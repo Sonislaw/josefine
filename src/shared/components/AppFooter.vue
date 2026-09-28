@@ -1,0 +1,2 @@
+<template><footer>Josefine · placeholder architektury platformy</footer></template>
+<style scoped>footer { padding: 1rem 2rem; border-top: 1px solid #ddd; color: #666; }</style>

@@ -1,11 +1,4 @@
-<script setup lang="ts"></script>
-
 <template>
-  <h1>You did it!</h1>
-  <p>
-    Visit <a href="https://vuejs.org/" target="_blank" rel="noopener">vuejs.org</a> to read the
-    documentation
-  </p>
+  <!-- The layout is selected by the route tree, keeping App independent of individual modules. -->
+  <RouterView />
 </template>
-
-<style scoped></style>
