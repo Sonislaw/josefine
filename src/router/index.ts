@@ -11,10 +11,10 @@ const routes: RouteRecordRaw[] = [
     component: AppLayout,
     children: [
       { path: '', name: 'home', component: () => import('@/views/HomeView.vue') },
-      ...caravaningRoutes,
       ...pracaRoutes,
     ],
   },
+  ...caravaningRoutes,
   { path: '/:pathMatch(.*)*', name: 'not-found', component: () => import('@/views/NotFoundView.vue') },
 ]
 
