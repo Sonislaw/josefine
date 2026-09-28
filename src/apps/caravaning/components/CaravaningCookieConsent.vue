@@ -47,7 +47,7 @@ onMounted(() => {
       <p class="max-w-3xl text-sm leading-6 text-muted-foreground">
         Używamy plików cookie analitycznych Google Analytics, aby rozumieć, jak działa serwis.
         Analityka uruchomi się wyłącznie po Twojej zgodzie. Szczegóły znajdziesz w
-        <RouterLink to="/karawaning/polityka-prywatnosci" class="font-medium text-primary underline underline-offset-4">polityce prywatności</RouterLink>.
+        <RouterLink :to="{ name: 'caravaning-privacy' }" class="font-medium text-primary underline underline-offset-4">polityce prywatności</RouterLink>.
       </p>
       <div class="flex shrink-0 flex-wrap gap-3">
         <button type="button" class="h-10 rounded-md border border-border px-4 text-sm font-medium transition hover:bg-muted" @click="choose('declined')">Odrzuć</button>

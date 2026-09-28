@@ -1,10 +1,10 @@
 {
   "siteName": "Caravaning Tools",
   "pages": [
-    { "key": "home", "path": "/karawaning", "title": "Caravaning Tools - kalkulatory i planowanie podróży", "description": "Praktyczne narzędzia dla caravaningowców.", "socialImage": "/og/caravaning-tools.png", "socialImageAlt": "Caravaning Tools" },
-    { "key": "dmc", "path": "/karawaning/kalkulator-dmc", "title": "Kalkulator DMC samochodu i przyczepy - Caravaning Tools", "description": "Oblicz łączną DMC samochodu i przyczepy kempingowej.", "socialImage": "/og/kalkulator-dmc.png", "socialImageAlt": "Kalkulator DMC zestawu" },
-    { "key": "consumption", "path": "/karawaning/kalkulator-spalania", "title": "Kalkulator spalania i kosztu paliwa - Caravaning Tools", "description": "Oblicz zużycie paliwa i koszt trasy.", "socialImage": "/og/kalkulator-spalania.png", "socialImageAlt": "Kalkulator spalania" },
-    { "key": "checklist", "path": "/karawaning/checklista-przed-wyjazdem", "title": "Checklista przed wyjazdem z przyczepą - Caravaning Tools", "description": "Lista kontrolna przed podpięciem przyczepy.", "socialImage": "/og/checklista-przed-wyjazdem.png", "socialImageAlt": "Checklista przed wyjazdem" },
-    { "key": "privacy", "path": "/karawaning/polityka-prywatnosci", "title": "Polityka prywatności - Caravaning Tools", "description": "Polityka prywatności Caravaning Tools.", "socialImage": "/og/caravaning-tools.png", "socialImageAlt": "Caravaning Tools" }
+    { "key": "home", "path": "/", "title": "Caravaning Tools - kalkulatory i planowanie podróży", "description": "Praktyczne narzędzia dla caravaningowców.", "socialImage": "/og/caravaning-tools.png", "socialImageAlt": "Caravaning Tools" },
+    { "key": "dmc", "path": "/kalkulator-dmc", "title": "Kalkulator DMC samochodu i przyczepy - Caravaning Tools", "description": "Oblicz łączną DMC samochodu i przyczepy kempingowej.", "socialImage": "/og/kalkulator-dmc.png", "socialImageAlt": "Kalkulator DMC zestawu" },
+    { "key": "consumption", "path": "/kalkulator-kosztow-podrozy", "title": "Kalkulator spalania i kosztu paliwa - Caravaning Tools", "description": "Oblicz zużycie paliwa i koszt trasy.", "socialImage": "/og/kalkulator-spalania.png", "socialImageAlt": "Kalkulator spalania" },
+    { "key": "checklist", "path": "/checklista-przed-wyjazdem", "title": "Checklista przed wyjazdem z przyczepą - Caravaning Tools", "description": "Lista kontrolna przed podpięciem przyczepy.", "socialImage": "/og/checklista-przed-wyjazdem.png", "socialImageAlt": "Checklista przed wyjazdem" },
+    { "key": "privacy", "path": "/polityka-prywatnosci", "title": "Polityka prywatności - Caravaning Tools", "description": "Polityka prywatności Caravaning Tools.", "socialImage": "/og/caravaning-tools.png", "socialImageAlt": "Caravaning Tools" }
   ]
 }

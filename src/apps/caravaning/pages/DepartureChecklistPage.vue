@@ -160,7 +160,7 @@ onMounted(() => {
 <template>
   <div class="mx-auto max-w-7xl px-4 py-7 sm:px-6 sm:py-10 lg:px-8 lg:pb-10">
     <RouterLink
-      to="/karawaning/"
+      :to="{ name: 'caravaning' }"
       class="inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
     >
       <ArrowLeft class="size-4" aria-hidden="true" />

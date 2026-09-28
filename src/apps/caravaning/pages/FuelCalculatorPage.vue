@@ -82,7 +82,7 @@ useCaravaningSeo('consumption', {
       name: 'Kalkulator spalania i kosztu paliwa',
       description:
         'Oblicz zużycie paliwa, koszt przejazdu w jedną stronę i w obie strony oraz szacowaną liczbę tankowań.',
-      url: `${siteUrl}/kalkulator-spalania`,
+      url: `${siteUrl}/kalkulator-kosztow-podrozy`,
       applicationCategory: 'UtilitiesApplication',
       operatingSystem: 'Any',
       inLanguage: 'pl-PL',
@@ -104,7 +104,7 @@ useCaravaningSeo('consumption', {
 <template>
   <div class="mx-auto max-w-7xl px-4 py-7 sm:px-6 sm:py-10 lg:px-8">
     <RouterLink
-      to="/karawaning/"
+      :to="{ name: 'caravaning' }"
       class="inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
     >
       <ArrowLeft class="size-4" aria-hidden="true" />

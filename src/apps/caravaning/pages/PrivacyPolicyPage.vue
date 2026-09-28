@@ -1,7 +1,11 @@
 <script setup lang="ts">
 import { ArrowLeft } from '@lucide/vue'
-import { RouterLink } from 'vue-router'
+import { computed } from 'vue'
+import { RouterLink, useRouter } from 'vue-router'
 import { siteName, siteUrl, useCaravaningSeo } from '@/apps/caravaning/seo/useCaravaningSeo'
+
+const router = useRouter()
+const privacyUrl = computed(() => router.resolve({ name: 'caravaning-privacy' }).href)
 
 useCaravaningSeo('privacy', {
   '@context': 'https://schema.org',
@@ -18,7 +22,7 @@ useCaravaningSeo('privacy', {
 <template>
   <article class="mx-auto max-w-4xl px-4 py-7 sm:px-6 sm:py-10 lg:px-8">
     <RouterLink
-      to="/karawaning/"
+      :to="{ name: 'caravaning' }"
       class="mb-8 inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
     >
       <ArrowLeft class="size-4" aria-hidden="true" />
@@ -147,10 +151,10 @@ useCaravaningSeo('privacy', {
           Aktualna wersja dokumentu jest zawsze publikowana pod adresem:
         </p>
         <a
-          href="/karawaning/polityka-prywatnosci"
+          :href="privacyUrl"
           class="mt-2 inline-flex break-all text-sm font-medium text-primary underline underline-offset-4"
         >
-          /karawaning/polityka-prywatnosci
+          {{ privacyUrl }}
         </a>
       </section>
 

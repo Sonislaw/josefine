@@ -61,7 +61,7 @@ onBeforeUnmount(() => {
 <template>
   <header class="sticky top-0 z-50 border-b border-border/80 bg-background/95 backdrop-blur">
     <div class="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-      <RouterLink to="/karawaning/" class="flex items-center gap-2.5">
+      <RouterLink :to="{ name: 'caravaning' }" class="flex items-center gap-2.5">
         <span
           class="flex size-9 items-center justify-center rounded-md bg-primary text-primary-foreground"
         >

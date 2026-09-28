@@ -9,7 +9,7 @@ import { Caravan } from '@lucide/vue'
       class="mx-auto grid max-w-7xl gap-8 px-4 py-10 sm:px-6 md:grid-cols-[1fr_auto] md:items-end lg:px-8"
     >
       <div class="max-w-lg">
-        <RouterLink to="/karawaning/" class="mb-3 inline-flex items-center gap-2 font-heading font-bold">
+        <RouterLink :to="{ name: 'caravaning' }" class="mb-3 inline-flex items-center gap-2 font-heading font-bold">
           <Caravan class="size-4 text-primary" aria-hidden="true" />
           Caravaning Tools
         </RouterLink>
@@ -27,7 +27,7 @@ import { Caravan } from '@lucide/vue'
         <a href="mailto:kontakt@zgrana.pl" class="text-muted-foreground hover:text-foreground">
           Kontakt
         </a>
-        <RouterLink to="/karawaning/polityka-prywatnosci" class="text-muted-foreground hover:text-foreground">
+        <RouterLink :to="{ name: 'caravaning-privacy' }" class="text-muted-foreground hover:text-foreground">
           Polityka prywatności
         </RouterLink>
       </nav>

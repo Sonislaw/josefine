@@ -15,7 +15,7 @@ interface ToolItem {
   title: string
   description: string
   icon: Component
-  to?: string
+  to?: { name: string }
 }
 
 const tools: ToolItem[] = [
@@ -23,19 +23,19 @@ const tools: ToolItem[] = [
     title: 'Kalkulator DMC',
     description: 'Dodaj DMC samochodu i przyczepy, aby obliczyć łączną wartość zestawu.',
     icon: Weight,
-    to: '/karawaning/kalkulator-dmc',
+    to: { name: 'caravaning-dmc' },
   },
   {
     title: 'Checklista przed wyjazdem',
     description: 'Odznacz punkty przed podpięciem przyczepy, po zaczepieniu i tuż przed ruszeniem.',
     icon: ClipboardCheck,
-    to: '/karawaning/checklista-przed-wyjazdem',
+    to: { name: 'caravaning-checklist' },
   },
   {
     title: 'Kalkulator spalania',
     description: 'Oblicz paliwo, koszt przejazdu i szacowaną liczbę tankowań.',
     icon: Fuel,
-    to: '/karawaning/kalkulator-spalania',
+    to: { name: 'caravaning-fuel' },
   },
 ]
 
@@ -90,7 +90,7 @@ useCaravaningSeo('home', {
           </p>
           <nav class="mt-8 flex items-center gap-3" aria-label="Szybki dost?p do narz?dzi">
             <RouterLink
-              to="/karawaning/kalkulator-dmc"
+              :to="{ name: 'caravaning-dmc' }"
               aria-label="Kalkulator DMC"
               title="Kalkulator DMC"
               class="flex size-12 items-center justify-center border border-white/20 bg-white/10 text-white transition-colors hover:bg-emerald-700"
@@ -98,7 +98,7 @@ useCaravaningSeo('home', {
               <Weight class="size-5" aria-hidden="true" />
             </RouterLink>
             <RouterLink
-              to="/karawaning/checklista-przed-wyjazdem"
+              :to="{ name: 'caravaning-checklist' }"
               aria-label="Checklista przed wyjazdem"
               title="Checklista przed wyjazdem"
               class="flex size-12 items-center justify-center border border-white/20 bg-white/10 text-white transition-colors hover:bg-emerald-700"
@@ -106,7 +106,7 @@ useCaravaningSeo('home', {
               <ClipboardCheck class="size-5" aria-hidden="true" />
             </RouterLink>
             <RouterLink
-              to="/karawaning/kalkulator-spalania"
+              :to="{ name: 'caravaning-fuel' }"
               aria-label="Kalkulator spalania"
               title="Kalkulator spalania"
               class="flex size-12 items-center justify-center border border-white/20 bg-white/10 text-white transition-colors hover:bg-emerald-700"
@@ -192,7 +192,7 @@ useCaravaningSeo('home', {
             <h3 class="font-heading text-lg font-semibold tracking-normal">Sprawdz DMC samochodu i przyczepy</h3>
             <p class="mt-3 text-sm leading-6 text-muted-foreground">
               Dopuszczalna masa calkowita ma znaczenie przy doborze samochodu i planowaniu obciazenia.
-              Skorzystaj z <RouterLink to="/karawaning/kalkulator-dmc" class="font-medium text-primary underline underline-offset-4">kalkulatora DMC</RouterLink>,
+              Skorzystaj z <RouterLink :to="{ name: 'caravaning-dmc' }" class="font-medium text-primary underline underline-offset-4">kalkulatora DMC</RouterLink>,
               aby zestawic wartosci i ocenic parametry pojazdow. Porownaj wynik z danymi w dowodach
               rejestracyjnych i wymaganiami dotyczacymi uprawnien kierowcy.
             </p>
@@ -201,7 +201,7 @@ useCaravaningSeo('home', {
             <h3 class="font-heading text-lg font-semibold tracking-normal">Oszacuj spalanie i koszt paliwa</h3>
             <p class="mt-3 text-sm leading-6 text-muted-foreground">
               Jazda z przyczepa moze zwiekszyc zuzycie paliwa, dlatego warto uwzglednic je w budzecie
-              wyjazdu. <RouterLink to="/karawaning/kalkulator-spalania" class="font-medium text-primary underline underline-offset-4">Kalkulator spalania</RouterLink>
+              wyjazdu. <RouterLink :to="{ name: 'caravaning-fuel' }" class="font-medium text-primary underline underline-offset-4">Kalkulator spalania</RouterLink>
               pomoze oszacowac ilosc potrzebnego paliwa, koszt przejazdu i liczbe tankowan na podstawie
               planowanego dystansu oraz spalania zestawu.
             </p>
@@ -210,7 +210,7 @@ useCaravaningSeo('home', {
             <h3 class="font-heading text-lg font-semibold tracking-normal">Przejdz checkliste przed wyjazdem</h3>
             <p class="mt-3 text-sm leading-6 text-muted-foreground">
               Przed ruszeniem sprawdz zamkniecie okien i klap, zabezpieczenie wnetrza, zaczep,
-              polaczenie elektryczne oraz oswietlenie. <RouterLink to="/karawaning/checklista-przed-wyjazdem" class="font-medium text-primary underline underline-offset-4">Checklista przed wyjazdem</RouterLink>
+              polaczenie elektryczne oraz oswietlenie. <RouterLink :to="{ name: 'caravaning-checklist' }" class="font-medium text-primary underline underline-offset-4">Checklista przed wyjazdem</RouterLink>
               pozwala odhaczac kolejne punkty i zapisac postep w przegladarce, by wrocic do przygotowan
               w dowolnym momencie.
             </p>
