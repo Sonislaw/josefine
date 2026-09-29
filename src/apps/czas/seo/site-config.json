@@ -1,0 +1,9 @@
+{"siteName":"Czas — kalkulatory dat i godzin","pages":[
+{"key":"home","path":"/","title":"Kalkulatory czasu: daty, wiek i godziny | Czas","description":"Bezpłatne kalkulatory czasu: różnica dat, wiek, czas pracy, godziny, minuty i odliczanie do daty.","socialImage":"/og/czas.svg","socialImageAlt":"Czas — kalkulatory dat i godzin"},
+{"key":"roznica-miedzy-datami","path":"/roznica-miedzy-datami","title":"Kalkulator różnicy między datami | Czas","description":"Oblicz liczbę dni między dwiema datami.","socialImage":"/og/czas.svg","socialImageAlt":"Kalkulator różnicy dat"},
+{"key":"data-za-liczbe-dni","path":"/data-za-liczbe-dni","title":"Kalkulator daty za liczbę dni | Czas","description":"Oblicz przyszłą lub wcześniejszą datę po dodaniu dni.","socialImage":"/og/czas.svg","socialImageAlt":"Kalkulator daty"},
+{"key":"wiek","path":"/wiek","title":"Kalkulator wieku | Czas","description":"Oblicz wiek na podstawie daty urodzenia.","socialImage":"/og/czas.svg","socialImageAlt":"Kalkulator wieku"},
+{"key":"czas-pracy","path":"/czas-pracy","title":"Kalkulator czasu pracy | Czas","description":"Oblicz godziny i minuty pracy między rozpoczęciem a zakończeniem.","socialImage":"/og/czas.svg","socialImageAlt":"Kalkulator czasu pracy"},
+{"key":"godziny-na-minuty","path":"/godziny-na-minuty","title":"Kalkulator godziny na minuty | Czas","description":"Przelicz godziny na minuty.","socialImage":"/og/czas.svg","socialImageAlt":"Godziny na minuty"},
+{"key":"minuty-na-godziny","path":"/minuty-na-godziny","title":"Kalkulator minuty na godziny | Czas","description":"Przelicz minuty na godziny i minuty.","socialImage":"/og/czas.svg","socialImageAlt":"Minuty na godziny"},
+{"key":"odliczanie-do-daty","path":"/odliczanie-do-daty","title":"Kalkulator dni do daty | Czas","description":"Oblicz liczbę dni do wybranego wydarzenia.","socialImage":"/og/czas.svg","socialImageAlt":"Odliczanie do daty"}]}
