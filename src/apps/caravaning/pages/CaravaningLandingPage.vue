@@ -175,7 +175,7 @@ useCaravaningSeo('home', {
 
     <section aria-labelledby="caravaning-guide-heading" class="border-t border-border bg-muted/20">
       <div class="mx-auto max-w-7xl px-4 py-14 sm:px-6 sm:py-16 lg:px-8">
-        <div class="max-w-3xl">
+        <div class="w-full">
           <p class="text-sm font-semibold text-primary">Praktyczny poradnik</p>
           <h2 id="caravaning-guide-heading" class="mt-2 font-heading text-2xl font-bold tracking-normal sm:text-3xl">
             Caravaning z przyczepa: zaplanuj podroz i przygotuj zestaw
