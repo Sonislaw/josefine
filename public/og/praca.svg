@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <rect width="1200" height="630" fill="#123b2d"/>
+  <circle cx="1080" cy="40" r="330" fill="#1e6347" opacity=".7"/>
+  <circle cx="1110" cy="630" r="245" fill="#9fe1b8" opacity=".18"/>
+  <rect x="82" y="86" width="66" height="66" rx="18" fill="#a9e4bd"/>
+  <text x="115" y="132" text-anchor="middle" font-family="Arial,sans-serif" font-size="38" font-weight="700" fill="#123b2d">P</text>
+  <text x="172" y="130" font-family="Arial,sans-serif" font-size="34" font-weight="700" fill="#fff">PracaNaRękę</text>
+  <text x="82" y="300" font-family="Arial,sans-serif" font-size="68" font-weight="700" fill="#fff">Ile dostaniesz</text>
+  <text x="82" y="384" font-family="Arial,sans-serif" font-size="68" font-weight="700" fill="#9fe1b8">na rękę?</text>
+  <text x="86" y="454" font-family="Arial,sans-serif" font-size="27" fill="#d8e8dd">Kalkulatory wynagrodzeń UoP i B2B</text>
+  <rect x="82" y="510" width="368" height="4" rx="2" fill="#a9e4bd"/>
+</svg>

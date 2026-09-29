@@ -3,6 +3,7 @@ import type { ModuleId } from '@/apps/registry'
 /** Exact production hostname → module mapping. Keep this as the single domain registry. */
 export const domains = {
   'karawaning.zgrana.pl': 'caravaning',
+  'praca.zgrana.pl': 'praca',
 } as const satisfies Record<string, ModuleId>
 
 export function getModuleForHostname(hostname: string): ModuleId | null {
