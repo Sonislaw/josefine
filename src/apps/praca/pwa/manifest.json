@@ -1,0 +1,12 @@
+{
+  "name": "PracaNaRękę — kalkulatory wynagrodzeń",
+  "short_name": "PracaNaRękę",
+  "description": "Kalkulatory wynagrodzeń UoP i B2B.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f7f8f6",
+  "theme_color": "#123b2d",
+  "lang": "pl-PL",
+  "icons": [{ "src": "/pwa/praca-icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }]
+}

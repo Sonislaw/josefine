@@ -12,6 +12,7 @@ if (!moduleId || !siteUrl) throw new Error('VITE_SEO_MODULE and VITE_PUBLIC_SITE
 
 const configPath = resolve(`src/apps/${moduleId}/seo/site-config.json`)
 const siteConfig = JSON.parse(await readFile(configPath, 'utf8'))
+const pwaConfigPath = resolve(`src/apps/${moduleId}/pwa/manifest.json`)
 const escapeXml = (value) => value.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
 const urls = siteConfig.pages
   .map(({ path }) => `  <url><loc>${escapeXml(new URL(path, siteUrl).href)}</loc></url>`)
@@ -22,3 +23,8 @@ const outputDirectory = resolve('dist')
 await mkdir(outputDirectory, { recursive: true })
 await writeFile(resolve(outputDirectory, 'sitemap.xml'), sitemap, 'utf8')
 await writeFile(resolve(outputDirectory, 'robots.txt'), `User-agent: *\nAllow: /\n\nSitemap: ${new URL('/sitemap.xml', siteUrl).href}\n`, 'utf8')
+try {
+  await writeFile(resolve(outputDirectory, 'manifest.webmanifest'), await readFile(pwaConfigPath, 'utf8'), 'utf8')
+} catch (error) {
+  if (error.code !== 'ENOENT') throw error
+}
