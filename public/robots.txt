@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+# The deployment publishes a sitemap.xml for each served hostname.

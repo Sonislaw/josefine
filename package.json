@@ -6,8 +6,11 @@
   "scripts": {
     "dev": "vite",
     "build": "run-p type-check \"build-only {@}\" --",
+    "build:karawaning": "npm run type-check && npm run build-only:karawaning && npm run generate:sitemap:karawaning",
     "preview": "vite preview",
-    "build-only": "vite build",
+    "build-only": "vite-ssg build",
+    "build-only:karawaning": "vite-ssg build --mode karawaning",
+    "generate:sitemap:karawaning": "node scripts/generate-sitemap.mjs karawaning",
     "type-check": "vue-tsc --build",
     "lint": "run-s \"lint:*\"",
     "lint:oxlint": "oxlint . --fix",
@@ -17,7 +20,7 @@
   "dependencies": {
     "@lucide/vue": "^1.48.0",
     "@tailwindcss/vite": "^4.3.3",
-    "@unhead/vue": "^3.4.1",
+    "@unhead/vue": "^2.1.17",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "pinia": "^4.0.3",
@@ -45,6 +48,7 @@
     "typescript": "~6.0.0",
     "vite": "^8.2.2",
     "vite-plugin-vue-devtools": "^8.2.1",
+    "vite-ssg": "^28.3.0",
     "vue-eslint-parser": "^10.4.1",
     "vue-tsc": "^3.3.11"
   },

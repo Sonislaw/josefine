@@ -1,15 +1,11 @@
-import { createApp } from 'vue'
 import { createPinia } from 'pinia'
-import { createHead } from '@unhead/vue/client'
+import { ViteSSG } from 'vite-ssg'
 
 import App from './App.vue'
-import router from './router'
+import { routes } from './router'
 import './styles/main.css'
 
-const app = createApp(App)
-
-app.use(createPinia())
-app.use(createHead())
-app.use(router)
-
-app.mount('#app')
+// ViteSSG renders route HTML during the build; the same entry hydrates it in the browser.
+export const createApp = ViteSSG(App, { routes }, ({ app }) => {
+  app.use(createPinia())
+})
