@@ -1,0 +1,17 @@
+{
+  "siteName": "Pieniądze — kalkulatory",
+  "pages": [
+    { "key": "home", "path": "/", "title": "Kalkulatory finansowe: VAT, rabat, marża i procenty | Pieniądze", "description": "Bezpłatne kalkulatory finansowe: brutto netto, VAT, rabat, marża, narzut, napiwek, podział rachunku i procenty.", "socialImage": "/og/pieniadze.svg", "socialImageAlt": "Pieniądze — kalkulatory finansowe" },
+    { "key": "brutto-netto", "path": "/brutto-netto", "title": "Kalkulator brutto netto VAT | Pieniądze", "description": "Oblicz kwotę netto i VAT z ceny brutto.", "socialImage": "/og/pieniadze.svg", "socialImageAlt": "Kalkulator brutto netto" },
+    { "key": "netto-brutto", "path": "/netto-brutto", "title": "Kalkulator netto brutto VAT | Pieniądze", "description": "Oblicz kwotę brutto i VAT z ceny netto.", "socialImage": "/og/pieniadze.svg", "socialImageAlt": "Kalkulator netto brutto" },
+    { "key": "procent-z-liczby", "path": "/procent-z-liczby", "title": "Kalkulator procentu z liczby | Pieniądze", "description": "Oblicz procent z dowolnej liczby.", "socialImage": "/og/pieniadze.svg", "socialImageAlt": "Kalkulator procentowy" },
+    { "key": "zmiana-procentowa", "path": "/zmiana-procentowa", "title": "Kalkulator zmiany procentowej | Pieniądze", "description": "Oblicz wzrost lub spadek procentowy między dwiema kwotami.", "socialImage": "/og/pieniadze.svg", "socialImageAlt": "Kalkulator zmiany procentowej" },
+    { "key": "rabat", "path": "/rabat", "title": "Kalkulator rabatu | Pieniądze", "description": "Oblicz cenę po rabacie procentowym.", "socialImage": "/og/pieniadze.svg", "socialImageAlt": "Kalkulator rabatu" },
+    { "key": "podwyzka", "path": "/podwyzka", "title": "Kalkulator podwyżki | Pieniądze", "description": "Oblicz kwotę po podwyżce procentowej.", "socialImage": "/og/pieniadze.svg", "socialImageAlt": "Kalkulator podwyżki" },
+    { "key": "marza", "path": "/marza", "title": "Kalkulator marży | Pieniądze", "description": "Oblicz marżę i zysk ze sprzedaży.", "socialImage": "/og/pieniadze.svg", "socialImageAlt": "Kalkulator marży" },
+    { "key": "narzut", "path": "/narzut", "title": "Kalkulator narzutu | Pieniądze", "description": "Oblicz narzut i zysk względem kosztu zakupu.", "socialImage": "/og/pieniadze.svg", "socialImageAlt": "Kalkulator narzutu" },
+    { "key": "cena-jednostkowa", "path": "/cena-jednostkowa", "title": "Kalkulator ceny jednostkowej | Pieniądze", "description": "Porównaj cenę za kilogram, litr, metr lub sztukę.", "socialImage": "/og/pieniadze.svg", "socialImageAlt": "Kalkulator ceny jednostkowej" },
+    { "key": "podzial-rachunku", "path": "/podzial-rachunku", "title": "Kalkulator podziału rachunku | Pieniądze", "description": "Oblicz ile płaci każda osoba za wspólny rachunek.", "socialImage": "/og/pieniadze.svg", "socialImageAlt": "Kalkulator podziału rachunku" },
+    { "key": "napiwek", "path": "/napiwek", "title": "Kalkulator napiwku | Pieniądze", "description": "Oblicz napiwek i końcową kwotę rachunku.", "socialImage": "/og/pieniadze.svg", "socialImageAlt": "Kalkulator napiwku" }
+  ]
+}

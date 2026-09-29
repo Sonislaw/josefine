@@ -4,6 +4,7 @@ import type { ModuleId } from '@/apps/registry'
 export const domains = {
   'karawaning.zgrana.pl': 'caravaning',
   'praca.zgrana.pl': 'praca',
+  'pieniadze.zgrana.pl': 'pieniadze',
 } as const satisfies Record<string, ModuleId>
 
 export function getModuleForHostname(hostname: string): ModuleId | null {
