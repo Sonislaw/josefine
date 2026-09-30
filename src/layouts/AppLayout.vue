@@ -2,7 +2,6 @@
 import AppFooter from '@/shared/components/AppFooter.vue'
 import AppHeader from '@/shared/components/AppHeader.vue'
 import AppSidebar from '@/shared/components/AppSidebar.vue'
-import CookieBanner from '@/shared/components/CookieBanner.vue'
 </script>
 
 <template>
@@ -10,7 +9,6 @@ import CookieBanner from '@/shared/components/CookieBanner.vue'
     <AppHeader />
     <div class="app-shell__body"><AppSidebar /><main class="app-shell__main"><RouterView /></main></div>
     <AppFooter />
-    <CookieBanner />
   </div>
 </template>
 

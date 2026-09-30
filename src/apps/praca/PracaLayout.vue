@@ -3,7 +3,6 @@ import { onMounted, ref } from 'vue'
 import { useHead } from '@unhead/vue'
 import { Download, Share2, X } from '@lucide/vue'
 import { RouterLink } from 'vue-router'
-import PracaCookieConsent from './components/PracaCookieConsent.vue'
 import { pracaPath } from './seo/usePracaSeo'
 import { usePwaInstall } from '@/shared/composables/usePwaInstall'
 import pracaLogo from './assets/praca-logo.svg'
@@ -73,6 +72,5 @@ onMounted(() => {
         <RouterLink :to="pracaPath('/polityka-prywatnosci')">Polityka prywatności</RouterLink>
       </div>
     </footer>
-    <PracaCookieConsent />
   </div>
 </template>

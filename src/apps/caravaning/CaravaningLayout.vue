@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { useHead } from '@unhead/vue'
-import CaravaningCookieConsent from './components/CaravaningCookieConsent.vue'
 import CaravaningFooter from './components/CaravaningFooter.vue'
 import CaravaningHeader from './components/CaravaningHeader.vue'
 
@@ -13,6 +12,5 @@ useHead({ htmlAttrs: { lang: 'pl' } })
     <CaravaningHeader />
     <main class="flex-1"><RouterView /></main>
     <CaravaningFooter />
-    <CaravaningCookieConsent />
   </div>
 </template>

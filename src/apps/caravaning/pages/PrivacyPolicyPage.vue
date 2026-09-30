@@ -80,56 +80,12 @@ useCaravaningSeo('privacy', {
       </section>
 
       <section class="py-7">
-        <h2 class="font-heading text-xl font-semibold tracking-normal">3. Google Analytics</h2>
-        <p class="mt-3 text-sm leading-7 text-muted-foreground">
-          Za Twoją zgodą serwis korzysta z Google Analytics 4, dostarczanego przez Google. Narzędzie
-          pomaga administratorowi analizować korzystanie ze strony i ulepszać jej działanie.
-        </p>
-        <p class="mt-3 text-sm leading-7 text-muted-foreground">
-          Skrypt Google Analytics nie jest ładowany przed wyrażeniem zgody na pliki cookie
-          analityczne. Po akceptacji Google Analytics może wykorzystywać pliki cookie i przetwarzać
-          informacje techniczne, takie jak adres IP, informacje o urządzeniu i przeglądarce oraz
-          sposób korzystania z serwisu.
-        </p>
-        <p class="mt-3 text-sm leading-7 text-muted-foreground">
-          Dane statystyczne służą do analizy popularności treści i jakości działania serwisu.
-          Więcej informacji o przetwarzaniu danych przez Google znajduje się w
-          <a href="https://policies.google.com/privacy" target="_blank" rel="noreferrer" class="font-medium text-primary underline underline-offset-4">polityce prywatności Google</a>.
-        </p>
+        <h2 class="font-heading text-xl font-semibold tracking-normal">3. Odbiorcy danych</h2>
+        <p class="mt-3 text-sm leading-7 text-muted-foreground">Dostawcą usług technicznych może być podmiot hostujący serwis. Serwis nie korzysta z Google Analytics ani z plików cookie analitycznych.</p>
       </section>
 
       <section class="py-7">
-        <h2 class="font-heading text-xl font-semibold tracking-normal">4. Pliki cookies</h2>
-        <p class="mt-3 text-sm leading-7 text-muted-foreground">
-          Serwis prosi o zgodę przed użyciem plików cookie analitycznych Google Analytics. Możesz
-          zaakceptować lub odrzucić analitykę w pasku zgody. Wybór jest zapisywany lokalnie w
-          przeglądarce, aby nie wyświetlać pytania przy każdej wizycie.
-        </p>
-        <p class="mt-3 text-sm leading-7 text-muted-foreground">
-          Możesz zmienić wybór przez usunięcie danych witryny w ustawieniach przeglądarki. Po
-          ponownym otwarciu strony pasek zgody pojawi się ponownie.
-        </p>
-      </section>
-
-      <section class="py-7">
-        <h2 class="font-heading text-xl font-semibold tracking-normal">5. Odbiorcy danych</h2>
-        <p class="mt-3 text-sm leading-7 text-muted-foreground">Dostawcami usług technicznych mogą być podmiot hostujący serwis oraz, po wyrażeniu zgody analitycznej, Google.</p>
-        <p class="mt-3 text-sm leading-7 text-muted-foreground">
-          Informacje dotyczące sposobu przetwarzania danych przez Google można znaleźć na
-          stronie:
-        </p>
-        <a
-          href="https://policies.google.com/privacy"
-          target="_blank"
-          rel="noreferrer"
-          class="mt-2 inline-flex break-all text-sm font-medium text-primary underline underline-offset-4"
-        >
-          https://policies.google.com/privacy
-        </a>
-      </section>
-
-      <section class="py-7">
-        <h2 class="font-heading text-xl font-semibold tracking-normal">6. Bezpieczeństwo</h2>
+        <h2 class="font-heading text-xl font-semibold tracking-normal">4. Bezpieczeństwo</h2>
         <p class="mt-3 text-sm leading-7 text-muted-foreground">
           Administrator stosuje środki techniczne i organizacyjne mające na celu ochronę serwisu
           przed nieuprawnionym dostępem, utratą danych lub innymi zagrożeniami.
@@ -141,7 +97,7 @@ useCaravaningSeo('privacy', {
 
       <section class="py-7">
         <h2 class="font-heading text-xl font-semibold tracking-normal">
-          7. Zmiany Polityki Prywatności
+          5. Zmiany Polityki Prywatności
         </h2>
         <p class="mt-3 text-sm leading-7 text-muted-foreground">
           Polityka Prywatności może być aktualizowana w przypadku zmian funkcjonalności serwisu,
@@ -159,7 +115,7 @@ useCaravaningSeo('privacy', {
       </section>
 
       <section class="py-7">
-        <h2 class="font-heading text-xl font-semibold tracking-normal">8. Kontakt</h2>
+        <h2 class="font-heading text-xl font-semibold tracking-normal">6. Kontakt</h2>
         <p class="mt-3 text-sm leading-7 text-muted-foreground">
           W sprawach związanych z funkcjonowaniem serwisu można skontaktować się z administratorem
           za pośrednictwem danych kontaktowych publikowanych w serwisie.
