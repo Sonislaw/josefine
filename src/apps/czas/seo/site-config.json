@@ -6,4 +6,5 @@
 {"key":"czas-pracy","path":"/czas-pracy","title":"Kalkulator czasu pracy | Czas","description":"Oblicz godziny i minuty pracy między rozpoczęciem a zakończeniem.","socialImage":"/og/czas.svg","socialImageAlt":"Kalkulator czasu pracy"},
 {"key":"godziny-na-minuty","path":"/godziny-na-minuty","title":"Kalkulator godziny na minuty | Czas","description":"Przelicz godziny na minuty.","socialImage":"/og/czas.svg","socialImageAlt":"Godziny na minuty"},
 {"key":"minuty-na-godziny","path":"/minuty-na-godziny","title":"Kalkulator minuty na godziny | Czas","description":"Przelicz minuty na godziny i minuty.","socialImage":"/og/czas.svg","socialImageAlt":"Minuty na godziny"},
-{"key":"odliczanie-do-daty","path":"/odliczanie-do-daty","title":"Kalkulator dni do daty | Czas","description":"Oblicz liczbę dni do wybranego wydarzenia.","socialImage":"/og/czas.svg","socialImageAlt":"Odliczanie do daty"}]}
+{"key":"odliczanie-do-daty","path":"/odliczanie-do-daty","title":"Kalkulator dni do daty | Czas","description":"Oblicz liczbę dni do wybranego wydarzenia.","socialImage":"/og/czas.svg","socialImageAlt":"Odliczanie do daty"},
+{"key":"privacy","path":"/polityka-prywatnosci","title":"Polityka prywatności | Czas","description":"Informacje o prywatności w serwisie Czas.","socialImage":"/og/czas.svg","socialImageAlt":"Czas"}]}

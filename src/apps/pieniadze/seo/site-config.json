@@ -12,6 +12,7 @@
     { "key": "narzut", "path": "/narzut", "title": "Kalkulator narzutu | Pieniądze", "description": "Oblicz narzut i zysk względem kosztu zakupu.", "socialImage": "/og/pieniadze.svg", "socialImageAlt": "Kalkulator narzutu" },
     { "key": "cena-jednostkowa", "path": "/cena-jednostkowa", "title": "Kalkulator ceny jednostkowej | Pieniądze", "description": "Porównaj cenę za kilogram, litr, metr lub sztukę.", "socialImage": "/og/pieniadze.svg", "socialImageAlt": "Kalkulator ceny jednostkowej" },
     { "key": "podzial-rachunku", "path": "/podzial-rachunku", "title": "Kalkulator podziału rachunku | Pieniądze", "description": "Oblicz ile płaci każda osoba za wspólny rachunek.", "socialImage": "/og/pieniadze.svg", "socialImageAlt": "Kalkulator podziału rachunku" },
-    { "key": "napiwek", "path": "/napiwek", "title": "Kalkulator napiwku | Pieniądze", "description": "Oblicz napiwek i końcową kwotę rachunku.", "socialImage": "/og/pieniadze.svg", "socialImageAlt": "Kalkulator napiwku" }
+    { "key": "napiwek", "path": "/napiwek", "title": "Kalkulator napiwku | Pieniądze", "description": "Oblicz napiwek i końcową kwotę rachunku.", "socialImage": "/og/pieniadze.svg", "socialImageAlt": "Kalkulator napiwku" },
+    { "key": "privacy", "path": "/polityka-prywatnosci", "title": "Polityka prywatności | Pieniądze", "description": "Informacje o prywatności w serwisie Pieniądze.", "socialImage": "/og/pieniadze.svg", "socialImageAlt": "Pieniądze" }
   ]
 }

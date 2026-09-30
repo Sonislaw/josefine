@@ -8,6 +8,7 @@ export function createPieniadzeRoutes(mode: RouteMode): RouteRecordRaw[] {
   return [{ path: basePath, component: () => import('./PieniadzeLayout.vue'), children: [
     { path: '', name: 'pieniadze', component: () => import('./pages/PieniadzeHomePage.vue') },
     ...tools.map((id) => ({ path: id, name: `pieniadze-${id}`, component: () => import('./pages/PieniadzeToolPage.vue'), props: { toolId: id } })),
+    { path: 'polityka-prywatnosci', name: 'pieniadze-privacy', component: () => import('./pages/PrivacyPolicyPage.vue') },
     { path: ':pathMatch(.*)*', name: 'pieniadze-not-found', component: () => import('@/views/NotFoundView.vue') },
   ] }]
 }
