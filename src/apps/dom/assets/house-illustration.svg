@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 560" role="img" aria-labelledby="house-title house-description">
+  <title id="house-title">Dom pełen pomysłów</title>
+  <desc id="house-description">Izometryczny pokój z meblami, rośliną i etykietami wymiarów.</desc>
+  <defs>
+    <linearGradient id="floor" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#f8e8d5"/><stop offset="1" stop-color="#ecd4b5"/></linearGradient>
+    <linearGradient id="wall" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#f7fbf1"/><stop offset="1" stop-color="#dce8d6"/></linearGradient>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="170%"><feDropShadow dx="0" dy="22" stdDeviation="20" flood-color="#234034" flood-opacity=".2"/></filter>
+  </defs>
+  <ellipse cx="341" cy="476" rx="245" ry="45" fill="#486e58" opacity=".13"/>
+  <g filter="url(#shadow)">
+    <path d="M94 305 340 174l246 131-246 134Z" fill="url(#floor)" stroke="#c8b99f" stroke-width="3"/>
+    <path d="M94 305V156L340 26v148Z" fill="url(#wall)" stroke="#bed0be" stroke-width="3"/>
+    <path d="M340 26 586 156v149L340 174Z" fill="#edf3e8" stroke="#bed0be" stroke-width="3"/>
+    <path d="M94 305 340 439v21L94 326Z" fill="#d1aa88"/>
+    <path d="M340 439 586 305v21L340 460Z" fill="#c69d7d"/>
+    <path d="M94 305 340 174l246 131" fill="none" stroke="#b88f74" stroke-opacity=".55" stroke-width="3"/>
+    <path d="M142 293 340 186l199 107-199 109Z" fill="none" stroke="#fffaf0" stroke-width="2" stroke-dasharray="9 9" opacity=".6"/>
+    <path d="M144 179 254 121v87l-110 59Z" fill="#c6dedc" stroke="#80a8a2" stroke-width="6"/>
+    <path d="M199 150v88m-55-59 110 29" stroke="#f8fcf6" stroke-width="5"/>
+    <path d="M397 102 520 168v93l-123-66Z" fill="#dfbd8f" stroke="#ad855d" stroke-width="4"/>
+    <path d="M410 120 508 172v67l-98-52Z" fill="#fff4db"/>
+    <circle cx="460" cy="180" r="16" fill="#f2c880"/><path d="M453 206h32" stroke="#a07f56" stroke-width="4"/>
+    <path d="M160 324 271 264l120 64-110 60Z" fill="#c4d2b8" opacity=".8"/>
+    <path d="M185 297 268 253l98 53-82 44Z" fill="#799789" stroke="#496d63" stroke-width="3"/>
+    <path d="M185 297v42l99 53v-42Z" fill="#52766b"/>
+    <path d="M284 350v42l82-44v-42Z" fill="#42665e"/>
+    <path d="M200 273 266 237l83 45-65 35Z" fill="#a7bca3"/>
+    <path d="M200 273v30l84 45v-31Z" fill="#759282"/>
+    <path d="M284 317v31l65-36v-30Z" fill="#648272"/>
+    <path d="M205 283 266 251l71 38-60 31Z" fill="#f1ddd1"/>
+    <path d="M219 296 251 278l32 18-32 17Z" fill="#eebf9e"/>
+    <path d="M374 300 424 273l51 28-50 26Z" fill="#8d604a"/>
+    <path d="M374 300v12l51 28v-13Z" fill="#684936"/>
+    <path d="M425 327v13l50-27v-12Z" fill="#704b36"/>
+    <path d="M387 318v33m73-45v33" stroke="#664933" stroke-width="7" stroke-linecap="round"/>
+    <path d="M501 301v-75" stroke="#4d7259" stroke-width="6" stroke-linecap="round"/>
+    <path d="M500 261c-40-14-49-45-25-63 27 7 39 26 25 63Z" fill="#6d9b72"/>
+    <path d="M502 252c30-36 48-45 58-26-15 25-36 34-58 26Z" fill="#87af77"/>
+    <path d="M499 282c-25-19-42-19-50-4 12 17 32 22 50 4Z" fill="#537f61"/>
+    <path d="M481 303h40l-6 25h-28Z" fill="#df8f6d"/>
+  </g>
+  <g font-family="Arial,sans-serif" font-weight="700">
+    <path d="M111 345 331 466" stroke="#51826a" stroke-width="2" stroke-dasharray="5 6"/>
+    <rect x="120" y="385" width="94" height="38" rx="10" fill="#fffdf8" stroke="#d9e6d8"/>
+    <text x="141" y="410" fill="#2c5943" font-size="17">5,0 m</text>
+    <path d="M350 476 581 350" stroke="#51826a" stroke-width="2" stroke-dasharray="5 6"/>
+    <rect x="464" y="389" width="94" height="38" rx="10" fill="#fffdf8" stroke="#d9e6d8"/>
+    <text x="484" y="414" fill="#2c5943" font-size="17">4,0 m</text>
+    <rect x="253" y="214" width="115" height="51" rx="15" fill="#f5cdbb"/>
+    <text x="274" y="248" fill="#713e32" font-size="24">20 m²</text>
+  </g>
+  <circle cx="92" cy="120" r="12" fill="#f2c4aa" opacity=".8"/>
+  <circle cx="586" cy="85" r="8" fill="#9bc7a4" opacity=".9"/>
+</svg>

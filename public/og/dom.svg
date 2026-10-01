@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <rect width="1200" height="630" fill="#244f3d"/>
+  <path d="M0 525 620 180l580 322v128H0Z" fill="#35634d" opacity=".7"/>
+  <circle cx="1005" cy="190" r="275" fill="#b8d2ae" opacity=".16"/>
+  <path d="m854 305 153-130 153 130m-263-10v185h220V295" fill="none" stroke="#f6d0b7" stroke-width="24" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M972 480V358h71v122" fill="none" stroke="#f6d0b7" stroke-width="20"/>
+  <text x="82" y="155" font-family="Arial,sans-serif" font-size="38" font-weight="700" fill="#f4d3bd">DOM</text>
+  <text x="82" y="300" font-family="Arial,sans-serif" font-size="77" font-weight="700" fill="white">Policz to</text>
+  <text x="82" y="392" font-family="Arial,sans-serif" font-size="77" font-weight="700" fill="white">po domowemu.</text>
+  <text x="82" y="489" font-family="Arial,sans-serif" font-size="30" fill="#e0ecdb">Wymiary, rachunki i materiały w jednym miejscu</text>
+</svg>

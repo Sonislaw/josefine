@@ -9,6 +9,8 @@ import CzasTools from '@/apps/czas/components/CzasTools.vue'
 import { czasModule } from '@/apps/czas/manifest'
 import JednostkiTools from '@/apps/jednostki/components/JednostkiTools.vue'
 import { jednostkiModule } from '@/apps/jednostki/manifest'
+import DomTools from '@/apps/dom/components/DomTools.vue'
+import { domModule } from '@/apps/dom/manifest'
 </script>
 
 <template>
@@ -18,5 +20,6 @@ import { jednostkiModule } from '@/apps/jednostki/manifest'
   <section class="module"><h2>{{ pieniadzeModule.name }}</h2><p>{{ pieniadzeModule.description }}</p><PieniadzeTools /></section>
   <section class="module"><h2>{{ czasModule.name }}</h2><p>{{ czasModule.description }}</p><CzasTools /></section>
   <section class="module"><h2>{{ jednostkiModule.name }}</h2><p>{{ jednostkiModule.description }}</p><JednostkiTools /></section>
+  <section class="module"><h2>{{ domModule.name }}</h2><p>{{ domModule.description }}</p><DomTools /></section>
 </template>
 <style scoped>.module { margin-top: 2.5rem; }</style>

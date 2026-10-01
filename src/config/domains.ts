@@ -7,6 +7,7 @@ export const domains = {
   'pieniadze.zgrana.pl': 'pieniadze',
   'czas.zgrana.pl': 'czas',
   'jednostki.zgrana.pl': 'jednostki',
+  'dom.zgrana.pl': 'dom',
 } as const satisfies Record<string, ModuleId>
 
 export function getModuleForHostname(hostname: string): ModuleId | null {

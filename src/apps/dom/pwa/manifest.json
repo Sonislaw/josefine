@@ -1,0 +1,12 @@
+{
+  "name": "Dom — praktyczne kalkulatory",
+  "short_name": "Dom",
+  "description": "Kalkulatory wymiarów, rachunków i materiałów do domowych projektów.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#faf8f3",
+  "theme_color": "#244f3d",
+  "lang": "pl-PL",
+  "icons": [{ "src": "/pwa/dom-icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }]
+}
