@@ -1,6 +1,6 @@
 # Josefine
 
-Platforma Vue 3 z niezależnymi modułami. Lokalnie `npm run dev` udostępnia moduły pod prefiksami (`/karawaning`, `/praca`, `/pieniadze`, `/czas`, `/jednostki`, `/dom`). Produkcyjny build pojedynczej aplikacji używa czystych adresów na jej subdomenie.
+Platforma Vue 3 z niezależnymi modułami. Lokalnie `npm run dev` udostępnia moduły pod prefiksami (`/karawaning`, `/praca`, `/pieniadze`, `/czas`, `/jednostki`, `/dom`, `/motoryzacja`). Produkcyjny build pojedynczej aplikacji używa czystych adresów na jej subdomenie.
 
 ## Uruchomienie
 
@@ -9,18 +9,18 @@ npm install
 npm run dev
 ```
 
-Przykład: `http://localhost:5173/dom/powierzchnia-prostokata`.
+Przykład: `http://localhost:5173/motoryzacja/spalanie-paliwa`.
 
 ## Build i Cloudflare Workers
 
-Każda subdomena ma własny build statycznego HTML, sitemapę i manifest PWA. Dla Dom:
+Każda subdomena ma własny build statycznego HTML, sitemapę i manifest PWA. Dla Motoryzacji:
 
 ```sh
-npm run build:site -- dom
-npx wrangler deploy --name josefine-dom
+npm run build:site -- motoryzacja
+npx wrangler deploy --name josefine-motoryzacja
 ```
 
-W projekcie Cloudflare Workers ustaw te same polecenia jako Build command i Deploy command oraz przypisz domenę `dom.zgrana.pl`. Nie współdziel katalogu `dist` między równolegle uruchomionymi buildami w jednym katalogu roboczym — każdy projekt Cloudflare buduje własną kopię repozytorium.
+W projekcie Cloudflare Workers ustaw te same polecenia jako Build command i Deploy command oraz przypisz domenę `motoryzacja.zgrana.pl`. Nie współdziel katalogu `dist` między równolegle uruchomionymi buildami w jednym katalogu roboczym — każdy projekt Cloudflare buduje własną kopię repozytorium.
 
 ## Dodawanie modułu
 

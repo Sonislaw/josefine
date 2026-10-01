@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 560" role="img" aria-labelledby="road-title road-description">
+  <title id="road-title">Droga pod kontrolą</title>
+  <desc id="road-description">Ilustracja samochodu na zakręcie z kartami spalania, zasięgu i prędkości.</desc>
+  <defs>
+    <linearGradient id="road" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#467282"/><stop offset="1" stop-color="#23495d"/></linearGradient>
+    <linearGradient id="car" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ffc181"/><stop offset="1" stop-color="#ef805a"/></linearGradient>
+    <filter id="shadow" x="-35%" y="-35%" width="170%" height="180%"><feDropShadow dx="0" dy="20" stdDeviation="17" flood-color="#061622" flood-opacity=".42"/></filter>
+  </defs>
+  <circle cx="345" cy="278" r="222" fill="#b9f276" opacity=".055"/>
+  <circle cx="345" cy="278" r="185" fill="none" stroke="#c5efd6" stroke-opacity=".2" stroke-width="1.5" stroke-dasharray="5 9"/>
+  <circle cx="345" cy="278" r="134" fill="none" stroke="#c5efd6" stroke-opacity=".12" stroke-width="1.5"/>
+  <path d="M72 498c89-104 177-52 260-135 90-91-7-125 103-192 50-30 105-33 171-98" fill="none" stroke="#b9e1c9" stroke-opacity=".18" stroke-width="86" stroke-linecap="round"/>
+  <path d="M72 498c89-104 177-52 260-135 90-91-7-125 103-192 50-30 105-33 171-98" fill="none" stroke="url(#road)" stroke-width="78" stroke-linecap="round"/>
+  <path d="M72 498c89-104 177-52 260-135 90-91-7-125 103-192 50-30 105-33 171-98" fill="none" stroke="#e1eacb" stroke-opacity=".55" stroke-width="2" stroke-linecap="round" stroke-dasharray="9 16"/>
+  <path d="M72 498c89-104 177-52 260-135 90-91-7-125 103-192 50-30 105-33 171-98" fill="none" stroke="#fff7d9" stroke-width="3" stroke-linecap="round" stroke-dasharray="18 22"/>
+  <circle cx="111" cy="457" r="14" fill="#c9f283" stroke="#123745" stroke-width="8"/>
+  <circle cx="575" cy="107" r="14" fill="#f6a976" stroke="#123745" stroke-width="8"/>
+  <g transform="translate(323 309) rotate(-31)" filter="url(#shadow)">
+    <rect x="-30" y="-86" width="60" height="172" rx="23" fill="url(#car)" stroke="#ffe0b3" stroke-width="3"/>
+    <rect x="-34" y="-49" width="68" height="79" rx="14" fill="#f8b07f"/>
+    <rect x="-23" y="-37" width="46" height="43" rx="8" fill="#163e52" stroke="#c8e5df" stroke-width="2"/>
+    <path d="M-22 17h44l-5 34h-34Z" fill="#163e52" stroke="#c8e5df" stroke-width="2"/>
+    <rect x="-37" y="-57" width="10" height="28" rx="5" fill="#172e38"/>
+    <rect x="27" y="-57" width="10" height="28" rx="5" fill="#172e38"/>
+    <rect x="-37" y="40" width="10" height="28" rx="5" fill="#172e38"/>
+    <rect x="27" y="40" width="10" height="28" rx="5" fill="#172e38"/>
+    <rect x="-22" y="-76" width="15" height="6" rx="3" fill="#fff2cc"/>
+    <rect x="7" y="-76" width="15" height="6" rx="3" fill="#fff2cc"/>
+    <rect x="-21" y="73" width="13" height="6" rx="3" fill="#c94c42"/>
+    <rect x="8" y="73" width="13" height="6" rx="3" fill="#c94c42"/>
+  </g>
+  <g filter="url(#shadow)" font-family="Arial,sans-serif">
+    <rect x="38" y="61" width="204" height="94" rx="21" fill="#f5f8e9"/>
+    <text x="59" y="96" fill="#698177" font-size="14" font-weight="700">ŚREDNIE SPALANIE</text>
+    <text x="59" y="132" fill="#193e45" font-size="29" font-weight="700">8,0 l/100 km</text>
+    <rect x="445" y="219" width="198" height="94" rx="21" fill="#c9ef8a"/>
+    <text x="466" y="254" fill="#4d6a45" font-size="14" font-weight="700">ZASIĘG</text>
+    <text x="466" y="291" fill="#23442f" font-size="30" font-weight="700">500 km</text>
+    <rect x="393" y="407" width="219" height="96" rx="21" fill="#f6bb94"/>
+    <text x="414" y="442" fill="#805647" font-size="14" font-weight="700">ŚREDNIA PRĘDKOŚĆ</text>
+    <text x="414" y="479" fill="#44313a" font-size="29" font-weight="700">60 km/h</text>
+  </g>
+  <circle cx="304" cy="87" r="5" fill="#c9ef8a" opacity=".8"/>
+  <circle cx="638" cy="359" r="6" fill="#f6bb94" opacity=".8"/>
+</svg>

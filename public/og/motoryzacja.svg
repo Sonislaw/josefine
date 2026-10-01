@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <rect width="1200" height="630" fill="#14313d"/>
+  <circle cx="975" cy="315" r="288" fill="#96ca9d" opacity=".12"/>
+  <path d="M772 554c57-133 227-75 234-218 6-111-51-143 82-226" fill="none" stroke="#638c83" stroke-width="77" stroke-linecap="round"/>
+  <path d="M772 554c57-133 227-75 234-218 6-111-51-143 82-226" fill="none" stroke="#e2edce" stroke-width="6" stroke-dasharray="22 23"/>
+  <g transform="translate(1028 318) rotate(-22)"><rect x="-30" y="-74" width="60" height="148" rx="22" fill="#f5a372"/><rect x="-21" y="-32" width="42" height="52" rx="8" fill="#173e4a"/></g>
+  <text x="80" y="150" font-family="Arial,sans-serif" font-size="37" font-weight="700" fill="#c9ef8a">MOTORYZACJA</text>
+  <text x="80" y="299" font-family="Arial,sans-serif" font-size="76" font-weight="700" fill="white">Jedź z planem.</text>
+  <text x="80" y="392" font-family="Arial,sans-serif" font-size="76" font-weight="700" fill="white">Policz trasę.</text>
+  <text x="80" y="485" font-family="Arial,sans-serif" font-size="29" fill="#c7ddd4">Spalanie, koszt, zasięg, prędkość i czas</text>
+</svg>

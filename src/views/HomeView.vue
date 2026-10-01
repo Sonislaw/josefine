@@ -11,6 +11,8 @@ import JednostkiTools from '@/apps/jednostki/components/JednostkiTools.vue'
 import { jednostkiModule } from '@/apps/jednostki/manifest'
 import DomTools from '@/apps/dom/components/DomTools.vue'
 import { domModule } from '@/apps/dom/manifest'
+import MotoryzacjaTools from '@/apps/motoryzacja/components/MotoryzacjaTools.vue'
+import { motoryzacjaModule } from '@/apps/motoryzacja/manifest'
 </script>
 
 <template>
@@ -21,5 +23,6 @@ import { domModule } from '@/apps/dom/manifest'
   <section class="module"><h2>{{ czasModule.name }}</h2><p>{{ czasModule.description }}</p><CzasTools /></section>
   <section class="module"><h2>{{ jednostkiModule.name }}</h2><p>{{ jednostkiModule.description }}</p><JednostkiTools /></section>
   <section class="module"><h2>{{ domModule.name }}</h2><p>{{ domModule.description }}</p><DomTools /></section>
+  <section class="module"><h2>{{ motoryzacjaModule.name }}</h2><p>{{ motoryzacjaModule.description }}</p><MotoryzacjaTools /></section>
 </template>
 <style scoped>.module { margin-top: 2.5rem; }</style>
