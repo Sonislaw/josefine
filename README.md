@@ -1,48 +1,33 @@
-# .
+# Josefine
 
-This template should help get you started developing with Vue 3 in Vite.
+Platforma Vue 3 z niezależnymi modułami. Lokalnie `npm run dev` udostępnia moduły pod prefiksami (`/karawaning`, `/praca`, `/pieniadze`, `/czas`, `/jednostki`). Produkcyjny build pojedynczej aplikacji używa czystych adresów na jej subdomenie.
 
-## Recommended IDE Setup
-
-[VS Code](https://code.visualstudio.com/) + [Vue (Official)](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur).
-
-## Recommended Browser Setup
-
-- Chromium-based browsers (Chrome, Edge, Brave, etc.):
-  - [Vue.js devtools](https://chromewebstore.google.com/detail/vuejs-devtools/nhdogjmejiglipccpnnnanhbledajbpd)
-  - [Turn on Custom Object Formatter in Chrome DevTools](http://bit.ly/object-formatters)
-- Firefox:
-  - [Vue.js devtools](https://addons.mozilla.org/en-US/firefox/addon/vue-js-devtools/)
-  - [Turn on Custom Object Formatter in Firefox DevTools](https://fxdx.dev/firefox-devtools-custom-object-formatters/)
-
-## Type Support for `.vue` Imports in TS
-
-TypeScript cannot handle type information for `.vue` imports by default, so we replace the `tsc` CLI with `vue-tsc` for type checking. In editors, we need [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) to make the TypeScript language service aware of `.vue` types.
-
-## Customize configuration
-
-See [Vite Configuration Reference](https://vite.dev/config/).
-
-## Project Setup
+## Uruchomienie
 
 ```sh
 npm install
-```
-
-### Compile and Hot-Reload for Development
-
-```sh
 npm run dev
 ```
 
-### Type-Check, Compile and Minify for Production
+Przykład: `http://localhost:5173/jednostki/centymetry-cale`.
+
+## Build i Cloudflare Workers
+
+Każda subdomena ma własny build statycznego HTML, sitemapę i manifest PWA. Dla Jednostek:
 
 ```sh
-npm run build
+npm run build:site -- jednostki
+npx wrangler deploy --name josefine-jednostki
 ```
 
-### Lint with [ESLint](https://eslint.org/)
+W projekcie Cloudflare Workers ustaw te same polecenia jako Build command i Deploy command oraz przypisz domenę `jednostki.zgrana.pl`. Nie współdziel katalogu `dist` między równolegle uruchomionymi buildami w jednym katalogu roboczym — każdy projekt Cloudflare buduje własną kopię repozytorium.
 
-```sh
-npm run lint
-```
+## Dodawanie modułu
+
+1. Dodaj `src/apps/<id>/` z `manifest.ts`, `routes.ts`, layoutem, stronami, `seo/site-config.json`, `seo/use...Seo.ts` i `pwa/manifest.json`.
+2. Zarejestruj moduł w `src/apps/registry.ts` i jego domenę w `src/config/domains.ts`.
+3. Dodaj `.env.<id>` z `VITE_DEPLOYMENT_HOST`, `VITE_PUBLIC_SITE_URL` i `VITE_SEO_MODULE`.
+4. Dodaj kartę do `src/views/HomeView.vue`, ikonę PWA do `public/pwa/` i obraz społecznościowy do `public/og/`.
+5. Każdej trasie przeznaczonej do indeksowania dodaj wpis w `seo/site-config.json`; build wygeneruje jej HTML i doda ją do sitemapy.
+
+Wspólna polityka prywatności znajduje się w `src/shared/components/PrivacyPolicyContent.vue`. Google Analytics jest podłączone raz w `src/App.vue` i działa także w nowych modułach.

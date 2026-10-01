@@ -7,6 +7,8 @@ import PieniadzeTools from '@/apps/pieniadze/components/PieniadzeTools.vue'
 import { pieniadzeModule } from '@/apps/pieniadze/manifest'
 import CzasTools from '@/apps/czas/components/CzasTools.vue'
 import { czasModule } from '@/apps/czas/manifest'
+import JednostkiTools from '@/apps/jednostki/components/JednostkiTools.vue'
+import { jednostkiModule } from '@/apps/jednostki/manifest'
 </script>
 
 <template>
@@ -15,5 +17,6 @@ import { czasModule } from '@/apps/czas/manifest'
   <section class="module"><h2>{{ pracaModule.name }}</h2><p>{{ pracaModule.description }}</p><PracaTools /></section>
   <section class="module"><h2>{{ pieniadzeModule.name }}</h2><p>{{ pieniadzeModule.description }}</p><PieniadzeTools /></section>
   <section class="module"><h2>{{ czasModule.name }}</h2><p>{{ czasModule.description }}</p><CzasTools /></section>
+  <section class="module"><h2>{{ jednostkiModule.name }}</h2><p>{{ jednostkiModule.description }}</p><JednostkiTools /></section>
 </template>
 <style scoped>.module { margin-top: 2.5rem; }</style>

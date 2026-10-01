@@ -1,0 +1,14 @@
+{
+  "siteName": "Jednostki — przeliczniki online",
+  "pages": [
+    { "key": "home", "path": "/", "title": "Przelicznik jednostek online: długość, masa, temperatura | Jednostki", "description": "Przelicz centymetry na cale, kilometry na mile, kilogramy na funty, litry na galony, temperaturę, powierzchnię i objętość.", "socialImage": "/og/jednostki.svg", "socialImageAlt": "Jednostki — przeliczniki online" },
+    { "key": "centymetry-cale", "path": "/centymetry-cale", "title": "Centymetry na cale i cale na centymetry — przelicznik", "description": "Szybko przelicz centymetry na cale i cale na centymetry. Dokładny wzór, przykłady i kalkulator cm ↔ in.", "socialImage": "/og/jednostki.svg", "socialImageAlt": "Centymetry i cale" },
+    { "key": "kilometry-mile", "path": "/kilometry-mile", "title": "Kilometry na mile i mile na kilometry — przelicznik", "description": "Przelicz km na mile lub mile na km. Sprawdź współczynnik i przykłady dla odległości.", "socialImage": "/og/jednostki.svg", "socialImageAlt": "Kilometry i mile" },
+    { "key": "kilogramy-funty", "path": "/kilogramy-funty", "title": "Kilogramy na funty i funty na kilogramy — przelicznik", "description": "Przelicz kg na lb i funty na kilogramy. Poznaj dokładny przelicznik masy i przykłady.", "socialImage": "/og/jednostki.svg", "socialImageAlt": "Kilogramy i funty" },
+    { "key": "litry-galony", "path": "/litry-galony", "title": "Litry na galony US i galony na litry — przelicznik", "description": "Przelicz litry na galony amerykańskie i galony US na litry. Wzór, przykłady i kalkulator online.", "socialImage": "/og/jednostki.svg", "socialImageAlt": "Litry i galony amerykańskie" },
+    { "key": "celsjusz-fahrenheit", "path": "/celsjusz-fahrenheit", "title": "Stopnie Celsjusza na Fahrenheita i odwrotnie — przelicznik", "description": "Przelicz °C na °F i °F na °C. Kalkulator temperatury ze wzorem i przykładami.", "socialImage": "/og/jednostki.svg", "socialImageAlt": "Stopnie Celsjusza i Fahrenheita" },
+    { "key": "metry-kwadratowe-ary-hektary", "path": "/metry-kwadratowe-ary-hektary", "title": "Metry kwadratowe, ary i hektary — przelicznik powierzchni", "description": "Przelicz m² na ary i hektary oraz w odwrotną stronę. Prosty kalkulator powierzchni działki.", "socialImage": "/og/jednostki.svg", "socialImageAlt": "Metry kwadratowe, ary i hektary" },
+    { "key": "metry-szescienne-litry", "path": "/metry-szescienne-litry", "title": "Metry sześcienne na litry i litry na m³ — przelicznik", "description": "Przelicz m³ na litry i litry na metry sześcienne. Sprawdź przelicznik objętości i przykłady.", "socialImage": "/og/jednostki.svg", "socialImageAlt": "Metry sześcienne i litry" },
+    { "key": "privacy", "path": "/polityka-prywatnosci", "title": "Polityka prywatności | Jednostki", "description": "Informacje o prywatności podczas korzystania z przeliczników Jednostki.", "socialImage": "/og/jednostki.svg", "socialImageAlt": "Jednostki" }
+  ]
+}

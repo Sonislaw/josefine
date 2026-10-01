@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 620 540" role="img" aria-labelledby="title description">
+  <title id="title">Jednostki w ruchu</title>
+  <desc id="description">Ilustracja pokazująca przeliczanie długości, temperatury, masy i objętości.</desc>
+  <defs>
+    <linearGradient id="disc" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#7181ff"/><stop offset="1" stop-color="#a489f9"/></linearGradient>
+    <linearGradient id="card" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ffffff"/><stop offset="1" stop-color="#e5eafd"/></linearGradient>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="170%"><feDropShadow dx="0" dy="20" stdDeviation="20" flood-color="#07142b" flood-opacity=".32"/></filter>
+  </defs>
+  <circle cx="310" cy="270" r="224" fill="#ffffff" opacity=".035"/>
+  <circle cx="310" cy="270" r="188" fill="none" stroke="#c4ccff" stroke-opacity=".28" stroke-width="1.5" stroke-dasharray="5 8"/>
+  <circle cx="310" cy="270" r="138" fill="none" stroke="#c4ccff" stroke-opacity=".2" stroke-width="1.5"/>
+  <circle cx="310" cy="270" r="96" fill="url(#disc)" filter="url(#shadow)"/>
+  <path d="M262 253h95m-15-16 16 16-16 16M358 289h-96m15-16-16 16 16 16" fill="none" stroke="white" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+  <g filter="url(#shadow)">
+    <rect x="52" y="78" width="176" height="96" rx="22" fill="url(#card)"/>
+    <text x="74" y="115" font-family="Arial,sans-serif" font-size="15" font-weight="700" fill="#53617f">DŁUGOŚĆ</text>
+    <text x="74" y="149" font-family="Arial,sans-serif" font-size="27" font-weight="700" fill="#17264c">cm ↔ in</text>
+    <rect x="394" y="64" width="166" height="94" rx="22" fill="#fbd7c8"/>
+    <text x="415" y="102" font-family="Arial,sans-serif" font-size="15" font-weight="700" fill="#8a5748">TEMPERATURA</text>
+    <text x="415" y="138" font-family="Arial,sans-serif" font-size="27" font-weight="700" fill="#493248">°C ↔ °F</text>
+    <rect x="33" y="353" width="177" height="100" rx="22" fill="#d4f2e5"/>
+    <text x="55" y="391" font-family="Arial,sans-serif" font-size="15" font-weight="700" fill="#3e6e65">MASA</text>
+    <text x="55" y="427" font-family="Arial,sans-serif" font-size="27" font-weight="700" fill="#1c514c">kg ↔ lb</text>
+    <rect x="403" y="374" width="177" height="102" rx="22" fill="#d4eafa"/>
+    <text x="425" y="411" font-family="Arial,sans-serif" font-size="15" font-weight="700" fill="#38617c">OBJĘTOŚĆ</text>
+    <text x="425" y="449" font-family="Arial,sans-serif" font-size="27" font-weight="700" fill="#194968">l ↔ gal</text>
+  </g>
+  <circle cx="223" cy="143" r="7" fill="#f7bc9f"/>
+  <circle cx="411" cy="154" r="7" fill="#b5a1ff"/>
+  <circle cx="211" cy="392" r="7" fill="#aee8c9"/>
+  <circle cx="408" cy="391" r="7" fill="#afd7f7"/>
+  <circle cx="310" cy="49" r="4" fill="#b6c2ff" opacity=".8"/>
+  <circle cx="503" cy="269" r="4" fill="#b6c2ff" opacity=".8"/>
+</svg>
