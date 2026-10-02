@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="background" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#13362f"/>
+      <stop offset="1" stop-color="#245247"/>
+    </linearGradient>
+    <linearGradient id="road" x1="0" y1="0" x2="1" y2="0">
+      <stop stop-color="#b9cba9" stop-opacity=".12"/>
+      <stop offset="1" stop-color="#e7dfbf" stop-opacity=".5"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#background)"/>
+  <circle cx="1015" cy="133" r="82" fill="#e9cf89"/>
+  <path d="M630 392 782 229l108 111 76-75 234 197v168H630Z" fill="#326357"/>
+  <path d="M714 447 880 275l121 126 94-86 105 93v222H714Z" fill="#3c7465"/>
+  <path d="M607 630c76-146 206-177 593-155v155Z" fill="url(#road)"/>
+  <path d="M838 630c91-92 183-126 362-129" fill="none" stroke="#ebdfba" stroke-width="5" stroke-dasharray="22 24" opacity=".72"/>
+
+  <text x="80" y="121" font-family="Arial, sans-serif" font-size="34" font-weight="700" letter-spacing="6" fill="#c8ddc3">CARAVANING</text>
+  <text x="76" y="280" font-family="Arial, sans-serif" font-size="80" font-weight="700" fill="#ffffff">Zaplanuj</text>
+  <text x="76" y="371" font-family="Arial, sans-serif" font-size="80" font-weight="700" fill="#ffffff">podróż.</text>
+  <text x="80" y="445" font-family="Arial, sans-serif" font-size="28" fill="#e6eddf">Kalkulatory i checklista przed wyjazdem</text>
+  <path d="M80 491h126" stroke="#d6c984" stroke-width="7" stroke-linecap="round"/>
+  <text x="80" y="549" font-family="Arial, sans-serif" font-size="22" fill="#bcd3c7">karawaning.zgrana.pl</text>
+
+  <g transform="translate(790 322)">
+    <path d="M-34 133h58" fill="none" stroke="#e5e3d4" stroke-width="10" stroke-linecap="round"/>
+    <path d="M-44 117 0 133" fill="none" stroke="#e5e3d4" stroke-width="8" stroke-linecap="round"/>
+    <rect x="12" y="0" width="302" height="149" rx="25" fill="#f5f1df"/>
+    <path d="M37 0h251c14 0 26 12 26 26v25H12V25C12 11 23 0 37 0Z" fill="#e3dfc9"/>
+    <rect x="48" y="36" width="92" height="58" rx="8" fill="#94b7a8"/>
+    <rect x="156" y="36" width="84" height="58" rx="8" fill="#94b7a8"/>
+    <rect x="252" y="36" width="37" height="113" rx="5" fill="#d7d4bd"/>
+    <rect x="264" y="90" width="7" height="7" rx="3" fill="#647e70"/>
+    <rect x="30" y="116" width="35" height="12" rx="6" fill="#dcb26c"/>
+    <circle cx="77" cy="149" r="28" fill="#193a32"/>
+    <circle cx="77" cy="149" r="12" fill="#dfe8d8"/>
+    <circle cx="253" cy="149" r="28" fill="#193a32"/>
+    <circle cx="253" cy="149" r="12" fill="#dfe8d8"/>
+  </g>
+</svg>

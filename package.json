@@ -5,10 +5,11 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build:site": "npm run type-check && node scripts/build-site.mjs",
-    "build:platform": "run-p type-check \"build-only {@}\" --",
+    "build:site": "npm run type-check && npm run check:og && node scripts/build-site.mjs",
+    "build:platform": "npm run check:og && run-p type-check \"build-only {@}\" --",
     "preview": "vite preview",
     "build-only": "vite-ssg build",
+    "check:og": "node scripts/check-og-images.mjs",
     "type-check": "vue-tsc --build",
     "lint": "run-s \"lint:*\"",
     "lint:oxlint": "oxlint . --fix",
