@@ -7,7 +7,9 @@ import { czasPath, czasSiteUrl, useCzasSeo } from '../seo/useCzasSeo'
 import FaqSection from '@/shared/components/FaqSection.vue'
 import { czasSeoContent } from '../seo/content'
 const props = defineProps<{ toolId: CzasToolId }>()
-const today = new Date().toISOString().slice(0, 10)
+const dateInputValue = (date: Date) =>
+  `${String(date.getFullYear()).padStart(4, '0')}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+const today = dateInputValue(new Date())
 const dateA = ref(today),
   dateB = ref(today),
   number = ref(7),
@@ -15,8 +17,20 @@ const dateA = ref(today),
   timeB = ref('17:00')
 const tool = computed(() => czasTools.find((item) => item.id === props.toolId)!)
 const parse = (date: string) => new Date(`${date}T00:00:00`)
+const isValidCalendarDate = (value: string) => {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false
+  const date = parse(value)
+  return !Number.isNaN(date.getTime()) && dateInputValue(date) === value
+}
 const dateFormat = (date: Date) =>
   new Intl.DateTimeFormat('pl-PL', { day: 'numeric', month: 'long', year: 'numeric' }).format(date)
+const dateWithWeekdayFormat = (date: Date) =>
+  new Intl.DateTimeFormat('pl-PL', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  }).format(date)
 const dayDiff = (a: string, b: string) =>
   Math.round(Math.abs(parse(b).getTime() - parse(a).getTime()) / 86_400_000)
 const workMinutes = computed(() => {
@@ -26,15 +40,30 @@ const workMinutes = computed(() => {
   if (result < 0) result += 1440
   return result
 })
+const addDaysDate = computed(() => {
+  if (!isValidCalendarDate(dateA.value) || !Number.isSafeInteger(number.value) || number.value < 0)
+    return null
+
+  const date = parse(dateA.value)
+  date.setDate(date.getDate() + number.value)
+  return Number.isNaN(date.getTime()) ? null : date
+})
+const addDaysError = computed(() => {
+  if (props.toolId !== 'data-za-liczbe-dni') return null
+  if (!isValidCalendarDate(dateA.value)) return 'Wybierz poprawną datę początkową.'
+  if (!Number.isSafeInteger(number.value) || number.value < 0)
+    return 'Wpisz nieujemną, całkowitą liczbę dni.'
+  if (!addDaysDate.value) return 'Podana liczba dni jest zbyt duża.'
+  return null
+})
 const result = computed(() => {
   if (props.toolId === 'roznica-miedzy-datami')
     return [['Liczba dni', String(dayDiff(dateA.value, dateB.value))]]
   if (props.toolId === 'data-za-liczbe-dni') {
-    const date = parse(dateA.value)
-    date.setDate(date.getDate() + number.value)
+    if (!addDaysDate.value) return []
     return [
-      ['Data', dateFormat(date)],
-      ['Dodano dni', String(number.value)],
+      ['Data końcowa', dateWithWeekdayFormat(addDaysDate.value)],
+      ['Dodano dni kalendarzowych', String(number.value)],
     ]
   }
   if (props.toolId === 'wiek') {
@@ -85,8 +114,9 @@ const relatedTools = computed(() =>
   czasTools.filter((item) => item.id !== props.toolId).slice(0, 3),
 )
 const reset = () => {
-  dateA.value = today
-  dateB.value = today
+  const resetDate = props.toolId === 'data-za-liczbe-dni' ? dateInputValue(new Date()) : today
+  dateA.value = resetDate
+  dateB.value = resetDate
   number.value = 7
   timeA.value = '09:00'
   timeB.value = '17:00'
@@ -152,8 +182,7 @@ useCzasSeo(props.toolId, {
               class="mt-2 h-12 w-full rounded-lg border border-[#d5cfea] px-4" /><input
               v-else-if="
                 toolId === 'godziny-na-minuty' ||
-                toolId === 'minuty-na-godziny' ||
-                toolId === 'data-za-liczbe-dni'
+                toolId === 'minuty-na-godziny'
               "
               v-model.number="number"
               type="number"
@@ -174,17 +203,25 @@ useCzasSeo(props.toolId, {
               v-model.number="number"
               type="number"
               min="0"
+              step="1"
+              inputmode="numeric"
               class="mt-2 h-12 w-full rounded-lg border border-[#d5cfea] px-4" /><input
               v-else
               v-model="dateB"
               type="date"
               class="mt-2 h-12 w-full rounded-lg border border-[#d5cfea] px-4"
           /></label>
+          <p v-if="toolId === 'data-za-liczbe-dni'" class="text-sm text-[#6b6682]">
+            Liczymy dni kalendarzowe, także weekendy. Data początkowa to dzień 0.
+          </p>
         </div>
       </section>
       <section class="result-panel rounded-2xl bg-[#4b3d92] p-6 text-white" aria-live="polite">
         <p class="result-kicker">TWÓJ WYNIK</p>
-        <div class="mt-6 space-y-4">
+        <p v-if="addDaysError" class="mt-6 text-sm text-white" role="alert">
+          {{ addDaysError }}
+        </p>
+        <div v-else class="mt-6 space-y-4">
           <div
             v-for="row in result"
             :key="row[0]"
