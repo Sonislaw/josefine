@@ -17,7 +17,7 @@ async function installApp() {
 
 useHead({
   htmlAttrs: { lang: 'pl' },
-  link: [{ rel: 'manifest', href: '/manifest.webmanifest' }, { rel: 'apple-touch-icon', href: '/pwa/jednostki-icon.svg' }],
+  link: [{ rel: 'manifest', href: '/manifest.webmanifest' }],
   meta: [{ name: 'theme-color', content: '#142958' }],
 })
 

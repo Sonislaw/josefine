@@ -19,6 +19,6 @@ const run = (file, args) => new Promise((resolveProcess, reject) => {
 const envFile = resolve(`.env.${site}`)
 await access(envFile)
 
-// One cross-platform pipeline: static HTML first, then host-specific sitemap and robots.txt.
+// One cross-platform pipeline: static HTML first, then host-specific metadata and assets.
 await run(process.execPath, [resolve('node_modules/vite-ssg/dist/node/cli.mjs'), 'build', '--mode', site])
 await run(process.execPath, [resolve('scripts/generate-sitemap.mjs'), site])

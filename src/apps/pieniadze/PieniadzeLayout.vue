@@ -16,7 +16,6 @@ useHead({
   htmlAttrs: { lang: 'pl' },
   link: [
     { rel: 'manifest', href: '/manifest.webmanifest' },
-    { rel: 'apple-touch-icon', href: '/pwa/pieniadze-icon.svg' },
   ],
   meta: [{ name: 'theme-color', content: '#173b67' }],
 })

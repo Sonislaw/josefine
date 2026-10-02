@@ -1,0 +1,42 @@
+{
+  "platform": {
+    "favicon": "/pwa/josefine-icon.svg",
+    "type": "image/svg+xml",
+    "appleTouchIcon": "/pwa/josefine-icon.svg"
+  },
+  "caravaning": {
+    "favicon": "/pwa/caravaning-icon.svg",
+    "type": "image/svg+xml",
+    "appleTouchIcon": "/pwa/icon-192.png"
+  },
+  "praca": {
+    "favicon": "/pwa/praca-icon.svg",
+    "type": "image/svg+xml",
+    "appleTouchIcon": "/pwa/praca-icon.svg"
+  },
+  "pieniadze": {
+    "favicon": "/pwa/pieniadze-icon.svg",
+    "type": "image/svg+xml",
+    "appleTouchIcon": "/pwa/pieniadze-icon.svg"
+  },
+  "czas": {
+    "favicon": "/pwa/czas-icon.svg",
+    "type": "image/svg+xml",
+    "appleTouchIcon": "/pwa/czas-icon.svg"
+  },
+  "jednostki": {
+    "favicon": "/pwa/jednostki-icon.svg",
+    "type": "image/svg+xml",
+    "appleTouchIcon": "/pwa/jednostki-icon.svg"
+  },
+  "dom": {
+    "favicon": "/pwa/dom-icon.svg",
+    "type": "image/svg+xml",
+    "appleTouchIcon": "/pwa/dom-icon.svg"
+  },
+  "motoryzacja": {
+    "favicon": "/pwa/motoryzacja-icon.svg",
+    "type": "image/svg+xml",
+    "appleTouchIcon": "/pwa/motoryzacja-icon.svg"
+  }
+}

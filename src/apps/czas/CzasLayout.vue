@@ -16,7 +16,6 @@ useHead({
   htmlAttrs: { lang: 'pl' },
   link: [
     { rel: 'manifest', href: '/manifest.webmanifest' },
-    { rel: 'apple-touch-icon', href: '/pwa/czas-icon.svg' },
   ],
   meta: [{ name: 'theme-color', content: '#4b3d92' }],
 })

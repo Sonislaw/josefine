@@ -17,7 +17,6 @@ useHead({
   htmlAttrs: { lang: 'pl' },
   link: [
     { rel: 'manifest', href: '/manifest.webmanifest' },
-    { rel: 'apple-touch-icon', href: '/pwa/praca-icon.svg' },
   ],
   meta: [{ name: 'theme-color', content: '#123b2d' }],
 })
