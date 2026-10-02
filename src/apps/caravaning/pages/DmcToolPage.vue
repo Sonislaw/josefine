@@ -127,7 +127,7 @@ useCaravaningSeo('dmc', {
 </script>
 
 <template>
-  <div class="mx-auto max-w-7xl px-4 py-7 sm:px-6 sm:py-10 lg:px-8">
+  <div class="caravaning-tool-page mx-auto max-w-7xl px-4 py-7 sm:px-6 sm:py-10 lg:px-8">
     <RouterLink
       :to="{ name: 'caravaning' }"
       class="inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
@@ -136,18 +136,22 @@ useCaravaningSeo('dmc', {
       Wszystkie narzędzia
     </RouterLink>
 
-    <div class="max-w-3xl">
+    <div class="caravaning-tool-intro">
       <p class="mt-6 text-sm font-semibold text-primary">Bezpiecznie zaplanuj zestaw</p>
       <h1 class="mt-2 font-heading text-3xl font-bold tracking-normal sm:text-4xl">
         Kalkulator DMC zestawu
       </h1>
       <p class="mt-3 text-base leading-7 text-muted-foreground">
-        Oblicz łączną dopuszczalną masę całkowitą samochodu i przyczepy kempingowej.
+        Zacznij od danych w dokumentach pojazdów. Zestaw DMC samochodu i przyczepy, aby świadomiej
+        zaplanować podróż oraz sprawdzić orientacyjną kategorię uprawnień.
       </p>
     </div>
 
     <div class="mt-10 grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(300px,0.8fr)] lg:gap-8">
-      <section aria-labelledby="calculator-heading" class="border border-border bg-card p-5 sm:p-8">
+      <section
+        aria-labelledby="calculator-heading"
+        class="caravaning-form-panel border border-border bg-card p-5 sm:p-8"
+      >
         <div class="flex items-start justify-between gap-4">
           <div>
             <h2 id="calculator-heading" class="font-heading text-lg font-semibold tracking-normal">
@@ -218,7 +222,7 @@ useCaravaningSeo('dmc', {
       <section
         aria-live="polite"
         aria-label="Wynik kalkulacji"
-        class="flex min-h-72 flex-col justify-between bg-[#17362f] p-6 text-white sm:p-8"
+        class="caravaning-result-panel flex min-h-72 flex-col justify-between bg-[#17362f] p-6 text-white sm:p-8"
       >
         <div class="flex items-center justify-between gap-4">
           <div>

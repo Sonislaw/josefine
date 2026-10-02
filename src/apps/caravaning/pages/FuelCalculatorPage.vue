@@ -102,7 +102,7 @@ useCaravaningSeo('consumption', {
 </script>
 
 <template>
-  <div class="mx-auto max-w-7xl px-4 py-7 sm:px-6 sm:py-10 lg:px-8">
+  <div class="caravaning-tool-page mx-auto max-w-7xl px-4 py-7 sm:px-6 sm:py-10 lg:px-8">
     <RouterLink
       :to="{ name: 'caravaning' }"
       class="inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
@@ -111,7 +111,7 @@ useCaravaningSeo('consumption', {
       Wszystkie narzędzia
     </RouterLink>
 
-    <div class="max-w-3xl">
+    <div class="caravaning-tool-intro">
       <p class="mt-6 text-sm font-semibold text-primary">Zaplanuj paliwo i budżet drogi</p>
       <h1 class="mt-2 font-heading text-3xl font-bold tracking-normal sm:text-4xl">
         Kalkulator spalania
@@ -123,7 +123,10 @@ useCaravaningSeo('consumption', {
     </div>
 
     <div class="mt-10 grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(300px,0.8fr)] lg:gap-8">
-      <section aria-labelledby="fuel-form-heading" class="border border-border bg-card p-5 sm:p-8">
+      <section
+        aria-labelledby="fuel-form-heading"
+        class="caravaning-form-panel border border-border bg-card p-5 sm:p-8"
+      >
         <div class="flex items-start justify-between gap-4">
           <div>
             <h2 id="fuel-form-heading" class="font-heading text-lg font-semibold tracking-normal">
@@ -267,7 +270,7 @@ useCaravaningSeo('consumption', {
       <section
         aria-live="polite"
         aria-label="Wyniki kalkulatora spalania"
-        class="flex flex-col bg-[#17362f] p-6 text-white sm:p-8"
+        class="caravaning-result-panel flex flex-col bg-[#17362f] p-6 text-white sm:p-8"
       >
         <div class="flex items-center justify-between gap-4">
           <div>

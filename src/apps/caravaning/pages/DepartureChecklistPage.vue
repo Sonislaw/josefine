@@ -158,7 +158,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="mx-auto max-w-7xl px-4 py-7 sm:px-6 sm:py-10 lg:px-8 lg:pb-10">
+  <div class="caravaning-tool-page mx-auto max-w-7xl px-4 py-7 sm:px-6 sm:py-10 lg:px-8 lg:pb-10">
     <RouterLink
       :to="{ name: 'caravaning' }"
       class="inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
@@ -167,18 +167,22 @@ onMounted(() => {
       Wszystkie narzędzia
     </RouterLink>
 
-    <div class="max-w-3xl">
+    <div class="caravaning-tool-intro">
       <p class="mt-6 text-sm font-semibold text-primary">Spokojnie ruszaj w drogę</p>
       <h1 class="mt-2 font-heading text-3xl font-bold tracking-normal sm:text-4xl">
         Checklista przed wyjazdem
       </h1>
       <p class="mt-3 text-base leading-7 text-muted-foreground">
-        Oznacz kolejne punkty przed podpięciem przyczepy, po zaczepieniu i tuż przed ruszeniem.
+        Przejdź przygotowania w trzech etapach: przed podpięciem, po zaczepieniu i tuż przed
+        ruszeniem. Odznaczaj punkty spokojnie — postęp zostanie zapisany w tej przeglądarce.
       </p>
     </div>
 
     <div class="mt-10 grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(300px,0.8fr)] lg:gap-8">
-      <section aria-labelledby="checklist-heading" class="border border-border bg-card p-5 sm:p-8">
+      <section
+        aria-labelledby="checklist-heading"
+        class="caravaning-form-panel border border-border bg-card p-5 sm:p-8"
+      >
         <div class="flex items-start justify-between gap-4">
           <div>
             <h2 id="checklist-heading" class="font-heading text-lg font-semibold tracking-normal">
@@ -231,7 +235,7 @@ onMounted(() => {
       <section
         aria-live="polite"
         aria-label="Postęp checklisty"
-        class="hidden self-start bg-[#17362f] p-6 text-white sm:p-8 lg:block"
+        class="caravaning-result-panel hidden self-start bg-[#17362f] p-6 text-white sm:p-8 lg:block"
       >
         <div class="flex items-center justify-between gap-4">
           <div>

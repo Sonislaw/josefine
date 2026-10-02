@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 530" fill="none">
+  <defs>
+    <linearGradient id="sky" x1="70" y1="40" x2="580" y2="500" gradientUnits="userSpaceOnUse"><stop stop-color="#416d5a"/><stop offset="1" stop-color="#173b33"/></linearGradient>
+    <linearGradient id="road" x1="470" y1="285" x2="311" y2="530" gradientUnits="userSpaceOnUse"><stop stop-color="#b6c4a9"/><stop offset="1" stop-color="#607d69"/></linearGradient>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="18" stdDeviation="18" flood-color="#09261F" flood-opacity=".3"/></filter>
+  </defs>
+  <rect x="20" y="20" width="640" height="480" rx="42" fill="url(#sky)"/>
+  <circle cx="536" cy="122" r="58" fill="#F2D493" opacity=".9"/>
+  <path d="M20 309C105 236 177 273 248 218c80-61 147-40 213 4 68 45 126 34 199-16v294H20V309Z" fill="#4C785E"/>
+  <path d="M20 372c91-56 152-28 219-71 80-51 172-21 230 18 62 41 129 28 191-7v188H20V372Z" fill="#345E4D"/>
+  <path d="M194 500c-21-55 10-89 102-110 86-20 126-48 105-91-10-21-1-31 33-33h68c-42 26-37 49-22 71 34 50-21 82-103 109-51 17-57 34-42 54H194Z" fill="url(#road)"/>
+  <path d="M271 500c-9-38 17-55 75-74 65-21 122-44 100-88" stroke="#F7E7B9" stroke-width="5" stroke-linecap="round" stroke-dasharray="20 20"/>
+  <g opacity=".65" fill="#B4C698"><path d="M85 339l16-59 16 59H85Z"/><path d="M79 350l22-67 22 67H79Z"/><rect x="98" y="347" width="6" height="29" rx="3"/></g>
+  <g opacity=".75" fill="#B4C698"><path d="M560 342l18-71 18 71h-36Z"/><path d="M552 354l26-73 26 73h-52Z"/><rect x="575" y="351" width="6" height="33" rx="3"/></g>
+  <g filter="url(#shadow)" transform="translate(170 225)">
+    <path d="M58 102h231c16 0 28 12 28 28v43H23v-30c0-23 14-41 35-41Z" fill="#F8F4E7" stroke="#D3D9C8" stroke-width="5"/>
+    <path d="M194 107V70c0-14 11-25 25-25h67c10 0 19 6 23 15l24 47" fill="#E9EFE6" stroke="#D3D9C8" stroke-width="5"/>
+    <path d="M215 70h58c7 0 13 4 16 10l12 26h-86V70Z" fill="#9DC5BA"/>
+    <path d="M46 91V42c0-9 7-16 16-16h132c8 0 15 7 15 16v67H46V91Z" fill="#F6EBD7" stroke="#D3D9C8" stroke-width="5"/>
+    <rect x="66" y="45" width="72" height="42" rx="8" fill="#9DC5BA"/><path d="M153 47h32v60h-32V47Z" fill="#E4D0AC"/>
+    <path d="M18 160h319" stroke="#D7E0D4" stroke-width="9" stroke-linecap="round"/>
+    <circle cx="85" cy="175" r="25" fill="#243B37"/><circle cx="85" cy="175" r="11" fill="#BAC5AF"/>
+    <circle cx="264" cy="175" r="25" fill="#243B37"/><circle cx="264" cy="175" r="11" fill="#BAC5AF"/>
+    <path d="M35 107h52" stroke="#C17B5B" stroke-width="8" stroke-linecap="round"/>
+  </g>
+  <g filter="url(#shadow)"><rect x="64" y="67" width="183" height="91" rx="17" fill="#FFFDF4"/><circle cx="91" cy="95" r="11" fill="#75A586"/><path d="m86 95 4 4 7-8" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><text x="110" y="101" fill="#315947" font-family="Arial,sans-serif" font-size="17" font-weight="700">Gotowi do drogi</text><path d="M91 125h121" stroke="#D8E3D4" stroke-width="8" stroke-linecap="round"/><path d="M91 140h86" stroke="#D8E3D4" stroke-width="8" stroke-linecap="round"/></g>
+  <g filter="url(#shadow)"><rect x="456" y="363" width="155" height="86" rx="18" fill="#FFF8E8"/><text x="476" y="395" fill="#8C7353" font-family="Arial,sans-serif" font-size="12" font-weight="700" letter-spacing="2">TRASA</text><text x="476" y="425" fill="#365A49" font-family="Arial,sans-serif" font-size="24" font-weight="700">Twój plan →</text></g>
+</svg>
