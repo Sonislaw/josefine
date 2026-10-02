@@ -3,6 +3,7 @@ import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import { Caravan, Download, Share2, X } from '@lucide/vue'
 import { Button } from '@/apps/caravaning/components/ui/button'
+import PwaInstallHint from '@/shared/components/PwaInstallHint.vue'
 
 interface InstallPromptEvent extends Event {
   prompt: () => Promise<void>
@@ -72,17 +73,18 @@ onBeforeUnmount(() => {
         </span>
       </RouterLink>
 
-      <Button
-        v-if="canOfferInstall"
-        variant="outline"
-        size="sm"
-        aria-label="Dodaj do ekranu głównego"
-        title="Dodaj do ekranu głównego"
-        @click="installApp"
-      >
-        <Download class="size-4" aria-hidden="true" />
-        <span class="hidden sm:inline">Dodaj do ekranu głównego</span>
-      </Button>
+      <PwaInstallHint v-if="canOfferInstall">
+        <Button
+          variant="outline"
+          size="sm"
+          aria-label="Dodaj do ekranu głównego"
+          title="Dodaj do ekranu głównego"
+          @click="installApp"
+        >
+          <Download class="size-4" aria-hidden="true" />
+          <span class="hidden sm:inline">Dodaj do ekranu głównego</span>
+        </Button>
+      </PwaInstallHint>
     </div>
 
     <div

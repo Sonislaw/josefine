@@ -4,6 +4,7 @@ import { useHead } from '@unhead/vue'
 import { ArrowUpRight, Download, House, Share2, X } from '@lucide/vue'
 import { RouterLink, RouterView } from 'vue-router'
 import { usePwaInstall } from '@/shared/composables/usePwaInstall'
+import PwaInstallHint from '@/shared/components/PwaInstallHint.vue'
 import { domPath } from './seo/useDomSeo'
 
 const { canOfferInstall, isIos, install } = usePwaInstall()
@@ -34,7 +35,9 @@ onMounted(() => {
           <span><strong>dom<span class="brand-dot">.</span></strong><small>praktyczne kalkulatory</small></span>
         </RouterLink>
         <nav class="header-links" aria-label="Główna nawigacja"><RouterLink :to="domPath('/')">Wszystkie narzędzia <ArrowUpRight :size="16" aria-hidden="true" /></RouterLink></nav>
-        <button v-if="canOfferInstall" type="button" class="install-button" @click="installApp"><Download :size="17" aria-hidden="true" /> <span>Dodaj do ekranu</span></button>
+        <PwaInstallHint v-if="canOfferInstall">
+          <button type="button" class="install-button" aria-label="Dodaj do ekranu głównego" @click="installApp"><Download :size="17" aria-hidden="true" /> <span>Dodaj do ekranu</span></button>
+        </PwaInstallHint>
       </div>
       <div v-if="showIosInstructions" class="ios-instructions" role="status"><span>W Safari wybierz <Share2 :size="16" aria-hidden="true" /> <strong>Udostępnij</strong>, a następnie <strong>Dodaj do ekranu początkowego</strong>.</span><button type="button" aria-label="Zamknij wskazówkę" @click="showIosInstructions = false"><X :size="18" /></button></div>
     </header>

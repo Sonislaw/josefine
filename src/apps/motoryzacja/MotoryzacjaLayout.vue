@@ -4,6 +4,7 @@ import { useHead } from '@unhead/vue'
 import { ArrowUpRight, CarFront, Download, Share2, X } from '@lucide/vue'
 import { RouterLink, RouterView } from 'vue-router'
 import { usePwaInstall } from '@/shared/composables/usePwaInstall'
+import PwaInstallHint from '@/shared/components/PwaInstallHint.vue'
 import { motoryzacjaPath } from './seo/useMotoryzacjaSeo'
 
 const { canOfferInstall, isIos, install } = usePwaInstall()
@@ -27,7 +28,7 @@ onMounted(() => {
 
 <template>
   <div class="moto-app">
-    <header class="site-header"><div class="header-inner"><RouterLink :to="motoryzacjaPath('/')" class="brand" aria-label="Motoryzacja — strona główna"><span class="brand-mark"><CarFront :size="27" :stroke-width="2.25" aria-hidden="true" /></span><span><strong>motoryzacja<span>.</span></strong><small>kalkulatory kierowcy</small></span></RouterLink><nav class="header-nav" aria-label="Główna nawigacja"><RouterLink :to="motoryzacjaPath('/')">Wszystkie narzędzia <ArrowUpRight :size="16" aria-hidden="true" /></RouterLink></nav><button v-if="canOfferInstall" type="button" class="install-button" @click="installApp"><Download :size="17" aria-hidden="true" /><span>Dodaj do ekranu</span></button></div><div v-if="showIosInstructions" class="ios-instructions" role="status"><span>W Safari wybierz <Share2 :size="16" aria-hidden="true" /> <strong>Udostępnij</strong>, a potem <strong>Dodaj do ekranu początkowego</strong>.</span><button type="button" aria-label="Zamknij wskazówkę" @click="showIosInstructions = false"><X :size="18" /></button></div></header>
+    <header class="site-header"><div class="header-inner"><RouterLink :to="motoryzacjaPath('/')" class="brand" aria-label="Motoryzacja — strona główna"><span class="brand-mark"><CarFront :size="27" :stroke-width="2.25" aria-hidden="true" /></span><span><strong>motoryzacja<span>.</span></strong><small>kalkulatory kierowcy</small></span></RouterLink><nav class="header-nav" aria-label="Główna nawigacja"><RouterLink :to="motoryzacjaPath('/')">Wszystkie narzędzia <ArrowUpRight :size="16" aria-hidden="true" /></RouterLink></nav><PwaInstallHint v-if="canOfferInstall"><button type="button" class="install-button" aria-label="Dodaj do ekranu głównego" @click="installApp"><Download :size="17" aria-hidden="true" /><span>Dodaj do ekranu</span></button></PwaInstallHint></div><div v-if="showIosInstructions" class="ios-instructions" role="status"><span>W Safari wybierz <Share2 :size="16" aria-hidden="true" /> <strong>Udostępnij</strong>, a potem <strong>Dodaj do ekranu początkowego</strong>.</span><button type="button" aria-label="Zamknij wskazówkę" @click="showIosInstructions = false"><X :size="18" /></button></div></header>
     <main class="site-main"><RouterView :key="$route.path" /></main>
     <footer class="site-footer"><div class="footer-inner"><div class="footer-brand"><span class="footer-mark"><CarFront :size="21" aria-hidden="true" /></span><div><strong>motoryzacja.</strong><p>Lepszy plan na każdy kilometr.</p></div></div><nav aria-label="Linki w stopce"><RouterLink :to="motoryzacjaPath('/')">Kalkulatory</RouterLink><RouterLink :to="motoryzacjaPath('/polityka-prywatnosci')">Polityka prywatności</RouterLink></nav></div></footer>
   </div>

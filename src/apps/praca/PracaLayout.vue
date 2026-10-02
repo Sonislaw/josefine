@@ -5,6 +5,7 @@ import { Download, Share2, X } from '@lucide/vue'
 import { RouterLink } from 'vue-router'
 import { pracaPath } from './seo/usePracaSeo'
 import { usePwaInstall } from '@/shared/composables/usePwaInstall'
+import PwaInstallHint from '@/shared/components/PwaInstallHint.vue'
 import pracaLogo from './assets/praca-logo.svg'
 const { canOfferInstall, isIos, install } = usePwaInstall()
 const showIosInstructions = ref(false)
@@ -33,14 +34,16 @@ onMounted(() => {
           ><img :src="pracaLogo" alt="" class="size-10" /><span
             >Praca<span class="text-[#25815c]">NaRękę</span></span
           ></RouterLink
-        ><button
-          v-if="canOfferInstall"
-          type="button"
-          class="inline-flex h-10 items-center gap-2 rounded-lg border border-[#d9e1db] px-3 text-sm font-semibold text-[#405348]"
-          @click="installApp"
-        >
-          <Download class="size-4" /><span class="hidden sm:inline">Dodaj do ekranu</span>
-        </button>
+        ><PwaInstallHint v-if="canOfferInstall">
+          <button
+            type="button"
+            aria-label="Dodaj do ekranu głównego"
+            class="inline-flex h-10 items-center gap-2 rounded-lg border border-[#d9e1db] px-3 text-sm font-semibold text-[#405348]"
+            @click="installApp"
+          >
+            <Download class="size-4" /><span class="hidden sm:inline">Dodaj do ekranu</span>
+          </button>
+        </PwaInstallHint>
       </div>
       <div
         v-if="showIosInstructions"

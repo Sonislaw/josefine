@@ -5,6 +5,7 @@ import { Clock3, Download, Share2, X } from '@lucide/vue'
 import { RouterLink } from 'vue-router'
 import { czasPath } from './seo/useCzasSeo'
 import { usePwaInstall } from '@/shared/composables/usePwaInstall'
+import PwaInstallHint from '@/shared/components/PwaInstallHint.vue'
 const { canOfferInstall, isIos, install } = usePwaInstall()
 const ios = ref(false)
 const installApp = async () => {
@@ -41,13 +42,16 @@ onMounted(() => {
             ></span
           >
         </RouterLink>
-        <button
-          v-if="canOfferInstall"
-          class="inline-flex h-10 items-center gap-2 rounded-lg border border-[#e3dff2] px-3 text-sm font-semibold"
-          @click="installApp"
-        >
-          <Download class="size-4" /><span class="hidden sm:inline">Dodaj do ekranu</span>
-        </button>
+        <PwaInstallHint v-if="canOfferInstall">
+          <button
+            type="button"
+            aria-label="Dodaj do ekranu głównego"
+            class="inline-flex h-10 items-center gap-2 rounded-lg border border-[#e3dff2] px-3 text-sm font-semibold"
+            @click="installApp"
+          >
+            <Download class="size-4" /><span class="hidden sm:inline">Dodaj do ekranu</span>
+          </button>
+        </PwaInstallHint>
       </div>
       <div
         v-if="ios"

@@ -4,6 +4,7 @@ import { useHead } from '@unhead/vue'
 import { ArrowUpRight, Download, Share2, X } from '@lucide/vue'
 import { RouterLink, RouterView } from 'vue-router'
 import { usePwaInstall } from '@/shared/composables/usePwaInstall'
+import PwaInstallHint from '@/shared/components/PwaInstallHint.vue'
 import { jednostkiPath } from './seo/useJednostkiSeo'
 
 const { canOfferInstall, isIos, install } = usePwaInstall()
@@ -37,7 +38,9 @@ onMounted(() => {
         </RouterLink>
         <div class="header-actions">
           <RouterLink :to="jednostkiPath('/')" class="browse-link">Wszystkie narzędzia <ArrowUpRight :size="17" aria-hidden="true" /></RouterLink>
-          <button v-if="canOfferInstall" type="button" class="install-button" @click="installApp"><Download :size="16" aria-hidden="true" /> Dodaj do ekranu</button>
+          <PwaInstallHint v-if="canOfferInstall">
+            <button type="button" class="install-button" aria-label="Dodaj do ekranu głównego" @click="installApp"><Download :size="16" aria-hidden="true" /> Dodaj do ekranu</button>
+          </PwaInstallHint>
         </div>
       </div>
       <div v-if="showIosInstructions" class="ios-instructions" role="status">
