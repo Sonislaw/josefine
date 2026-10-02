@@ -10,6 +10,12 @@ import {
   usePieniadzeSeo,
 } from '../seo/usePieniadzeSeo'
 import FaqSection from '@/shared/components/FaqSection.vue'
+import ShareResultButton from '@/shared/components/ShareResultButton.vue'
+import {
+  choiceShareField,
+  numberShareField,
+  useShareableCalculator,
+} from '@/shared/composables/useShareableCalculator'
 import { toolSeoContent } from '../seo/content'
 const props = defineProps<{ toolId: PieniadzeToolId }>()
 const tool = computed(() => pieniadzeTools.find((item) => item.id === props.toolId)!)
@@ -131,6 +137,18 @@ const secondInput = computed({
     else value.value = input
   },
 })
+const { buildShareUrl, canShareInputs } = useShareableCalculator(() => [
+  numberShareField('kwota', amount, { min: 0 }),
+  numberShareField(usesRate.value ? 'procent' : 'wartosc', secondInput, { min: 0 }),
+  ...(props.toolId === 'cena-jednostkowa'
+    ? [choiceShareField('jednostka', unit, ['kg', 'l', 'm', 'szt.'])]
+    : []),
+])
+const canShare = computed(() =>
+  [amount.value, secondInput.value].every(
+    (input) => typeof input === 'number' && Number.isFinite(input) && input >= 0,
+  ),
+)
 const seoContent = computed(() => toolSeoContent[props.toolId])
 const faq = computed(() => seoContent.value.faqs)
 const relatedTools = computed(() =>
@@ -239,6 +257,7 @@ usePieniadzeSeo(props.toolId, {
             ><strong class="text-xl">{{ row[1] }}</strong>
           </div>
         </div>
+        <ShareResultButton :get-url="buildShareUrl" :disabled="!canShare || !canShareInputs" class="mt-6" />
         <p class="mt-6 text-xs leading-5 text-white/60">
           Wynik ma charakter informacyjny. Podane wartości i stawki wymagają weryfikacji dla
           konkretnej transakcji.

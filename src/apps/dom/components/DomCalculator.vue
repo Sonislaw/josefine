@@ -1,12 +1,19 @@
 <script setup lang="ts">
-import { computed, reactive } from 'vue'
+import { computed, reactive, toRef } from 'vue'
 import { RotateCcw, Sparkles } from '@lucide/vue'
+import ShareResultButton from '@/shared/components/ShareResultButton.vue'
+import { textShareField, useShareableCalculator } from '@/shared/composables/useShareableCalculator'
 import { calculateDom, domCalculators, formatDomResult, parseDomNumber, type InputField } from '../lib/calculations'
 import type { DomToolId } from '../manifest'
 
 const props = defineProps<{ toolId: DomToolId }>()
 const definition = domCalculators[props.toolId]
 const form = reactive<Record<string, string>>(Object.fromEntries(definition.fields.map((field) => [field.id, field.defaultValue])))
+const { buildShareUrl, canShareInputs } = useShareableCalculator(
+  definition.fields.map((field) =>
+    textShareField(field.id, toRef(form, field.id), (raw) => parseDomNumber(raw) !== null),
+  ),
+)
 
 function errorFor(field: InputField): string | null {
   const value = parseDomNumber(form[field.id] ?? '')
@@ -34,7 +41,7 @@ function reset() {
 <template>
   <section class="calculator" aria-labelledby="calculator-title">
     <div class="calculator-header"><div><p class="section-kicker"><Sparkles :size="14" aria-hidden="true" /> KALKULATOR</p><h2 id="calculator-title">Twoje dane, Twój wynik</h2></div><button type="button" class="reset-button" @click="reset"><RotateCcw :size="16" aria-hidden="true" /> <span>Przywróć przykład</span></button></div>
-    <div class="calculator-grid"><div class="input-panel"><div class="panel-heading"><span class="panel-index">01</span><div><strong>Wprowadź wartości</strong><p>Obliczenia aktualizują się automatycznie.</p></div></div><div class="fields"><div v-for="field in definition.fields" :key="field.id" class="field"><label :for="`dom-${field.id}`">{{ field.label }}</label><div class="input-wrap"><input :id="`dom-${field.id}`" v-model="form[field.id]" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" :aria-invalid="!!errorFor(field)" :aria-describedby="field.hint || errorFor(field) ? `dom-help-${field.id}` : undefined" /><span aria-hidden="true">{{ field.unit }}</span></div><p v-if="field.hint || errorFor(field)" :id="`dom-help-${field.id}`" class="field-help" :class="{ 'field-help--error': !!errorFor(field) }">{{ errorFor(field) ?? field.hint }}</p></div></div><p class="input-note">Możesz użyć przecinka lub kropki dziesiętnej.</p></div><div class="output-panel" aria-live="polite"><div class="panel-heading"><span class="panel-index">02</span><div><strong>Sprawdź wynik</strong><p>Przeliczone na podstawie wpisanych danych.</p></div></div><template v-if="results"><div class="primary-result"><span>{{ results[0]!.label }}</span><strong>{{ formatDomResult(results[0]!) }} <small>{{ results[0]!.unit }}</small></strong></div><div v-if="results.length > 1" class="secondary-results"><div v-for="row in results.slice(1)" :key="row.label"><span>{{ row.label }}</span><strong>{{ formatDomResult(row) }} {{ row.unit }}</strong></div></div></template><div v-else class="empty-result"><strong>—</strong><p>Popraw zaznaczone pola, aby zobaczyć wynik.</p></div><p class="output-note">{{ definition.note }}</p></div></div>
+    <div class="calculator-grid"><div class="input-panel"><div class="panel-heading"><span class="panel-index">01</span><div><strong>Wprowadź wartości</strong><p>Obliczenia aktualizują się automatycznie.</p></div></div><div class="fields"><div v-for="field in definition.fields" :key="field.id" class="field"><label :for="`dom-${field.id}`">{{ field.label }}</label><div class="input-wrap"><input :id="`dom-${field.id}`" v-model="form[field.id]" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" :aria-invalid="!!errorFor(field)" :aria-describedby="field.hint || errorFor(field) ? `dom-help-${field.id}` : undefined" /><span aria-hidden="true">{{ field.unit }}</span></div><p v-if="field.hint || errorFor(field)" :id="`dom-help-${field.id}`" class="field-help" :class="{ 'field-help--error': !!errorFor(field) }">{{ errorFor(field) ?? field.hint }}</p></div></div><p class="input-note">Możesz użyć przecinka lub kropki dziesiętnej.</p></div><div class="output-panel" aria-live="polite"><div class="panel-heading"><span class="panel-index">02</span><div><strong>Sprawdź wynik</strong><p>Przeliczone na podstawie wpisanych danych.</p></div></div><template v-if="results"><div class="primary-result"><span>{{ results[0]!.label }}</span><strong>{{ formatDomResult(results[0]!) }} <small>{{ results[0]!.unit }}</small></strong></div><div v-if="results.length > 1" class="secondary-results"><div v-for="row in results.slice(1)" :key="row.label"><span>{{ row.label }}</span><strong>{{ formatDomResult(row) }} {{ row.unit }}</strong></div></div></template><div v-else class="empty-result"><strong>—</strong><p>Popraw zaznaczone pola, aby zobaczyć wynik.</p></div><ShareResultButton :get-url="buildShareUrl" :disabled="!results || !canShareInputs" class="share-action" /><p class="output-note">{{ definition.note }}</p></div></div>
     <div class="formula-strip"><span>WZÓR</span><strong>{{ definition.formula }}</strong><small>{{ definition.example }}</small></div>
   </section>
 </template>
@@ -77,6 +84,7 @@ function reset() {
 .empty-result { margin-top: 2rem; }
 .empty-result strong { font-family: var(--font-heading); font-size: 3rem; }
 .empty-result p { color: #d0e4d0; font-size: .8rem; }
+.share-action { align-self: flex-start; margin-top: 1.5rem; }
 .output-note { margin-top: auto; padding-top: 2.5rem; color: #cfdfce; font-size: .75rem; line-height: 1.65; }
 .formula-strip { display: flex; align-items: center; flex-wrap: wrap; gap: .5rem 1.3rem; padding: 1.1rem 2rem; border-top: 1px solid #e8ecdf; background: #f7f5eb; }
 .formula-strip span { color: #a16953; font-size: .7rem; font-weight: 800; letter-spacing: .12em; }

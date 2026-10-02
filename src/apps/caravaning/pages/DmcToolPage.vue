@@ -4,9 +4,15 @@ import { ArrowLeft, RotateCcw, Scale } from '@lucide/vue'
 import { RouterLink } from 'vue-router'
 import { Button } from '@/apps/caravaning/components/ui/button'
 import { siteName, siteUrl, useCaravaningSeo } from '@/apps/caravaning/seo/useCaravaningSeo'
+import ShareResultButton from '@/shared/components/ShareResultButton.vue'
+import { numberShareField, useShareableCalculator } from '@/shared/composables/useShareableCalculator'
 
 const carDmc = ref<number | string>('')
 const trailerDmc = ref<number | string>('')
+const { buildShareUrl, canShareInputs } = useShareableCalculator([
+  numberShareField('auto', carDmc, { min: 1, integer: true, allowEmpty: true }),
+  numberShareField('przyczepa', trailerDmc, { min: 1, integer: true, allowEmpty: true }),
+])
 
 const totalDmc = computed(() => Number(carDmc.value) + Number(trailerDmc.value))
 const hasBothValues = computed(() => Number(carDmc.value) > 0 && Number(trailerDmc.value) > 0)
@@ -264,6 +270,7 @@ useCaravaningSeo('dmc', {
             </p>
           </div>
         </div>
+        <ShareResultButton :get-url="buildShareUrl" :disabled="!hasBothValues || !canShareInputs" class="mt-6 self-start" />
       </section>
     </div>
 

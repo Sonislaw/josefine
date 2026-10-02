@@ -4,12 +4,25 @@ import { ArrowLeft, Fuel, RotateCcw } from '@lucide/vue'
 import { RouterLink } from 'vue-router'
 import { Button } from '@/apps/caravaning/components/ui/button'
 import { siteName, siteUrl, useCaravaningSeo } from '@/apps/caravaning/seo/useCaravaningSeo'
+import ShareResultButton from '@/shared/components/ShareResultButton.vue'
+import {
+  booleanShareField,
+  numberShareField,
+  useShareableCalculator,
+} from '@/shared/composables/useShareableCalculator'
 
 const oneWayDistance = ref<number | string>('')
 const consumption = ref<number | string>('')
 const includeTrailerConsumption = ref(false)
 const fuelPrice = ref<number | string>('')
 const tankCapacity = ref<number | string>('')
+const { buildShareUrl, canShareInputs } = useShareableCalculator([
+  numberShareField('dystans', oneWayDistance, { min: 1, allowEmpty: true }),
+  numberShareField('spalanie', consumption, { min: 0.1, allowEmpty: true }),
+  booleanShareField('przyczepa', includeTrailerConsumption),
+  numberShareField('cena', fuelPrice, { min: 0.01, allowEmpty: true }),
+  numberShareField('bak', tankCapacity, { min: 0, allowEmpty: true }),
+])
 
 const hasRequiredInputs = computed(() =>
   [oneWayDistance.value, consumption.value, fuelPrice.value].every((value) => Number(value) > 0),
@@ -338,6 +351,7 @@ useCaravaningSeo('consumption', {
           Szacowane zużycie paliwa w obie strony:
           {{ hasRequiredInputs ? `${formatNumber(roundTripFuel)} l` : '—' }}.
         </p>
+        <ShareResultButton :get-url="buildShareUrl" :disabled="!hasRequiredInputs || !canShareInputs" class="mt-6 self-start" />
       </section>
     </div>
 

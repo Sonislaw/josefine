@@ -3,6 +3,12 @@ import { computed, ref } from 'vue'
 import { ArrowLeft, ArrowRightLeft, ArrowUpRight, RotateCcw } from '@lucide/vue'
 import { RouterLink } from 'vue-router'
 import FaqSection from '@/shared/components/FaqSection.vue'
+import ShareResultButton from '@/shared/components/ShareResultButton.vue'
+import {
+  choiceShareField,
+  textShareField,
+  useShareableCalculator,
+} from '@/shared/composables/useShareableCalculator'
 import { conversions, convert, formatResult, parsePolishNumber } from '../lib/conversions'
 import { jednostkiTools, type JednostkiToolId } from '../manifest'
 import { jednostkiSeoContent } from '../seo/content'
@@ -16,6 +22,12 @@ const content = jednostkiSeoContent[props.toolId]
 const rawValue = ref(configuration.defaultValue)
 const fromUnit = ref(configuration.units[0]!.id)
 const toUnit = ref(configuration.units[1]!.id)
+const unitIds = configuration.units.map((unit) => unit.id)
+const { buildShareUrl, canShareInputs } = useShareableCalculator([
+  textShareField('wartosc', rawValue, (raw) => parsePolishNumber(raw) !== null),
+  choiceShareField('z', fromUnit, unitIds),
+  choiceShareField('na', toUnit, unitIds),
+])
 const fromLabel = computed(() => configuration.units.find((unit) => unit.id === fromUnit.value)!)
 const toLabel = computed(() => configuration.units.find((unit) => unit.id === toUnit.value)!)
 const inputValue = computed(() => parsePolishNumber(rawValue.value))
@@ -77,7 +89,7 @@ useJednostkiSeo(props.toolId, {
       <div class="converter-grid">
         <div class="input-panel"><label for="unit-input">Wartość do przeliczenia</label><div class="number-field"><input id="unit-input" v-model="rawValue" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" aria-describedby="input-hint" /><span aria-hidden="true">{{ fromLabel.symbol }}</span></div><p id="input-hint" class="hint">Możesz wpisać liczbę z przecinkiem lub kropką.</p><label for="from-unit" class="select-label">Z jednostki</label><select id="from-unit" v-model="fromUnit"><option v-for="unit in configuration.units" :key="unit.id" :value="unit.id">{{ unit.label }} ({{ unit.symbol }})</option></select></div>
         <button type="button" class="swap-button" aria-label="Zamień kierunek przeliczania" @click="swapUnits"><ArrowRightLeft :size="23" aria-hidden="true" /></button>
-        <div class="result-panel" aria-live="polite"><p class="result-label">Wynik</p><div class="result-number"><strong>{{ resultText }}</strong><span>{{ toLabel.symbol }}</span></div><p v-if="result === null" class="result-message">{{ isNegativeInvalid ? 'Wpisz wartość nieujemną.' : 'Wpisz poprawną liczbę.' }}</p><p v-else class="result-hint">{{ formatResult(inputValue!) }} {{ fromLabel.symbol }} = {{ resultText }} {{ toLabel.symbol }}</p><label for="to-unit" class="select-label">Na jednostkę</label><select id="to-unit" v-model="toUnit"><option v-for="unit in configuration.units" :key="unit.id" :value="unit.id">{{ unit.label }} ({{ unit.symbol }})</option></select></div>
+        <div class="result-panel" aria-live="polite"><p class="result-label">Wynik</p><div class="result-number"><strong>{{ resultText }}</strong><span>{{ toLabel.symbol }}</span></div><p v-if="result === null" class="result-message">{{ isNegativeInvalid ? 'Wpisz wartość nieujemną.' : 'Wpisz poprawną liczbę.' }}</p><p v-else class="result-hint">{{ formatResult(inputValue!) }} {{ fromLabel.symbol }} = {{ resultText }} {{ toLabel.symbol }}</p><label for="to-unit" class="select-label">Na jednostkę</label><select id="to-unit" v-model="toUnit"><option v-for="unit in configuration.units" :key="unit.id" :value="unit.id">{{ unit.label }} ({{ unit.symbol }})</option></select><ShareResultButton :get-url="buildShareUrl" :disabled="result === null || !canShareInputs" class="mt-5" /></div>
       </div>
       <div class="formula-strip"><span>WZÓR / PRZELICZNIK</span><strong>{{ configuration.formula }}</strong><small>{{ configuration.example }}</small></div>
     </section>

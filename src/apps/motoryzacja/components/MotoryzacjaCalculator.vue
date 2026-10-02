@@ -1,12 +1,19 @@
 <script setup lang="ts">
-import { computed, reactive } from 'vue'
+import { computed, reactive, toRef } from 'vue'
 import { RotateCcw } from '@lucide/vue'
+import ShareResultButton from '@/shared/components/ShareResultButton.vue'
+import { textShareField, useShareableCalculator } from '@/shared/composables/useShareableCalculator'
 import { calculateMotoryzacja, formatMotoryzacjaResult, motoryzacjaCalculators, parseMotoryzacjaNumber, type InputField } from '../lib/calculations'
 import type { MotoryzacjaToolId } from '../manifest'
 
 const props = defineProps<{ toolId: MotoryzacjaToolId }>()
 const definition = motoryzacjaCalculators[props.toolId]
 const form = reactive<Record<string, string>>(Object.fromEntries(definition.fields.map((field) => [field.id, field.defaultValue])))
+const { buildShareUrl, canShareInputs } = useShareableCalculator(
+  definition.fields.map((field) =>
+    textShareField(field.id, toRef(form, field.id), (raw) => parseMotoryzacjaNumber(raw) !== null),
+  ),
+)
 
 function errorFor(field: InputField): string | null {
   const value = parseMotoryzacjaNumber(form[field.id] ?? '')
@@ -41,7 +48,7 @@ function reset() {
 </script>
 
 <template>
-  <section class="calculator" aria-labelledby="calculator-title"><div class="calculator-header"><div><p class="section-kicker">KALKULATOR / NA ŻYWO</p><h2 id="calculator-title">Wpisz dane z trasy</h2></div><button type="button" class="reset-button" @click="reset"><RotateCcw :size="16" aria-hidden="true" /><span>Przywróć przykład</span></button></div><div class="calculator-grid"><div class="input-panel"><div class="panel-heading"><span class="panel-index">01</span><div><strong>Twoje wartości</strong><p>Użyj danych z przejazdu lub planowanej trasy.</p></div></div><div class="fields"><div v-for="field in definition.fields" :key="field.id" class="field"><label :for="`moto-${field.id}`">{{ field.label }}</label><div class="input-wrap"><input :id="`moto-${field.id}`" v-model="form[field.id]" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" :aria-invalid="!!errorFor(field)" :aria-describedby="field.hint || errorFor(field) ? `moto-help-${field.id}` : undefined" /><span aria-hidden="true">{{ field.unit }}</span></div><p v-if="field.hint || errorFor(field)" :id="`moto-help-${field.id}`" class="field-help" :class="{ 'field-help--error': !!errorFor(field) }">{{ errorFor(field) ?? field.hint }}</p></div></div><p v-if="generalError" class="general-error" role="alert">{{ generalError }}</p><p class="input-note">Możesz wpisać liczby z przecinkiem lub kropką.</p></div><div class="output-panel" aria-live="polite"><div class="panel-heading"><span class="panel-index">02</span><div><strong>Wynik podróży</strong><p>Aktualizuje się podczas wpisywania.</p></div></div><template v-if="results"><div class="primary-result"><span>{{ results[0]!.label }}</span><strong>{{ formatMotoryzacjaResult(results[0]!) }} <small>{{ results[0]!.unit }}</small></strong></div><div v-if="results.length > 1" class="secondary-results"><div v-for="row in results.slice(1)" :key="row.label"><span>{{ row.label }}</span><strong>{{ formatMotoryzacjaResult(row) }} {{ row.unit }}</strong></div></div></template><div v-else class="empty-result"><strong>—</strong><p>Popraw zaznaczone pola, aby zobaczyć wynik.</p></div><p class="output-note">{{ definition.note }}</p></div></div><div class="formula-strip"><span>WZÓR</span><strong>{{ definition.formula }}</strong><small>{{ definition.example }}</small></div></section>
+  <section class="calculator" aria-labelledby="calculator-title"><div class="calculator-header"><div><p class="section-kicker">KALKULATOR / NA ŻYWO</p><h2 id="calculator-title">Wpisz dane z trasy</h2></div><button type="button" class="reset-button" @click="reset"><RotateCcw :size="16" aria-hidden="true" /><span>Przywróć przykład</span></button></div><div class="calculator-grid"><div class="input-panel"><div class="panel-heading"><span class="panel-index">01</span><div><strong>Twoje wartości</strong><p>Użyj danych z przejazdu lub planowanej trasy.</p></div></div><div class="fields"><div v-for="field in definition.fields" :key="field.id" class="field"><label :for="`moto-${field.id}`">{{ field.label }}</label><div class="input-wrap"><input :id="`moto-${field.id}`" v-model="form[field.id]" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" :aria-invalid="!!errorFor(field)" :aria-describedby="field.hint || errorFor(field) ? `moto-help-${field.id}` : undefined" /><span aria-hidden="true">{{ field.unit }}</span></div><p v-if="field.hint || errorFor(field)" :id="`moto-help-${field.id}`" class="field-help" :class="{ 'field-help--error': !!errorFor(field) }">{{ errorFor(field) ?? field.hint }}</p></div></div><p v-if="generalError" class="general-error" role="alert">{{ generalError }}</p><p class="input-note">Możesz wpisać liczby z przecinkiem lub kropką.</p></div><div class="output-panel" aria-live="polite"><div class="panel-heading"><span class="panel-index">02</span><div><strong>Wynik podróży</strong><p>Aktualizuje się podczas wpisywania.</p></div></div><template v-if="results"><div class="primary-result"><span>{{ results[0]!.label }}</span><strong>{{ formatMotoryzacjaResult(results[0]!) }} <small>{{ results[0]!.unit }}</small></strong></div><div v-if="results.length > 1" class="secondary-results"><div v-for="row in results.slice(1)" :key="row.label"><span>{{ row.label }}</span><strong>{{ formatMotoryzacjaResult(row) }} {{ row.unit }}</strong></div></div></template><div v-else class="empty-result"><strong>—</strong><p>Popraw zaznaczone pola, aby zobaczyć wynik.</p></div><ShareResultButton :get-url="buildShareUrl" :disabled="!results || !canShareInputs" class="share-action" /><p class="output-note">{{ definition.note }}</p></div></div><div class="formula-strip"><span>WZÓR</span><strong>{{ definition.formula }}</strong><small>{{ definition.example }}</small></div></section>
 </template>
 
 <style scoped>
@@ -84,6 +91,7 @@ function reset() {
 .empty-result { position: relative; z-index: 1; margin-top: 2rem; }
 .empty-result strong { font-family: var(--font-heading); font-size: 3rem; }
 .empty-result p { color: #bed7ce; font-size: .8rem; }
+.share-action { position: relative; z-index: 1; align-self: flex-start; margin-top: 1.5rem; }
 .output-note { position: relative; z-index: 1; margin-top: auto; padding-top: 2.5rem; color: #c6ddd3; font-size: .74rem; line-height: 1.65; }
 .formula-strip { display: flex; align-items: center; flex-wrap: wrap; gap: .5rem 1.3rem; padding: 1.1rem 2rem; border-top: 1px solid #e5ece5; background: #eff5ed; }
 .formula-strip span { color: #9c745d; font-size: .69rem; font-weight: 800; letter-spacing: .12em; }

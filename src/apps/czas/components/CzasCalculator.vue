@@ -5,6 +5,12 @@ import { RouterLink } from 'vue-router'
 import { czasTools, type CzasToolId } from '../manifest'
 import { czasPath, czasSiteUrl, useCzasSeo } from '../seo/useCzasSeo'
 import FaqSection from '@/shared/components/FaqSection.vue'
+import ShareResultButton from '@/shared/components/ShareResultButton.vue'
+import {
+  numberShareField,
+  textShareField,
+  useShareableCalculator,
+} from '@/shared/composables/useShareableCalculator'
 import { czasSeoContent } from '../seo/content'
 const props = defineProps<{ toolId: CzasToolId }>()
 const dateInputValue = (date: Date) =>
@@ -22,6 +28,7 @@ const isValidCalendarDate = (value: string) => {
   const date = parse(value)
   return !Number.isNaN(date.getTime()) && dateInputValue(date) === value
 }
+const isValidTime = (value: string) => /^([01]\d|2[0-3]):[0-5]\d$/.test(value)
 const dateFormat = (date: Date) =>
   new Intl.DateTimeFormat('pl-PL', { day: 'numeric', month: 'long', year: 'numeric' }).format(date)
 const dateWithWeekdayFormat = (date: Date) =>
@@ -55,6 +62,46 @@ const addDaysError = computed(() => {
     return 'Wpisz nieujemną, całkowitą liczbę dni.'
   if (!addDaysDate.value) return 'Podana liczba dni jest zbyt duża.'
   return null
+})
+const { buildShareUrl, canShareInputs } = useShareableCalculator(() => {
+  switch (props.toolId) {
+    case 'roznica-miedzy-datami':
+      return [
+        textShareField('od', dateA, isValidCalendarDate),
+        textShareField('do', dateB, isValidCalendarDate),
+      ]
+    case 'data-za-liczbe-dni':
+      return [
+        textShareField('data', dateA, isValidCalendarDate),
+        numberShareField('dni', number, { min: 0, integer: true }),
+      ]
+    case 'czas-pracy':
+      return [textShareField('od', timeA, isValidTime), textShareField('do', timeB, isValidTime)]
+    case 'godziny-na-minuty':
+      return [numberShareField('godziny', number, { min: 0 })]
+    case 'minuty-na-godziny':
+      return [numberShareField('minuty', number, { min: 0, integer: true })]
+    case 'wiek':
+    case 'odliczanie-do-daty':
+      return [textShareField('data', dateA, isValidCalendarDate)]
+  }
+})
+const canShare = computed(() => {
+  switch (props.toolId) {
+    case 'roznica-miedzy-datami':
+      return isValidCalendarDate(dateA.value) && isValidCalendarDate(dateB.value)
+    case 'data-za-liczbe-dni':
+      return !addDaysError.value
+    case 'czas-pracy':
+      return isValidTime(timeA.value) && isValidTime(timeB.value)
+    case 'godziny-na-minuty':
+      return typeof number.value === 'number' && Number.isFinite(number.value) && number.value >= 0
+    case 'minuty-na-godziny':
+      return Number.isSafeInteger(number.value) && number.value >= 0
+    case 'wiek':
+    case 'odliczanie-do-daty':
+      return isValidCalendarDate(dateA.value)
+  }
 })
 const result = computed(() => {
   if (props.toolId === 'roznica-miedzy-datami')
@@ -231,6 +278,7 @@ useCzasSeo(props.toolId, {
             ><strong class="text-xl">{{ row[1] }}</strong>
           </div>
         </div>
+        <ShareResultButton :get-url="buildShareUrl" :disabled="!canShare || !canShareInputs" class="mt-6" />
       </section>
     </div>
     <section class="explanation">

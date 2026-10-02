@@ -13,6 +13,13 @@ import {
 } from '../lib/calculations'
 import { pracaPath, pracaSiteName, pracaSiteUrl, usePracaSeo } from '../seo/usePracaSeo'
 import FaqSection from '@/shared/components/FaqSection.vue'
+import ShareResultButton from '@/shared/components/ShareResultButton.vue'
+import {
+  booleanShareField,
+  choiceShareField,
+  numberShareField,
+  useShareableCalculator,
+} from '@/shared/composables/useShareableCalculator'
 
 const props = defineProps<{ mode: 'uop' | 'b2b' | 'comparison' }>()
 const gross = ref(props.mode === 'comparison' ? 15_000 : 12_000)
@@ -25,6 +32,31 @@ const sickness = ref(false),
   under26 = ref(false),
   elevatedKup = ref(false),
   ppk = ref(false)
+const uopShareFields = [
+  numberShareField('brutto', gross, { min: 0 }),
+  booleanShareField('ponizej26', under26),
+  booleanShareField('podwyzszone-kup', elevatedKup),
+  booleanShareField('ppk', ppk),
+]
+const b2bShareFields = [
+  numberShareField('faktura', invoice, { min: 0 }),
+  numberShareField('koszty', costs, { min: 0 }),
+  choiceShareField('forma', form, ['scale', 'linear', 'lump']),
+  numberShareField('stawka', rate, { choices: [8.5, 12, 15, 17] }),
+  choiceShareField('zus', zus, ['start', 'preferential', 'full']),
+  booleanShareField('chorobowe', sickness),
+]
+const { buildShareUrl, canShareInputs } = useShareableCalculator(() => [
+  ...(props.mode === 'b2b' ? [] : uopShareFields),
+  ...(props.mode === 'uop' ? [] : b2bShareFields),
+])
+const isNonnegativeNumber = (value: unknown) =>
+  typeof value === 'number' && Number.isFinite(value) && value >= 0
+const canShare = computed(() =>
+  (props.mode === 'b2b' || isNonnegativeNumber(gross.value)) &&
+  (props.mode === 'uop' ||
+    (isNonnegativeNumber(invoice.value) && isNonnegativeNumber(costs.value))),
+)
 const uop = computed(() => calcUop(gross.value, under26.value, elevatedKup.value, ppk.value))
 const b2b = computed(() =>
   calcB2b(invoice.value, costs.value, form.value, rate.value, zus.value, sickness.value),
@@ -367,6 +399,7 @@ usePracaSeo(seoKey.value, {
             </p>
           </div></template
         >
+        <ShareResultButton :get-url="buildShareUrl" :disabled="!canShare || !canShareInputs" class="mt-6" />
         <p class="mt-6 border-t border-white/15 pt-4 text-xs leading-5 text-white/60">
           Założenia: uproszczona kalkulacja na 2026 r. Wynik zależy od indywidualnej sytuacji i nie
           stanowi porady podatkowej.
