@@ -51,10 +51,12 @@ export const domSeoContent: Record<DomToolId, ToolContent> = {
     ],
   },
   'ilosc-farby': {
-    intro: 'Przed malowaniem warto policzyć, ile farby potrzeba na całą powierzchnię. Kalkulator uwzględnia liczbę warstw oraz wydajność podaną przez producenta w metrach kwadratowych na litr.',
-    how: 'Pomnóż malowaną powierzchnię przez liczbę warstw, a następnie podziel przez wydajność farby. Obok podstawowego wyniku pokazujemy także wariant z 10% zapasem.',
+    intro: 'Możesz zacząć od znanej powierzchni albo od wymiarów prostokątnego pokoju. W drugim trybie kalkulator oblicza ściany, odejmuje wpisane drzwi i okna oraz opcjonalnie dodaje sufit. W obu trybach wynik zależy od liczby warstw i wydajności wybranej farby.',
+    how: 'Dla pokoju mnożymy obwód podłogi przez wysokość. Od powierzchni ścian odejmujemy łączną powierzchnię drzwi i okien; sufit, jeśli go zaznaczysz, liczymy jako długość razy szerokość. Otrzymaną powierzchnię mnożymy przez liczbę warstw i dzielimy przez wydajność farby w m²/l. Pokazujemy też wariant z 10% zapasem. Tryb „Znam powierzchnię” zachowuje dotychczasowy sposób obliczenia.',
     faqs: [
       { question: 'Ile farby potrzeba na 40 m² przy dwóch warstwach?', answer: 'Przy wydajności 10 m²/l potrzeba około 8 litrów farby. Z 10% zapasem byłoby to 8,8 litra.' },
+      { question: 'Jak policzyć powierzchnię ścian pokoju do malowania?', answer: 'Dodaj długość i szerokość pokoju, pomnóż przez dwa, a następnie przez wysokość. Od wyniku odejmij łączną powierzchnię drzwi i okien. Sufit dodaj osobno, jeżeli zamierzasz malować go tą samą farbą i liczbą warstw.' },
+      { question: 'Czy kalkulator farby uwzględnia okna, drzwi i sufit?', answer: 'W trybie „Mam wymiary pokoju” możesz wpisać sumę powierzchni drzwi i okien oraz zaznaczyć malowanie sufitu. Kalkulator nie zakłada domyślnych wymiarów otworów, więc podaj własne pomiary.' },
       { question: 'Czy wydajność farby zawsze jest taka sama?', answer: 'Nie. Zależy od produktu, chłonności podłoża, koloru i sposobu malowania. Wpisz wartość z etykiety wybranej farby.' },
     ],
   },

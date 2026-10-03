@@ -14,7 +14,7 @@ const visibleTools = computed(() => activeCategory.value === 'Wszystkie' ? domTo
 
 const faq = [
   { question: 'Jak korzystać z kalkulatorów Dom?', answer: 'Wybierz narzędzie, wpisz wymiary lub ceny w opisanych jednostkach, a wynik pojawi się od razu. Przy polach możesz używać polskiego przecinka dziesiętnego.' },
-  { question: 'Czy mogę użyć wymiarów pokoju w kilku kalkulatorach?', answer: 'Tak. W panelu na stronie głównej wpisz długość, szerokość i wysokość prostokątnego pokoju. Zobaczysz powierzchnię podłogi i ścian, obwód oraz kubaturę. Linki do paneli, płytek i farby przeniosą odpowiedni metraż do wybranego kalkulatora.' },
+  { question: 'Czy mogę użyć wymiarów pokoju w kilku kalkulatorach?', answer: 'Tak. W panelu na stronie głównej wpisz długość, szerokość i wysokość prostokątnego pokoju. Zobaczysz powierzchnię podłogi i ścian, obwód oraz kubaturę. Linki do paneli i płytek przeniosą metraż podłogi, a link do farby otworzy tryb pokoju z wpisanymi wymiarami.' },
   { question: 'Czy kalkulatory nadają się do planowania remontu?', answer: 'Tak, pomagają oszacować ilość farby, płytek i paczek paneli. Przy zakupie sprawdź także zalecenia producenta, zapas na docinki oraz rzeczywiste wymiary pomieszczenia.' },
   { question: 'Co obejmują kalkulatory kosztu prądu i wody?', answer: 'Prąd liczymy z mocy, liczby godzin i ceny za kWh. Wodę liczymy z zużycia w m³ i podanej ceny za m³. Kalkulatory nie doliczają automatycznie opłat stałych.' },
   { question: 'Czy wpisane dane są wysyłane na serwer?', answer: 'Same obliczenia wykonują się w przeglądarce. Więcej informacji o danych technicznych i analityce znajdziesz w polityce prywatności.' },

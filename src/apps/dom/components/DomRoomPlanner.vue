@@ -46,7 +46,16 @@ const nextSteps = computed(() => {
     {
       title: 'Farba na ściany',
       detail: `${format(room.value.walls)} m² ścian przed odjęciem otworów`,
-      to: { path: domPath('/ilosc-farby'), query: { area: toQueryNumber(room.value.walls) } },
+      to: {
+        path: domPath('/ilosc-farby'),
+        query: {
+          mode: 'room',
+          length: dimensions.length,
+          width: dimensions.width,
+          height: dimensions.height,
+          area: toQueryNumber(room.value.walls),
+        },
+      },
     },
   ]
 })

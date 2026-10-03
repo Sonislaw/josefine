@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { defineAsyncComponent } from 'vue'
 import { ArrowLeft, ArrowUpRight } from '@lucide/vue'
 import { RouterLink } from 'vue-router'
 import FaqSection from '@/shared/components/FaqSection.vue'
@@ -8,6 +9,8 @@ import { domSeoContent } from '../seo/content'
 import { domPath, domSiteName, domSiteUrl, useDomSeo } from '../seo/useDomSeo'
 
 const props = defineProps<{ toolId: DomToolId }>()
+// The richer paint mode is only fetched for the paint page, not every Dom calculator.
+const DomPaintCalculator = defineAsyncComponent(() => import('../components/DomPaintCalculator.vue'))
 const tool = domTools.find((item) => item.id === props.toolId)!
 const content = domSeoContent[props.toolId]
 const relatedTools = domTools.filter((item) => item.id !== props.toolId).slice(0, 3)
@@ -22,7 +25,7 @@ useDomSeo(props.toolId, {
 </script>
 
 <template>
-  <div class="tool-page"><nav class="breadcrumb" aria-label="Ścieżka nawigacji"><RouterLink :to="domPath('/')"><ArrowLeft :size="16" aria-hidden="true" /> Wszystkie kalkulatory</RouterLink><span aria-hidden="true">/</span><span>{{ tool.category }}</span></nav><header class="page-header"><div><span class="category-pill">{{ tool.category }} <span aria-hidden="true">·</span> Dom</span><h1>{{ tool.title }}</h1><p>{{ tool.description }} Wprowadź dane, a kalkulator pokaże wynik oraz sposób obliczenia.</p></div><div class="header-symbol" aria-hidden="true">{{ tool.symbol }}</div></header><DomCalculator :tool-id="toolId" /><section class="explanation"><div class="explanation-lead"><p class="section-kicker">PRAKTYCZNE WYJAŚNIENIE</p><h2>{{ tool.title }} — jak to działa?</h2></div><div class="explanation-text"><p>{{ content.intro }}</p><p>{{ content.how }}</p></div></section><FaqSection :items="content.faqs" :title="`Pytania o ${tool.title}`" /><section class="related"><div class="related-heading"><div><p class="section-kicker">SPRAWDŹ RÓWNIEŻ</p><h2>Inne domowe narzędzia</h2></div><RouterLink :to="domPath('/')">Wszystkie kalkulatory <ArrowUpRight :size="17" aria-hidden="true" /></RouterLink></div><div class="related-grid"><RouterLink v-for="item in relatedTools" :key="item.id" :to="domPath(`/${item.id}`)"><span>{{ item.category }}</span><strong>{{ item.title }}</strong><ArrowUpRight :size="19" aria-hidden="true" /></RouterLink></div></section></div>
+  <div class="tool-page"><nav class="breadcrumb" aria-label="Ścieżka nawigacji"><RouterLink :to="domPath('/')"><ArrowLeft :size="16" aria-hidden="true" /> Wszystkie kalkulatory</RouterLink><span aria-hidden="true">/</span><span>{{ tool.category }}</span></nav><header class="page-header"><div><span class="category-pill">{{ tool.category }} <span aria-hidden="true">·</span> Dom</span><h1>{{ tool.title }}</h1><p>{{ tool.description }} Wprowadź dane, a kalkulator pokaże wynik oraz sposób obliczenia.</p></div><div class="header-symbol" aria-hidden="true">{{ tool.symbol }}</div></header><DomPaintCalculator v-if="toolId === 'ilosc-farby'" /><DomCalculator v-else :tool-id="toolId" /><section class="explanation"><div class="explanation-lead"><p class="section-kicker">PRAKTYCZNE WYJAŚNIENIE</p><h2>{{ tool.title }} — jak to działa?</h2></div><div class="explanation-text"><p>{{ content.intro }}</p><p>{{ content.how }}</p></div></section><FaqSection :items="content.faqs" :title="`Pytania o ${tool.title}`" /><section class="related"><div class="related-heading"><div><p class="section-kicker">SPRAWDŹ RÓWNIEŻ</p><h2>Inne domowe narzędzia</h2></div><RouterLink :to="domPath('/')">Wszystkie kalkulatory <ArrowUpRight :size="17" aria-hidden="true" /></RouterLink></div><div class="related-grid"><RouterLink v-for="item in relatedTools" :key="item.id" :to="domPath(`/${item.id}`)"><span>{{ item.category }}</span><strong>{{ item.title }}</strong><ArrowUpRight :size="19" aria-hidden="true" /></RouterLink></div></section></div>
 </template>
 
 <style scoped>
