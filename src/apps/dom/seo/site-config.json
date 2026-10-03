@@ -29,7 +29,7 @@
       "key": "objetosc-pomieszczenia",
       "path": "/objetosc-pomieszczenia",
       "title": "Kalkulator objętości pomieszczenia w m³ | Dom",
-      "description": "Oblicz kubaturę pomieszczenia z długości, szerokości i wysokości. Wynik w m³ i litrach.",
+      "description": "Oblicz kubaturę pokoju z długości, szerokości i wysokości albo zsumuj objętości kilku pomieszczeń. Zobacz wyniki w m³ i udostępnij plan.",
       "socialImage": "/og/dom.png",
       "socialImageAlt": "Dom — praktyczne kalkulatory"
     },

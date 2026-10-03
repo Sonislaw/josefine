@@ -16,6 +16,7 @@ import {
   serializeAreaFragments,
   type AreaFragment,
 } from '../lib/composite-area'
+import type { VolumeRoomInput } from '../lib/multi-room-volume'
 import {
   calculateDom,
   domCalculators,
@@ -41,6 +42,7 @@ const DomTilePurchasePlan = defineAsyncComponent(() => import('./DomTilePurchase
 const DomTileLayoutPreview = defineAsyncComponent(() => import('./DomTileLayoutPreview.vue'))
 const DomSkirtingPlan = defineAsyncComponent(() => import('./DomSkirtingPlan.vue'))
 const DomCompositeArea = defineAsyncComponent(() => import('./DomCompositeArea.vue'))
+const DomMultiRoomVolume = defineAsyncComponent(() => import('./DomMultiRoomVolume.vue'))
 const DomPaintPurchasePlan = defineAsyncComponent(() => import('./DomPaintPurchasePlan.vue'))
 
 const props = defineProps<{
@@ -74,6 +76,8 @@ const reserve = ref('10')
 const boardPrice = ref('')
 const compositeEnabled = ref(false)
 const areaFragments = ref<AreaFragment[]>([])
+const volumeEnabled = ref(false)
+const volumeRooms = ref<VolumeRoomInput[]>([])
 const paintCanSize = defineModel<string>('paintCanSize', { default: '5' })
 const paintCanPrice = defineModel<string>('paintCanPrice', { default: '' })
 const selectedRoomId = ref('')
@@ -341,6 +345,8 @@ function reset() {
   boardPrice.value = ''
   compositeEnabled.value = false
   areaFragments.value = []
+  volumeEnabled.value = false
+  volumeRooms.value = []
   if (props.toolId === 'ilosc-farby') {
     paintCanSize.value = '5'
     paintCanPrice.value = ''
@@ -371,8 +377,19 @@ function useMeterVolume(volume: number) {
     :get-share-url="buildShareUrl"
     :can-share="canShareInputs"
   />
+  <DomMultiRoomVolume
+    v-if="toolId === 'objetosc-pomieszczenia'"
+    v-model:enabled="volumeEnabled"
+    v-model:rooms="volumeRooms"
+    :base-length="form.length ?? ''"
+    :base-width="form.width ?? ''"
+    :base-height="form.height ?? ''"
+  />
   <section
-    v-if="toolId !== 'powierzchnia-prostokata' || !compositeEnabled"
+    v-if="
+      (toolId !== 'powierzchnia-prostokata' || !compositeEnabled) &&
+      (toolId !== 'objetosc-pomieszczenia' || !volumeEnabled)
+    "
     class="calculator"
     aria-labelledby="calculator-title"
   >

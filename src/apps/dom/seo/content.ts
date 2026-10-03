@@ -67,8 +67,8 @@ export const domSeoContent: Record<DomToolId, ToolContent> = {
   },
   'objetosc-pomieszczenia': {
     intro:
-      'Objętość, czyli kubatura pomieszczenia, informuje, ile przestrzeni mieści się w jego wnętrzu. Warto ją znać przy doborze wentylacji, ogrzewania lub osuszacza.',
-    how: 'Pomnóż długość, szerokość i wysokość podane w metrach. Wynik w metrach sześciennych pokazujemy dodatkowo w litrach. Obliczenie dotyczy pomieszczenia o kształcie prostopadłościanu.',
+      'Objętość, czyli kubatura pomieszczenia, informuje, ile przestrzeni mieści się w jego wnętrzu. Możesz policzyć jeden pokój albo dodać kilka pomieszczeń i zobaczyć kubaturę całego mieszkania. Wymiary pokoi zapisanych w Moim remoncie da się skopiować do planu bez ponownego mierzenia.',
+    how: 'Dla każdego prostokątnego pomieszczenia mnożymy długość, szerokość i wysokość podane w metrach. W trybie jednego pokoju pokazujemy wynik w m³ i litrach. W trybie wielu pokoi wyświetlamy wynik każdego pomieszczenia oraz ich sumę. Pomiar ze skosami wymaga osobnego podziału na prostsze bryły; sama kubatura nie wystarcza do doboru wentylacji lub ogrzewania.',
     faqs: [
       {
         question: 'Jak obliczyć kubaturę pokoju?',
@@ -79,6 +79,11 @@ export const domSeoContent: Record<DomToolId, ToolContent> = {
         question: 'Czy skosy i wnęki są uwzględniane?',
         answer:
           'Nie. Aby oszacować kubaturę pokoju ze skosami, podziel go na prostsze bryły i dodaj ich objętości.',
+      },
+      {
+        question: 'Jak obliczyć kubaturę kilku pomieszczeń?',
+        answer:
+          'Wybierz „Kilka pomieszczeń”, dodaj pokoje i wpisz długość, szerokość oraz wysokość każdego z nich. Kalkulator pokaże osobne wyniki i ich sumę. Możesz też skopiować wymiary z pokoi zapisanych w Moim remoncie; udostępniony link zawiera ich nazwy i wymiary, ale nie wymaga dostępu do Twoich lokalnych danych.',
       },
     ],
   },

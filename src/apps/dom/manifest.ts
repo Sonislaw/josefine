@@ -20,7 +20,7 @@ export const domTools = [
   {
     id: 'objetosc-pomieszczenia',
     title: 'Objętość pomieszczenia',
-    description: 'Oblicza objętość z długości, szerokości i wysokości.',
+    description: 'Oblicza kubaturę jednego pokoju lub sumę objętości kilku pomieszczeń.',
     category: 'Wymiary',
     symbol: 'm³',
     accent: 'blue',
