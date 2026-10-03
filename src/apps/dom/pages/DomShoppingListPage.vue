@@ -141,6 +141,8 @@ const formatMetric = (value: number) =>
 
 function itemAmount(item: ShoppingItem): string {
   const amount = `${formatCount(item.quantity)} ${shoppingKinds[item.kind].unit}`
+  if (item.kind === 'tileBoxes' && item.tileLengthCm && item.tileWidthCm && item.piecesPerBox)
+    return `${amount} po ${formatCount(item.piecesPerBox)} szt. · ${formatDimension(item.tileLengthCm)} × ${formatDimension(item.tileWidthCm)} cm`
   if (item.kind === 'paintCans')
     return `${amount} po ${formatLiters(item.packageSizeLiters)} l (${formatLiters(item.quantity * item.packageSizeLiters)} l razem)`
   if (item.kind === 'groutPacks')
@@ -149,6 +151,10 @@ function itemAmount(item: ShoppingItem): string {
 }
 
 function itemLabel(item: ShoppingItem): string {
+  if ((item.kind === 'tilePieces' || item.kind === 'tileBoxes') && item.tileSurface === 'floor')
+    return 'Płytki · podłoga'
+  if ((item.kind === 'tilePieces' || item.kind === 'tileBoxes') && item.tileSurface === 'walls')
+    return 'Płytki · ściany'
   if (item.kind === 'paintCans' && item.paintVariant === 'main') return 'Farba · kolor główny'
   if (item.kind === 'paintCans' && item.paintVariant === 'accent') return 'Farba · kolor akcentowy'
   return shoppingKinds[item.kind].label

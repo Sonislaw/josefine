@@ -179,8 +179,8 @@ export const domSeoContent: Record<DomToolId, ToolContent> = {
   },
   'liczba-plytek': {
     intro:
-      'Kalkulator płytek szacuje liczbę pojedynczych sztuk potrzebnych na podłogę lub ścianę. Wpisz powierzchnię do ułożenia, wymiary jednej płytki i zapas na docinki. Dla prostokątnej podłogi możesz włączyć orientacyjny podgląd układu od narożnika i zobaczyć docinki przy ścianach. Jeśli produkt jest sprzedawany w pełnych kartonach, opcjonalny plan zakupu przeliczy wynik na opakowania.',
-    how: 'Powierzchnię płytki w cm² przeliczamy na m². Następnie powierzchnię do ułożenia powiększamy o zadany zapas, dzielimy przez powierzchnię jednej płytki i zaokrąglamy w górę do pełnej sztuki. W trybie kartonów dzielimy tę liczbę sztuk przez liczbę płytek w opakowaniu i ponownie zaokrąglamy w górę. Koszt to liczba kartonów pomnożona przez cenę jednego kartonu, jeśli ją podasz.',
+      'Kalkulator płytek szacuje liczbę sztuk potrzebnych na jedną powierzchnię albo, w opcjonalnym planie całego pokoju, osobno na podłogę i ściany. Podstawowe obliczenie oraz podgląd prostego układu podłogi pozostają dostępne. W planie pokoju możesz wykorzystać zapisane wymiary, odjąć otwory od ścian i dobrać różne płytki oraz kartony dla obu powierzchni.',
+    how: 'Powierzchnię pojedynczej płytki w cm² przeliczamy na m². Metraż do ułożenia zwiększamy o zapas wybrany dla danej powierzchni, dzielimy przez powierzchnię płytki i zaokrąglamy w górę do pełnej sztuki. Liczbę sztuk dzielimy przez zawartość kartonu i ponownie zaokrąglamy w górę. W planie pokoju podłoga to długość razy szerokość, a ściany to obwód razy wysokość minus wpisana powierzchnia drzwi i okien. Podłogę i ściany liczymy niezależnie, więc nie sumujemy sztuk różnych formatów; koszt łączny pokazujemy dopiero, gdy obie ceny są znane.',
     faqs: [
       {
         question: 'Ile płytek 60 × 60 cm na 12 m²?',
@@ -211,6 +211,16 @@ export const domSeoContent: Record<DomToolId, ToolContent> = {
         question: 'Jak kalkulator liczy koszt płytek?',
         answer:
           'Wpisz cenę jednego kartonu. Kalkulator pomnoży ją przez liczbę pełnych kartonów. Nie dolicza kleju, fug, dostawy ani montażu.',
+      },
+      {
+        question: 'Jak policzyć płytki na podłogę i ściany jednego pokoju?',
+        answer:
+          'Otwórz panel „Zaplanuj płytki w całym pomieszczeniu”. Wpisz długość, szerokość i wysokość pokoju, zaznacz powierzchnie do wykończenia, a następnie podaj format i zawartość kartonu osobno dla podłogi i ścian. Kalkulator pokaże osobne zakupy dla każdej grupy.',
+      },
+      {
+        question: 'Czy drzwi i okna odejmują się też od podłogi?',
+        answer:
+          'Nie. Wpisane otwory odejmujemy wyłącznie od powierzchni ścian. Powierzchnia podłogi to długość pokoju pomnożona przez jego szerokość. Jeżeli ściany mają skosy, wnęki albo płytki tylko do części wysokości, zmierz rzeczywistą powierzchnię osobno.',
       },
     ],
   },

@@ -38,7 +38,7 @@ const faq = [
   {
     question: 'Czy kalkulatory nadają się do planowania remontu?',
     answer:
-      'Tak, pomagają oszacować ilość farby, rolek tapety, płytek, fugi i paczek paneli. Przy zakupie sprawdź także zalecenia producenta, zapas na docinki oraz rzeczywiste wymiary pomieszczenia.',
+      'Tak, pomagają oszacować ilość farby, rolek tapety, płytek, fugi i paczek paneli. W kalkulatorze płytek możesz też zaplanować osobno podłogę i ściany prostokątnego pokoju. Przy zakupie sprawdź zalecenia producenta, zapas na docinki oraz rzeczywiste wymiary pomieszczenia.',
   },
   {
     question: 'Co obejmują kalkulatory kosztu prądu i wody?',

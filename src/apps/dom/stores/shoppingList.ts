@@ -19,10 +19,19 @@ export const shoppingKinds = {
 } as const
 
 export type ShoppingKind = keyof typeof shoppingKinds
-type StandardKind = Exclude<ShoppingKind, 'paintCans' | 'groutPacks'>
+type StandardKind = Exclude<ShoppingKind, 'paintCans' | 'groutPacks' | 'tilePieces' | 'tileBoxes'>
 // Paint adds one optional branch to the existing v1 envelope; older saved items still validate.
 export type ShoppingDraft =
   | { kind: StandardKind; quantity: number; cost: number | null }
+  | {
+      kind: 'tilePieces' | 'tileBoxes'
+      quantity: number
+      cost: number | null
+      tileSurface?: 'floor' | 'walls'
+      tileLengthCm?: number
+      tileWidthCm?: number
+      piecesPerBox?: number
+    }
   | {
       kind: 'paintCans'
       quantity: number
@@ -56,6 +65,28 @@ function isDraft(value: unknown): value is ShoppingDraft {
     (item.cost === null ||
       (typeof item.cost === 'number' && Number.isFinite(item.cost) && item.cost >= 0))
   if (!basic) return false
+  if (item.kind === 'tilePieces' || item.kind === 'tileBoxes')
+    return (
+      (item.tileSurface === undefined ||
+        item.tileSurface === 'floor' ||
+        item.tileSurface === 'walls') &&
+      (item.tileLengthCm === undefined ||
+        (typeof item.tileLengthCm === 'number' &&
+          Number.isFinite(item.tileLengthCm) &&
+          item.tileLengthCm > 0 &&
+          item.tileLengthCm <= 300)) &&
+      (item.tileWidthCm === undefined ||
+        (typeof item.tileWidthCm === 'number' &&
+          Number.isFinite(item.tileWidthCm) &&
+          item.tileWidthCm > 0 &&
+          item.tileWidthCm <= 300)) &&
+      (item.tileLengthCm === undefined) === (item.tileWidthCm === undefined) &&
+      (item.piecesPerBox === undefined ||
+        (item.kind === 'tileBoxes' &&
+          typeof item.piecesPerBox === 'number' &&
+          Number.isSafeInteger(item.piecesPerBox) &&
+          item.piecesPerBox > 0))
+    )
   if (item.kind === 'groutPacks')
     return (
       typeof item.packageWeightKg === 'number' &&

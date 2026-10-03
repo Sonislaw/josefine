@@ -53,7 +53,7 @@ export const domTools = [
   {
     id: 'liczba-plytek',
     title: 'Liczba płytek',
-    description: 'Oblicza liczbę płytek potrzebnych na daną powierzchnię.',
+    description: 'Oblicza płytki na jedną powierzchnię lub osobno na podłogę i ściany pokoju.',
     category: 'Remont',
     symbol: '▦',
     accent: 'sand',

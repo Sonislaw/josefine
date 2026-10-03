@@ -46,6 +46,7 @@ import type { ShoppingRoom } from '../stores/shoppingList'
 // Rozbudowane plany zakupów pobieramy tylko na stronach odpowiednich materiałów.
 const DomPanelPurchasePlan = defineAsyncComponent(() => import('./DomPanelPurchasePlan.vue'))
 const DomTilePurchasePlan = defineAsyncComponent(() => import('./DomTilePurchasePlan.vue'))
+const DomTileRoomPlan = defineAsyncComponent(() => import('./DomTileRoomPlan.vue'))
 const DomTileLayoutPreview = defineAsyncComponent(() => import('./DomTileLayoutPreview.vue'))
 const DomSkirtingPlan = defineAsyncComponent(() => import('./DomSkirtingPlan.vue'))
 const DomCompositeArea = defineAsyncComponent(() => import('./DomCompositeArea.vue'))
@@ -672,6 +673,15 @@ function useMeterVolume(volume: number) {
       Policz fugę <ArrowUpRight :size="17" aria-hidden="true" />
     </RouterLink>
   </section>
+  <DomTileRoomPlan
+    v-if="toolId === 'liczba-plytek'"
+    :base-tile-length="form.tileLength ?? ''"
+    :base-tile-width="form.tileWidth ?? ''"
+    :base-waste="form.waste ?? ''"
+    :base-room-length="tileRoomLength"
+    :base-room-width="tileRoomWidth"
+    :preferred-room-id="effectiveRoomId"
+  />
   <DomSkirtingPlan
     v-if="toolId === 'obwod-prostokata'"
     v-model:openings="openings"
