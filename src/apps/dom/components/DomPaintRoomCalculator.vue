@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, reactive, ref, toRef } from 'vue'
+import { computed, reactive, ref, toRef, watch } from 'vue'
 import { Paintbrush, RotateCcw } from '@lucide/vue'
 import ShareResultButton from '@/shared/components/ShareResultButton.vue'
 import {
@@ -11,6 +11,7 @@ import {
 import { parseDomNumber } from '../lib/calculations'
 import { calculatePaintRoom, PAINT_RESERVE_RATE } from '../lib/paint'
 import { isValidOptionalPaintCanPrice, parsePaintCanSize } from '../lib/paint-purchase'
+import type { RoomDimensions } from '../lib/room-metrics'
 import DomPaintPurchasePlan from './DomPaintPurchasePlan.vue'
 
 type PaintFieldId = 'length' | 'width' | 'height' | 'doors' | 'windows' | 'coats' | 'coverage'
@@ -43,6 +44,16 @@ const fields: PaintField[] = [
 ]
 
 const form = reactive<Record<PaintFieldId, string>>({ ...defaults })
+const props = defineProps<{ preferredRoomId?: string; roomPrefill?: RoomDimensions | null }>()
+watch(
+  () => props.roomPrefill,
+  (dimensions) => {
+    if (!dimensions) return
+    form.length = String(dimensions.length)
+    form.width = String(dimensions.width)
+    form.height = String(dimensions.height)
+  },
+)
 const includeCeiling = ref(false)
 const paintCanSize = defineModel<string>('paintCanSize', { default: '5' })
 const paintCanPrice = defineModel<string>('paintCanPrice', { default: '' })
@@ -269,6 +280,7 @@ function reset() {
     v-model:can-price="paintCanPrice"
     :required-liters="result?.litersWithReserve ?? null"
     id-prefix="paint-room"
+    :preferred-room-id="preferredRoomId"
   />
 </template>
 

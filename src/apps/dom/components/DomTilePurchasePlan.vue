@@ -6,7 +6,7 @@ import { calculateTilePurchase } from '../lib/tiles'
 import AddToDomShoppingList from './AddToDomShoppingList.vue'
 import type { ShoppingDraft } from '../stores/shoppingList'
 
-const props = defineProps<{ tilesNeeded: number | null }>()
+const props = defineProps<{ tilesNeeded: number | null; preferredRoomId?: string }>()
 const includeBoxes = defineModel<boolean>('includeBoxes', { required: true })
 const tilesPerBox = defineModel<string>('tilesPerBox', { required: true })
 const boxPrice = defineModel<string>('boxPrice', { required: true })
@@ -43,7 +43,15 @@ const purchase = computed(() => {
 
 const shoppingItems = computed<ShoppingDraft[]>(() => {
   if (includeBoxes.value) {
-    return purchase.value ? [{ kind: 'tileBoxes', quantity: purchase.value.boxCount, cost: purchase.value.estimatedCost }] : []
+    return purchase.value
+      ? [
+          {
+            kind: 'tileBoxes',
+            quantity: purchase.value.boxCount,
+            cost: purchase.value.estimatedCost,
+          },
+        ]
+      : []
   }
   return props.tilesNeeded !== null && props.tilesNeeded > 0
     ? [{ kind: 'tilePieces', quantity: props.tilesNeeded, cost: null }]
@@ -165,7 +173,7 @@ function boxUnit(count: number) {
       </div>
     </div>
 
-    <AddToDomShoppingList :items="shoppingItems" />
+    <AddToDomShoppingList :items="shoppingItems" :preferred-room-id="preferredRoomId" />
     <p class="plan-note">
       Liczbę kartonów zaokrąglamy w górę. Nadwyżka oznacza sztuki ponad wynik podstawowy, który już
       uwzględnia wpisany zapas na docinki. Koszt nie obejmuje kleju, fug, dostawy ani montażu.

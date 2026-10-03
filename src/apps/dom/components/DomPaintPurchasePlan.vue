@@ -10,7 +10,11 @@ import {
 import type { ShoppingDraft } from '../stores/shoppingList'
 import AddToDomShoppingList from './AddToDomShoppingList.vue'
 
-const props = defineProps<{ requiredLiters: number | null; idPrefix: string }>()
+const props = defineProps<{
+  requiredLiters: number | null
+  idPrefix: string
+  preferredRoomId?: string
+}>()
 const canSize = defineModel<string>('canSize', { required: true })
 const canPrice = defineModel<string>('canPrice', { required: true })
 
@@ -144,7 +148,11 @@ const formatMoney = (value: number) =>
       </div>
     </div>
 
-    <AddToDomShoppingList :items="shoppingItems" label="Dodaj farbę do Mojego remontu" />
+    <AddToDomShoppingList
+      :items="shoppingItems"
+      :preferred-room-id="preferredRoomId"
+      label="Dodaj farbę do Mojego remontu"
+    />
     <p class="plan-note">
       Liczymy pełne puszki jednego rozmiaru, bez mieszania pojemności. Sprawdź rzeczywistą wydajność
       i dostępne opakowania wybranej farby. Osobne kolory lub produkty policz oddzielnie.

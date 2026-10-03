@@ -25,13 +25,15 @@ import {
 } from '../lib/calculations'
 import { calculateMeterUsage, parseDailyHours, parseDaysPerWeek } from '../lib/practical'
 import { calculateSkirtingPlan } from '../lib/skirting'
-import { parseRoomDimension } from '../lib/room-metrics'
+import { calculateRoomMetrics, parseRoomDimension, type RoomDimensions } from '../lib/room-metrics'
 import type { TileOrientation } from '../lib/tile-layout'
 import { isValidOptionalPaintCanPrice, parsePaintCanSize } from '../lib/paint-purchase'
 import type { DomToolId } from '../manifest'
 import { domPath } from '../seo/useDomSeo'
 import DomEnergyProjection from './DomEnergyProjection.vue'
 import DomWaterMeter from './DomWaterMeter.vue'
+import DomRoomPicker from './DomRoomPicker.vue'
+import type { ShoppingRoom } from '../stores/shoppingList'
 
 // Rozbudowane plany zakupów pobieramy tylko na stronach odpowiednich materiałów.
 const DomPanelPurchasePlan = defineAsyncComponent(() => import('./DomPanelPurchasePlan.vue'))
@@ -41,7 +43,11 @@ const DomSkirtingPlan = defineAsyncComponent(() => import('./DomSkirtingPlan.vue
 const DomCompositeArea = defineAsyncComponent(() => import('./DomCompositeArea.vue'))
 const DomPaintPurchasePlan = defineAsyncComponent(() => import('./DomPaintPurchasePlan.vue'))
 
-const props = defineProps<{ toolId: DomToolId }>()
+const props = defineProps<{
+  toolId: DomToolId
+  preferredRoomId?: string
+  roomPrefill?: RoomDimensions | null
+}>()
 const route = useRoute()
 const definition = domCalculators[props.toolId]
 const form = reactive<Record<string, string>>(
@@ -70,6 +76,37 @@ const compositeEnabled = ref(false)
 const areaFragments = ref<AreaFragment[]>([])
 const paintCanSize = defineModel<string>('paintCanSize', { default: '5' })
 const paintCanPrice = defineModel<string>('paintCanPrice', { default: '' })
+const selectedRoomId = ref('')
+const effectiveRoomId = computed(() => props.preferredRoomId ?? selectedRoomId.value)
+
+function useRoom(room: ShoppingRoom | null) {
+  if (!room?.dimensions) return
+  const metrics = calculateRoomMetrics(room.dimensions)
+  if (!metrics) return
+
+  if (props.toolId === 'liczba-paczek-paneli' || props.toolId === 'liczba-plytek') {
+    form.area = String(Number(metrics.floor.toFixed(6)))
+  }
+  if (props.toolId === 'liczba-plytek') {
+    tileRoomLength.value = String(room.dimensions.length)
+    tileRoomWidth.value = String(room.dimensions.width)
+    tileOrientation.value = 'standard'
+    tileLayoutEnabled.value = room.dimensions.length >= 0.01 && room.dimensions.width >= 0.01
+  }
+  if (props.toolId === 'obwod-prostokata') {
+    form.length = String(room.dimensions.length)
+    form.width = String(room.dimensions.width)
+  }
+}
+
+watch(
+  () => props.roomPrefill,
+  (dimensions) => {
+    if (props.toolId !== 'ilosc-farby' || !dimensions) return
+    const metrics = calculateRoomMetrics(dimensions)
+    if (metrics) form.area = String(Number(metrics.walls.toFixed(6)))
+  },
+)
 
 const fragmentsShareField: ShareField = {
   key: 'parts',
@@ -316,6 +353,15 @@ function useMeterVolume(volume: number) {
 </script>
 
 <template>
+  <DomRoomPicker
+    v-if="
+      toolId === 'liczba-paczek-paneli' ||
+      toolId === 'liczba-plytek' ||
+      toolId === 'obwod-prostokata'
+    "
+    v-model="selectedRoomId"
+    @choose="useRoom"
+  />
   <DomCompositeArea
     v-if="toolId === 'powierzchnia-prostokata'"
     v-model:enabled="compositeEnabled"
@@ -453,6 +499,7 @@ function useMeterVolume(volume: number) {
     :area="parseDomNumber(form.area ?? '')"
     :pack-coverage="parseDomNumber(form.packCoverage ?? '')"
     :waste="parseDomNumber(form.waste ?? '')"
+    :preferred-room-id="effectiveRoomId"
   />
   <DomTileLayoutPreview
     v-if="toolId === 'liczba-plytek'"
@@ -471,6 +518,7 @@ function useMeterVolume(volume: number) {
     v-model:tiles-per-box="tilesPerBox"
     v-model:box-price="boxPrice"
     :tiles-needed="results?.[0]?.value ?? null"
+    :preferred-room-id="effectiveRoomId"
   />
   <DomSkirtingPlan
     v-if="toolId === 'obwod-prostokata'"
@@ -479,6 +527,7 @@ function useMeterVolume(volume: number) {
     v-model:reserve="reserve"
     v-model:board-price="boardPrice"
     :perimeter="results?.[0]?.value ?? null"
+    :preferred-room-id="effectiveRoomId"
   />
   <DomPaintPurchasePlan
     v-if="toolId === 'ilosc-farby'"
@@ -486,6 +535,7 @@ function useMeterVolume(volume: number) {
     v-model:can-price="paintCanPrice"
     :required-liters="results?.[1]?.value ?? null"
     id-prefix="paint-area"
+    :preferred-room-id="effectiveRoomId"
   />
 </template>
 

@@ -1,14 +1,26 @@
 <script setup lang="ts">
 import { onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
+import type { RoomDimensions } from '../lib/room-metrics'
+import type { ShoppingRoom } from '../stores/shoppingList'
 import DomCalculator from './DomCalculator.vue'
 import DomPaintRoomCalculator from './DomPaintRoomCalculator.vue'
+import DomRoomPicker from './DomRoomPicker.vue'
 
 const route = useRoute()
 const selectedMode = ref<'area' | 'room'>('area')
 // One purchase choice follows the visitor when switching between area and room modes.
 const canSize = ref('5')
 const canPrice = ref('')
+const selectedRoomId = ref('')
+const roomPrefill = ref<RoomDimensions | null>(null)
+
+function chooseRoom(room: ShoppingRoom | null) {
+  if (!room?.dimensions) return
+  // A deliberate picker choice changes inputs; merely opening a URL with roomId does not.
+  roomPrefill.value = { ...room.dimensions }
+  selectedMode.value = 'room'
+}
 
 // SSG renders the simple mode for every URL; select query-dependent UI after hydration.
 onMounted(() => {
@@ -23,6 +35,7 @@ watch(
 </script>
 
 <template>
+  <DomRoomPicker v-model="selectedRoomId" @choose="chooseRoom" />
   <section class="paint-mode" aria-labelledby="paint-mode-title">
     <div>
       <p class="eyebrow">JAK CHCESZ LICZYĆ?</p>
@@ -42,10 +55,17 @@ watch(
       tool-id="ilosc-farby"
       v-model:paint-can-size="canSize"
       v-model:paint-can-price="canPrice"
+      :preferred-room-id="selectedRoomId"
+      :room-prefill="roomPrefill"
     />
   </div>
   <div v-show="selectedMode === 'room'">
-    <DomPaintRoomCalculator v-model:paint-can-size="canSize" v-model:paint-can-price="canPrice" />
+    <DomPaintRoomCalculator
+      v-model:paint-can-size="canSize"
+      v-model:paint-can-price="canPrice"
+      :preferred-room-id="selectedRoomId"
+      :room-prefill="roomPrefill"
+    />
   </div>
 </template>
 

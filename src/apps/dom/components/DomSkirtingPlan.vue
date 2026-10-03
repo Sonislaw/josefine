@@ -6,7 +6,7 @@ import { calculateSkirtingPlan } from '../lib/skirting'
 import AddToDomShoppingList from './AddToDomShoppingList.vue'
 import type { ShoppingDraft } from '../stores/shoppingList'
 
-const props = defineProps<{ perimeter: number | null }>()
+const props = defineProps<{ perimeter: number | null; preferredRoomId?: string }>()
 const openings = defineModel<string>('openings', { required: true })
 const boardLength = defineModel<string>('boardLength', { required: true })
 const reserve = defineModel<string>('reserve', { required: true })
@@ -53,7 +53,9 @@ const plan = computed(() => {
 })
 
 const shoppingItems = computed<ShoppingDraft[]>(() =>
-  plan.value ? [{ kind: 'skirting', quantity: plan.value.boardCount, cost: plan.value.estimatedCost }] : [],
+  plan.value
+    ? [{ kind: 'skirting', quantity: plan.value.boardCount, cost: plan.value.estimatedCost }]
+    : [],
 )
 
 const formatLength = (value: number) =>
@@ -204,7 +206,7 @@ function boardUnit(count: number) {
         </p>
       </div>
     </div>
-    <AddToDomShoppingList :items="shoppingItems" />
+    <AddToDomShoppingList :items="shoppingItems" :preferred-room-id="preferredRoomId" />
     <p class="plan-note">
       To szacunek z łącznej długości, a nie plan cięcia listwy na odcinki każdej ściany. Narożniki,
       miejsca łączeń i nieprzydatne resztki mogą zwiększyć rzeczywistą liczbę potrzebnych sztuk.

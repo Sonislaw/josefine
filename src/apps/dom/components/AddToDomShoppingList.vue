@@ -7,7 +7,7 @@ import type { ShoppingDraft } from '../stores/shoppingList'
 import { useDomShoppingList } from '../stores/shoppingList'
 import { domPath } from '../seo/useDomSeo'
 
-const props = defineProps<{ items: ShoppingDraft[]; label?: string }>()
+const props = defineProps<{ items: ShoppingDraft[]; label?: string; preferredRoomId?: string }>()
 const list = useDomShoppingList()
 const route = useRoute()
 const { rooms } = storeToRefs(list)
@@ -17,15 +17,12 @@ const selectedRoomId = ref('')
 const roomSelectionTouched = ref(false)
 const roomPickerId = useId()
 
-function syncRoomFromUrl() {
-  const roomId = route.query.roomId
-  // The room ID is only a local hint. Shared links on another device remain unassigned.
-  if (
-    !roomSelectionTouched.value &&
-    typeof roomId === 'string' &&
-    rooms.value.some((room) => room.id === roomId)
-  ) {
-    selectedRoomId.value = roomId
+function syncSuggestedRoom() {
+  // An explicit picker choice (including "Bez pomieszczenia") wins over an old URL hint.
+  const roomId = props.preferredRoomId ?? route.query.roomId
+  if (!roomSelectionTouched.value) {
+    selectedRoomId.value =
+      typeof roomId === 'string' && rooms.value.some((room) => room.id === roomId) ? roomId : ''
   }
   if (selectedRoomId.value && !rooms.value.some((room) => room.id === selectedRoomId.value)) {
     selectedRoomId.value = ''
@@ -34,7 +31,7 @@ function syncRoomFromUrl() {
 
 onMounted(() => {
   list.hydrate()
-  syncRoomFromUrl()
+  syncSuggestedRoom()
 })
 
 watch(
@@ -47,13 +44,19 @@ watch(
 watch(selectedRoomId, () => {
   added.value = false
 })
-watch(rooms, syncRoomFromUrl, { deep: true })
+watch(rooms, syncSuggestedRoom, { deep: true })
+watch(
+  () => props.preferredRoomId,
+  () => {
+    roomSelectionTouched.value = false
+    syncSuggestedRoom()
+  },
+)
 watch(
   () => route.query.roomId,
   () => {
     roomSelectionTouched.value = false
-    selectedRoomId.value = ''
-    syncRoomFromUrl()
+    syncSuggestedRoom()
   },
 )
 

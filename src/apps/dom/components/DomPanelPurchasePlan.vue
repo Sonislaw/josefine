@@ -12,6 +12,7 @@ const props = defineProps<{
   area: number | null
   packCoverage: number | null
   waste: number | null
+  preferredRoomId?: string
 }>()
 
 const packPrice = defineModel<string>('packPrice', { required: true })
@@ -58,9 +59,15 @@ const purchase = computed(() => {
 
 const shoppingItems = computed<ShoppingDraft[]>(() => {
   if (!purchase.value) return []
-  const result: ShoppingDraft[] = [{ kind: 'panels', quantity: purchase.value.panels.packCount, cost: purchase.value.panelCost }]
+  const result: ShoppingDraft[] = [
+    { kind: 'panels', quantity: purchase.value.panels.packCount, cost: purchase.value.panelCost },
+  ]
   if (includeUnderlay.value && purchase.value.underlayCount !== null) {
-    result.push({ kind: 'underlay', quantity: purchase.value.underlayCount, cost: purchase.value.underlayCost })
+    result.push({
+      kind: 'underlay',
+      quantity: purchase.value.underlayCount,
+      cost: purchase.value.underlayCost,
+    })
   }
   return result
 })
@@ -211,14 +218,24 @@ const formatMoney = (value: number) =>
         </p>
       </div>
     </div>
-    <AddToDomShoppingList :items="shoppingItems" :label="includeUnderlay ? 'Dodaj panele i podkład do Mojego remontu' : undefined" />
+    <AddToDomShoppingList
+      :items="shoppingItems"
+      :preferred-room-id="preferredRoomId"
+      :label="includeUnderlay ? 'Dodaj panele i podkład do Mojego remontu' : undefined"
+    />
     <p class="plan-caveat">
       To orientacyjny plan materiałów, bez listew, montażu i transportu. Podkład liczymy z
       powierzchni podłogi bez zapasu na docinki paneli; sprawdź zalecenia producenta i zawartość
       opakowań.
     </p>
     <RouterLink class="skirting-link" :to="domPath('/obwod-prostokata')">
-      <span><strong>Policz też listwy przypodłogowe</strong><small>Podaj długość i szerokość pokoju — sam metraż podłogi nie wystarczy do obliczenia obwodu.</small></span>
+      <span
+        ><strong>Policz też listwy przypodłogowe</strong
+        ><small
+          >Podaj długość i szerokość pokoju — sam metraż podłogi nie wystarczy do obliczenia
+          obwodu.</small
+        ></span
+      >
       <ArrowUpRight :size="18" aria-hidden="true" />
     </RouterLink>
   </section>
@@ -496,18 +513,34 @@ label small {
   justify-content: space-between;
   gap: 1rem;
   margin-top: 1rem;
-  padding: .9rem 1rem;
+  padding: 0.9rem 1rem;
   border: 1px solid #d3e2cf;
   border-radius: 12px;
   background: #f3f8ef;
   color: #2d6040;
   text-decoration: none;
 }
-.skirting-link:hover, .skirting-link:focus-visible { border-color: #77a582; background: #eaf4e6; }
-.skirting-link strong, .skirting-link small { display: block; }
-.skirting-link strong { font-size: .8rem; }
-.skirting-link small { margin-top: .2rem; color: #6b806e; font-size: .7rem; line-height: 1.45; }
-.skirting-link svg { flex: 0 0 auto; }
+.skirting-link:hover,
+.skirting-link:focus-visible {
+  border-color: #77a582;
+  background: #eaf4e6;
+}
+.skirting-link strong,
+.skirting-link small {
+  display: block;
+}
+.skirting-link strong {
+  font-size: 0.8rem;
+}
+.skirting-link small {
+  margin-top: 0.2rem;
+  color: #6b806e;
+  font-size: 0.7rem;
+  line-height: 1.45;
+}
+.skirting-link svg {
+  flex: 0 0 auto;
+}
 @media (max-width: 850px) {
   .plan-grid {
     grid-template-columns: 1fr;
