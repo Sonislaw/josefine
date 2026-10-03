@@ -22,7 +22,12 @@ type StandardKind = Exclude<ShoppingKind, 'paintCans'>
 export type ShoppingDraft =
   | { kind: StandardKind; quantity: number; cost: number | null }
   | { kind: 'paintCans'; quantity: number; cost: number | null; packageSizeLiters: number }
-export type ShoppingItem = ShoppingDraft & { id: string; roomId: string | null }
+export type ShoppingItem = ShoppingDraft & { id: string; roomId: string | null; purchased: boolean }
+type StoredShoppingItem = ShoppingDraft & {
+  id: string
+  roomId: string | null
+  purchased?: boolean
+}
 export type ShoppingRoom = {
   id: string
   name: string
@@ -59,10 +64,13 @@ function isLegacyItem(value: unknown): value is ShoppingDraft & { id: string } {
   )
 }
 
-function isItemWithRoom(value: unknown): value is ShoppingItem {
+function isItemWithRoom(value: unknown): value is StoredShoppingItem {
   return (
     isLegacyItem(value) &&
-    ((value as ShoppingItem).roomId === null || typeof (value as ShoppingItem).roomId === 'string')
+    ((value as StoredShoppingItem).roomId === null ||
+      typeof (value as StoredShoppingItem).roomId === 'string') &&
+    ((value as StoredShoppingItem).purchased === undefined ||
+      typeof (value as StoredShoppingItem).purchased === 'boolean')
   )
 }
 
@@ -87,7 +95,7 @@ function parseLegacyItems(raw: string): ShoppingItem[] {
   if (saved.version !== 1 || !Array.isArray(saved.items) || !saved.items.every(isLegacyItem)) {
     throw new Error('Unsupported shopping list')
   }
-  return saved.items.map((item) => ({ ...item, roomId: null }))
+  return saved.items.map((item) => ({ ...item, roomId: null, purchased: false }))
 }
 
 function parseSavedState(raw: string): { rooms: ShoppingRoom[]; items: ShoppingItem[] } {
@@ -113,7 +121,11 @@ function parseSavedState(raw: string): { rooms: ShoppingRoom[]; items: ShoppingI
   ) {
     throw new Error('Invalid shopping list references')
   }
-  return { rooms: saved.rooms, items: saved.items }
+  // v2 entries saved before purchase tracking have no flag and remain "do kupienia".
+  return {
+    rooms: saved.rooms,
+    items: saved.items.map((item) => ({ ...item, purchased: item.purchased === true })),
+  }
 }
 
 function cleanRoomName(raw: string): string {
@@ -180,7 +192,12 @@ export const useDomShoppingList = defineStore('dom-shopping-list', () => {
     )
       return false
     items.value.push(
-      ...drafts.map((draft) => ({ ...draft, id: window.crypto.randomUUID(), roomId })),
+      ...drafts.map((draft) => ({
+        ...draft,
+        id: window.crypto.randomUUID(),
+        roomId,
+        purchased: false,
+      })),
     )
     return persist()
   }
@@ -284,6 +301,16 @@ export const useDomShoppingList = defineStore('dom-shopping-list', () => {
     return true
   }
 
+  function setItemPurchased(itemId: string, purchased: boolean): boolean {
+    hydrate()
+    const item = items.value.find((entry) => entry.id === itemId)
+    if (!item || typeof purchased !== 'boolean') return false
+    if (item.purchased === purchased) return true
+    item.purchased = purchased
+    persist()
+    return true
+  }
+
   function removeItem(id: string) {
     hydrate()
     items.value = items.value.filter((item) => item.id !== id)
@@ -318,6 +345,7 @@ export const useDomShoppingList = defineStore('dom-shopping-list', () => {
     deleteRoom,
     assignItem,
     updateItemPurchase,
+    setItemPurchased,
     removeItem,
     clearItems,
     refreshFromStorage,

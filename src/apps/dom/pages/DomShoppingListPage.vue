@@ -51,6 +51,9 @@ const editingDimensionsRoomId = ref<string | null>(null)
 const dimensionForm = reactive({ length: '', width: '', height: '' })
 const dimensionError = ref('')
 const editingItemId = ref<string | null>(null)
+const purchaseFilter = ref<'all' | 'pending' | 'purchased'>('all')
+const purchasedCount = computed(() => items.value.filter((item) => item.purchased).length)
+const pendingCount = computed(() => items.value.length - purchasedCount.value)
 const dimensionFields = [
   { id: 'length', label: 'Długość' },
   { id: 'width', label: 'Szerokość' },
@@ -62,6 +65,7 @@ interface RoomGroup {
   room: ShoppingRoom | null
   name: string
   items: ShoppingItem[]
+  purchasedCount: number
   knownTotal: number
   missingPrices: number
   metrics: RoomMetrics | null
@@ -76,6 +80,7 @@ function makeGroup(room: ShoppingRoom | null, name: string, groupItems: Shopping
     room,
     name,
     items: groupItems,
+    purchasedCount: groupItems.filter((item) => item.purchased).length,
     knownTotal:
       groupItems.reduce(
         (cents, item) => cents + (item.cost === null ? 0 : Math.round(item.cost * 100)),
@@ -101,6 +106,19 @@ const groups = computed(() => {
     result.push(makeGroup(null, 'Bez pomieszczenia', unassigned))
   return result
 })
+const visibleGroups = computed(() =>
+  groups.value
+    .map((group) => ({
+      ...group,
+      visibleItems:
+        purchaseFilter.value === 'all'
+          ? group.items
+          : group.items.filter((item) =>
+              purchaseFilter.value === 'purchased' ? item.purchased : !item.purchased,
+            ),
+    }))
+    .filter((group) => purchaseFilter.value === 'all' || group.visibleItems.length > 0),
+)
 const laborTotal = computed(
   () => groups.value.reduce((cents, group) => cents + Math.round(group.labor.total * 100), 0) / 100,
 )
@@ -222,6 +240,17 @@ function removeItem(itemId: string) {
   list.removeItem(itemId)
   if (editingItemId.value === itemId) editingItemId.value = null
 }
+
+function setPurchaseFilter(filter: 'all' | 'pending' | 'purchased') {
+  purchaseFilter.value = filter
+  editingItemId.value = null
+}
+
+function togglePurchased(itemId: string, event: Event) {
+  const input = event.target as HTMLInputElement
+  if (!list.setItemPurchased(itemId, input.checked)) input.checked = !input.checked
+  if (editingItemId.value === itemId) editingItemId.value = null
+}
 </script>
 
 <template>
@@ -291,11 +320,48 @@ function removeItem(itemId: string) {
       </button>
     </section>
 
+    <section v-if="hydrated && items.length" class="purchase-toolbar" aria-label="Filtr zakupów">
+      <div>
+        <strong>Twoje zakupy</strong>
+        <p>Filtr zmienia widok listy, ale nie sumy w kosztorysie.</p>
+      </div>
+      <div class="purchase-filters" role="group" aria-label="Pokaż zakupy">
+        <button
+          type="button"
+          :aria-pressed="purchaseFilter === 'all'"
+          @click="setPurchaseFilter('all')"
+        >
+          Wszystkie <span>{{ items.length }}</span>
+        </button>
+        <button
+          type="button"
+          :aria-pressed="purchaseFilter === 'pending'"
+          @click="setPurchaseFilter('pending')"
+        >
+          Do kupienia <span>{{ pendingCount }}</span>
+        </button>
+        <button
+          type="button"
+          :aria-pressed="purchaseFilter === 'purchased'"
+          @click="setPurchaseFilter('purchased')"
+        >
+          Kupione <span>{{ purchasedCount }}</span>
+        </button>
+      </div>
+    </section>
+
     <div v-if="!hydrated" class="list-card" role="status">Wczytywanie listy…</div>
     <div v-else-if="items.length || rooms.length" class="content-grid">
       <div class="room-groups">
+        <p v-if="!visibleGroups.length" class="empty-filter">
+          {{
+            purchaseFilter === 'purchased'
+              ? 'Nie masz jeszcze kupionych pozycji.'
+              : 'Wszystko z listy zostało już kupione.'
+          }}
+        </p>
         <section
-          v-for="(group, index) in groups"
+          v-for="(group, index) in visibleGroups"
           :key="group.id ?? 'unassigned'"
           class="list-card"
           :aria-labelledby="`room-heading-${index}`"
@@ -318,6 +384,17 @@ function removeItem(itemId: string) {
                     : 'brak podanych cen materiałów'
                 }}</span
               >
+              <span v-if="group.items.length" class="group-progress">
+                Kupione {{ group.purchasedCount }} z {{ group.items.length }}
+              </span>
+              <progress
+                v-if="group.items.length"
+                :value="group.purchasedCount"
+                :max="group.items.length"
+                :aria-label="`Postęp zakupów: ${group.name}`"
+              >
+                {{ group.purchasedCount }} z {{ group.items.length }}
+              </progress>
             </div>
             <div v-if="group.room" class="group-actions">
               <button
@@ -459,8 +536,13 @@ function removeItem(itemId: string) {
             </template>
           </div>
 
-          <ul v-if="group.items.length" class="items-list">
-            <li v-for="item in group.items" :key="item.id" class="item-row">
+          <ul v-if="group.visibleItems.length" class="items-list">
+            <li
+              v-for="item in group.visibleItems"
+              :key="item.id"
+              class="item-row"
+              :class="{ 'item-row--purchased': item.purchased }"
+            >
               <div class="item-icon"><ShoppingBasket :size="21" aria-hidden="true" /></div>
               <div class="item-copy">
                 <strong>{{ shoppingKinds[item.kind].label }}</strong
@@ -482,6 +564,15 @@ function removeItem(itemId: string) {
                     </option>
                   </select></label
                 >
+                <label class="purchase-status">
+                  <input
+                    type="checkbox"
+                    :checked="item.purchased"
+                    :aria-label="`${item.purchased ? 'Oznacz jako do kupienia' : 'Oznacz jako kupione'}: ${shoppingKinds[item.kind].label}, ${itemAmount(item)}`"
+                    @change="togglePurchased(item.id, $event)"
+                  />
+                  <span>{{ item.purchased ? 'Kupione' : 'Oznacz jako kupione' }}</span>
+                </label>
               </div>
               <div class="item-end">
                 <strong>{{ item.cost === null ? 'Cena niepodana' : formatMoney(item.cost) }}</strong
@@ -548,6 +639,7 @@ function removeItem(itemId: string) {
           </div>
         </div>
         <p>Pozycji: {{ items.length }} · Utworzone pomieszczenia: {{ rooms.length }}.</p>
+        <p>Kupione: {{ purchasedCount }} z {{ items.length }} · Do kupienia: {{ pendingCount }}.</p>
         <p v-if="unknownPriceCount">
           Liczba pozycji bez ceny: {{ unknownPriceCount }}. Nie uwzględniono ich w sumie, więc nie
           jest to pełny koszt remontu.
@@ -762,6 +854,64 @@ h1 span {
   color: #a34f3c;
   font-size: 0.72rem;
 }
+.purchase-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.9rem 1.5rem;
+  margin-bottom: 1.2rem;
+  padding: 1rem 1.2rem;
+  border: 1px solid #d6e5d1;
+  border-radius: 16px;
+  background: #f6faf2;
+}
+.purchase-toolbar strong {
+  color: #315c43;
+  font-family: var(--font-heading);
+  font-size: 0.95rem;
+}
+.purchase-toolbar p {
+  margin-top: 0.2rem;
+  color: #718675;
+  font-size: 0.72rem;
+}
+.purchase-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+.purchase-filters button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 39px;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #d3dfce;
+  border-radius: 9px;
+  background: #fffefa;
+  color: #4f7058;
+  font: inherit;
+  font-size: 0.73rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+.purchase-filters button:hover {
+  background: #eaf2e6;
+}
+.purchase-filters button[aria-pressed='true'] {
+  border-color: #28573e;
+  background: #28573e;
+  color: #fff;
+}
+.purchase-filters button:focus-visible {
+  outline: 2px solid #28573e;
+  outline-offset: 2px;
+}
+.purchase-filters span {
+  font-size: 0.68rem;
+  opacity: 0.8;
+}
 .content-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 310px;
@@ -773,6 +923,15 @@ h1 span {
   align-content: start;
   gap: 1rem;
   min-width: 0;
+}
+.empty-filter {
+  padding: 1.5rem;
+  border: 1px dashed #cbdcc8;
+  border-radius: 18px;
+  background: #fffefa;
+  color: #52725b;
+  font-size: 0.83rem;
+  line-height: 1.6;
 }
 .list-card,
 .summary-card,
@@ -810,6 +969,30 @@ h1 span {
   margin-top: 0.25rem;
   color: #758575;
   font-size: 0.74rem;
+}
+.group-title > .group-progress {
+  color: #3d7450;
+  font-weight: 800;
+}
+.group-title progress {
+  display: block;
+  width: min(100%, 220px);
+  height: 7px;
+  margin-top: 0.4rem;
+  border: 0;
+  border-radius: 99px;
+  overflow: hidden;
+  background: #e3ebde;
+  accent-color: #3b8052;
+}
+.group-title progress::-webkit-progress-bar {
+  background: #e3ebde;
+}
+.group-title progress::-webkit-progress-value {
+  background: #3b8052;
+}
+.group-title progress::-moz-progress-bar {
+  background: #3b8052;
 }
 .group-actions {
   display: flex;
@@ -1092,6 +1275,9 @@ h1 span {
   padding: 1rem 0;
   border-top: 1px solid #edf0e8;
 }
+.item-row--purchased .item-icon {
+  background: #dcebd8;
+}
 .item-icon {
   flex: 0 0 42px;
   display: grid;
@@ -1145,6 +1331,33 @@ h1 span {
   color: #315a40;
   font: inherit;
   font-size: 0.72rem;
+}
+.purchase-status {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  width: max-content;
+  margin-top: 0.55rem;
+  color: #416c4c;
+  font-size: 0.72rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+.purchase-status input {
+  width: 17px;
+  height: 17px;
+  margin: 0;
+  accent-color: #39714c;
+  cursor: pointer;
+}
+.purchase-status span {
+  margin-top: 0;
+  color: inherit;
+  font-size: inherit;
+}
+.purchase-status input:focus-visible {
+  outline: 2px solid #28573e;
+  outline-offset: 2px;
 }
 .item-end {
   display: flex;
