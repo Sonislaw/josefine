@@ -61,11 +61,14 @@ export const domSeoContent: Record<DomToolId, ToolContent> = {
     ],
   },
   'liczba-plytek': {
-    intro: 'Kalkulator płytek szacuje liczbę pojedynczych sztuk potrzebnych na podłogę lub ścianę. Wpisz powierzchnię do ułożenia, wymiary jednej płytki i zapas na docinki.',
-    how: 'Powierzchnię płytki w cm² przeliczamy na m². Następnie powierzchnię do ułożenia powiększamy o zadany zapas, dzielimy przez powierzchnię jednej płytki i zaokrąglamy w górę do pełnej sztuki.',
+    intro: 'Kalkulator płytek szacuje liczbę pojedynczych sztuk potrzebnych na podłogę lub ścianę. Wpisz powierzchnię do ułożenia, wymiary jednej płytki i zapas na docinki. Jeśli wybrany produkt jest sprzedawany w pełnych kartonach, opcjonalny plan zakupu przeliczy wynik na opakowania i pokaże ewentualną nadwyżkę.',
+    how: 'Powierzchnię płytki w cm² przeliczamy na m². Następnie powierzchnię do ułożenia powiększamy o zadany zapas, dzielimy przez powierzchnię jednej płytki i zaokrąglamy w górę do pełnej sztuki. W trybie kartonów dzielimy tę liczbę sztuk przez liczbę płytek w opakowaniu i ponownie zaokrąglamy w górę. Koszt to liczba kartonów pomnożona przez cenę jednego kartonu, jeśli ją podasz.',
     faqs: [
       { question: 'Ile płytek 60 × 60 cm na 12 m²?', answer: 'Bez zapasu potrzeba co najmniej 34 płytek. Przy 10% zapasie kalkulator wskaże 37 sztuk.' },
       { question: 'Jaki zapas płytek przyjąć?', answer: 'Zapas zależy od układu, liczby docinek i kształtu pomieszczenia. W kalkulatorze możesz wpisać własny procent; domyślnie to 10%.' },
+      { question: 'Ile kartonów kupić, jeśli potrzeba 37 płytek?', answer: 'Jeśli karton zawiera 4 płytki, potrzeba 10 pełnych kartonów. Kupisz wtedy 40 sztuk, czyli 3 ponad obliczoną liczbę uwzględniającą zapas.' },
+      { question: 'Czy muszę kupować pełne kartony płytek?', answer: 'To zależy od produktu i sklepu. Niektóre płytki są sprzedawane na sztuki, inne tylko w opakowaniach. Sprawdź warunki sprzedaży wybranego modelu; tryb kartonów włącz tylko wtedy, gdy go potrzebujesz.' },
+      { question: 'Jak kalkulator liczy koszt płytek?', answer: 'Wpisz cenę jednego kartonu. Kalkulator pomnoży ją przez liczbę pełnych kartonów. Nie dolicza kleju, fug, dostawy ani montażu.' },
     ],
   },
   'liczba-paczek-paneli': {

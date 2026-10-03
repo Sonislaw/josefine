@@ -21,8 +21,9 @@ import { domPath } from '../seo/useDomSeo'
 import DomEnergyProjection from './DomEnergyProjection.vue'
 import DomWaterMeter from './DomWaterMeter.vue'
 
-// Rozbudowany plan zakupów pobieramy tylko na stronie paneli.
+// Rozbudowane plany zakupów pobieramy tylko na stronach odpowiednich materiałów.
 const DomPanelPurchasePlan = defineAsyncComponent(() => import('./DomPanelPurchasePlan.vue'))
+const DomTilePurchasePlan = defineAsyncComponent(() => import('./DomTilePurchasePlan.vue'))
 
 const props = defineProps<{ toolId: DomToolId }>()
 const definition = domCalculators[props.toolId]
@@ -37,6 +38,9 @@ const panelPackPrice = ref('')
 const includeUnderlay = ref(false)
 const underlayCoverage = ref('10')
 const underlayPackPrice = ref('')
+const includeBoxes = ref(false)
+const tilesPerBox = ref('4')
+const boxPrice = ref('')
 
 // Pola nieaktywnego podkładu nie powinny blokować linku do wyniku ani zapisywać starych błędów.
 const shareUnderlayCoverage = computed({
@@ -49,6 +53,18 @@ const shareUnderlayPackPrice = computed({
   get: () => (includeUnderlay.value ? underlayPackPrice.value : ''),
   set: (value: string) => {
     underlayPackPrice.value = value
+  },
+})
+const shareTilesPerBox = computed({
+  get: () => (includeBoxes.value ? tilesPerBox.value : '4'),
+  set: (value: string) => {
+    tilesPerBox.value = value
+  },
+})
+const shareBoxPrice = computed({
+  get: () => (includeBoxes.value ? boxPrice.value : ''),
+  set: (value: string) => {
+    boxPrice.value = value
   },
 })
 const validOptionalPrice = (raw: string) => raw.trim() === '' || parseDomNumber(raw) !== null
@@ -85,6 +101,16 @@ const { buildShareUrl, canShareInputs } = useShareableCalculator([
           return value !== null && value > 0
         }),
         textShareField('underlayPackPrice', shareUnderlayPackPrice, validOptionalPrice),
+      ]
+    : []),
+  ...(props.toolId === 'liczba-plytek'
+    ? [
+        booleanShareField('includeBoxes', includeBoxes),
+        textShareField('tilesPerBox', shareTilesPerBox, (raw) => {
+          const value = parseDomNumber(raw)
+          return value !== null && Number.isSafeInteger(value) && value > 0
+        }),
+        textShareField('boxPrice', shareBoxPrice, validOptionalPrice),
       ]
     : []),
 ])
@@ -132,6 +158,9 @@ function reset() {
   includeUnderlay.value = false
   underlayCoverage.value = '10'
   underlayPackPrice.value = ''
+  includeBoxes.value = false
+  tilesPerBox.value = '4'
+  boxPrice.value = ''
 }
 
 function useMeterVolume(volume: number) {
@@ -264,6 +293,13 @@ function useMeterVolume(volume: number) {
     :area="parseDomNumber(form.area ?? '')"
     :pack-coverage="parseDomNumber(form.packCoverage ?? '')"
     :waste="parseDomNumber(form.waste ?? '')"
+  />
+  <DomTilePurchasePlan
+    v-if="toolId === 'liczba-plytek'"
+    v-model:include-boxes="includeBoxes"
+    v-model:tiles-per-box="tilesPerBox"
+    v-model:box-price="boxPrice"
+    :tiles-needed="results?.[0]?.value ?? null"
   />
 </template>
 
