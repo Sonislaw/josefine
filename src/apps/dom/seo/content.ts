@@ -33,19 +33,21 @@ export const domSeoContent: Record<DomToolId, ToolContent> = {
     ],
   },
   'koszt-pradu': {
-    intro: 'Kalkulator kosztu prądu pozwala oszacować, ile kosztuje używanie konkretnego urządzenia przez wybrany czas. Przydaje się przy porównywaniu sprzętów i planowaniu domowych wydatków.',
-    how: 'Moc w watach dzielimy przez 1 000, aby otrzymać kilowaty. Następnie mnożymy przez liczbę godzin pracy i cenę za 1 kWh. Użyj łącznego czasu pracy, który chcesz policzyć.',
+    intro: 'Kalkulator kosztu prądu pozwala oszacować wydatek dla jednego okresu pracy urządzenia albo regularnego używania. Zobacz koszt dnia, średniego miesiąca i roku bez zmiany podstawowego obliczenia.',
+    how: 'Moc w watach dzielimy przez 1 000, aby otrzymać kilowaty. Podstawowy wynik mnoży tę wartość przez łączną liczbę godzin i cenę kWh. Prognoza regularnego używania uwzględnia dodatkowo godziny w dniu używania i liczbę takich dni w tygodniu. Średni miesiąc to 1/12 roku.',
     faqs: [
       { question: 'Ile kosztuje godzina pracy urządzenia 1000 W?', answer: 'Urządzenie 1000 W zużywa 1 kWh w ciągu godziny przy stałym poborze mocy. Koszt to cena 1 kWh wpisana do kalkulatora.' },
       { question: 'Czy wynik jest taki sam jak kwota na rachunku?', answer: 'Nie zawsze. Wynik zależy od podanej ceny kWh i nie dolicza automatycznie opłat stałych ani zmian poboru mocy urządzenia.' },
+      { question: 'Jak policzyć roczny koszt regularnie używanego urządzenia?', answer: 'Podaj moc urządzenia, cenę kWh, godziny pracy w dniu używania i liczbę dni tygodniowo. Prognoza zakłada 365 dni w roku i stały pobór mocy, więc dla urządzeń z termostatem może różnić się od rzeczywistego zużycia.' },
     ],
   },
   'koszt-wody': {
-    intro: 'Kalkulator kosztu wody pomaga szybko oszacować cenę zużycia widocznego na wodomierzu. Ilość wody podawana jest zwykle w metrach sześciennych, a jeden metr sześcienny to 1 000 litrów.',
-    how: 'Pomnóż liczbę zużytych metrów sześciennych przez cenę za 1 m³. Jeśli chcesz uwzględnić również ścieki, wpisz sumę obu cen jednostkowych z rachunku.',
+    intro: 'Kalkulator kosztu wody pomaga oszacować cenę zużycia w metrach sześciennych. Jeśli masz dwa odczyty wodomierza, pomocnik obliczy różnicę i wstawi ją do podstawowego kalkulatora.',
+    how: 'Zużycie to aktualny odczyt minus poprzedni. Otrzymaną liczbę metrów sześciennych pomnóż przez cenę za 1 m³; jeden metr sześcienny to 1 000 litrów. Jeśli chcesz uwzględnić ścieki, wpisz łączną cenę wody i odprowadzania ścieków z rachunku.',
     faqs: [
       { question: 'Ile litrów ma 1 m³ wody?', answer: 'Jeden metr sześcienny to dokładnie 1 000 litrów.' },
       { question: 'Czy kalkulator uwzględnia opłatę za ścieki?', answer: 'Tylko wtedy, gdy dodasz cenę ścieków do wpisanej ceny za 1 m³. Opłaty stałe nie są dodawane automatycznie.' },
+      { question: 'Jak obliczyć zużycie wody z odczytów wodomierza?', answer: 'Od aktualnego odczytu odejmij poprzedni. Możesz wpisać oba wskazania do pomocnika pod kalkulatorem i przenieść wynik do pola zużycia jednym kliknięciem. Jeżeli licznik został wymieniony lub wyzerowany, sprawdź rozliczenie na rachunku.' },
     ],
   },
   'ilosc-farby': {

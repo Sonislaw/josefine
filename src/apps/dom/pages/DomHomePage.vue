@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 import { ArrowRight, ArrowUpRight, Check, House, Ruler, Sparkles } from '@lucide/vue'
 import { RouterLink } from 'vue-router'
 import FaqSection from '@/shared/components/FaqSection.vue'
+import DomRoomPlanner from '../components/DomRoomPlanner.vue'
 import houseIllustration from '../assets/house-illustration.svg'
 import { domTools } from '../manifest'
 import { domPath, domSiteName, domSiteUrl, useDomSeo } from '../seo/useDomSeo'
@@ -13,6 +14,7 @@ const visibleTools = computed(() => activeCategory.value === 'Wszystkie' ? domTo
 
 const faq = [
   { question: 'Jak korzystać z kalkulatorów Dom?', answer: 'Wybierz narzędzie, wpisz wymiary lub ceny w opisanych jednostkach, a wynik pojawi się od razu. Przy polach możesz używać polskiego przecinka dziesiętnego.' },
+  { question: 'Czy mogę użyć wymiarów pokoju w kilku kalkulatorach?', answer: 'Tak. W panelu na stronie głównej wpisz długość, szerokość i wysokość prostokątnego pokoju. Zobaczysz powierzchnię podłogi i ścian, obwód oraz kubaturę. Linki do paneli, płytek i farby przeniosą odpowiedni metraż do wybranego kalkulatora.' },
   { question: 'Czy kalkulatory nadają się do planowania remontu?', answer: 'Tak, pomagają oszacować ilość farby, płytek i paczek paneli. Przy zakupie sprawdź także zalecenia producenta, zapas na docinki oraz rzeczywiste wymiary pomieszczenia.' },
   { question: 'Co obejmują kalkulatory kosztu prądu i wody?', answer: 'Prąd liczymy z mocy, liczby godzin i ceny za kWh. Wodę liczymy z zużycia w m³ i podanej ceny za m³. Kalkulatory nie doliczają automatycznie opłat stałych.' },
   { question: 'Czy wpisane dane są wysyłane na serwer?', answer: 'Same obliczenia wykonują się w przeglądarce. Więcej informacji o danych technicznych i analityce znajdziesz w polityce prywatności.' },
@@ -30,10 +32,12 @@ useDomSeo('home', {
 <template>
   <div>
     <section class="hero">
-      <div class="hero-inner"><div class="hero-copy"><span class="eyebrow"><House :size="16" aria-hidden="true" /> Małe rachunki, duża wygoda</span><h1>Policz to<br /><em>po domowemu.</em></h1><p>Od wymiarów pokoju po liczbę paczek paneli. Osiem prostych kalkulatorów, które pomogą Ci zaplanować domowe sprawy z większą pewnością.</p><a class="hero-cta" href="#kalkulatory">Sprawdź kalkulatory <ArrowRight :size="18" aria-hidden="true" /></a><div class="hero-assurances"><span><Check :size="16" /> Bez konta</span><span><Check :size="16" /> Wynik od razu</span><span><Check :size="16" /> Czytelne wzory</span></div></div><div class="hero-art"><img :src="houseIllustration" width="680" height="560" alt="Izometryczny pokój z wymiarami 5 na 4 metry i powierzchnią 20 metrów kwadratowych" /><div class="art-note"><Ruler :size="18" aria-hidden="true" /> Pomysł zaczyna się od dobrego pomiaru</div></div></div>
+      <div class="hero-inner"><div class="hero-copy"><span class="eyebrow"><House :size="16" aria-hidden="true" /> Małe rachunki, duża wygoda</span><h1>Policz to<br /><em>po domowemu.</em></h1><p>Podaj wymiary pokoju raz, a potem przejdź do farby, płytek lub paneli z gotowym metrażem. Osiem prostych kalkulatorów pomaga też zapanować nad domowymi rachunkami.</p><a class="hero-cta" href="#kalkulatory">Sprawdź kalkulatory <ArrowRight :size="18" aria-hidden="true" /></a><div class="hero-assurances"><span><Check :size="16" /> Bez konta</span><span><Check :size="16" /> Wynik od razu</span><span><Check :size="16" /> Czytelne wzory</span></div></div><div class="hero-art"><img :src="houseIllustration" width="680" height="560" alt="Izometryczny pokój z wymiarami 5 na 4 metry i powierzchnią 20 metrów kwadratowych" /><div class="art-note"><Ruler :size="18" aria-hidden="true" /> Pomysł zaczyna się od dobrego pomiaru</div></div></div>
     </section>
 
     <section class="topic-strip" aria-label="Zakres kalkulatorów"><div><span class="topic-number">01</span><strong>Wymiary</strong><small>Powierzchnia, obwód i kubatura</small></div><div><span class="topic-number">02</span><strong>Rachunki</strong><small>Prąd i woda pod kontrolą</small></div><div><span class="topic-number">03</span><strong>Remont</strong><small>Farba, płytki i panele</small></div></section>
+
+    <DomRoomPlanner />
 
     <section id="kalkulatory" class="tools-section"><div class="section-heading"><div><p class="section-kicker"><Sparkles :size="16" aria-hidden="true" /> TWOJA SKRZYNKA NARZĘDZI</p><h2>Co dziś planujesz?</h2><p>Wybierz temat. Każdy kalkulator podpowie, jak powstaje wynik.</p></div><span class="tool-count">08 <small>kalkulatorów</small></span></div><div class="category-tabs" role="group" aria-label="Filtruj kalkulatory"><button v-for="category in categories" :key="category" type="button" :aria-pressed="activeCategory === category" :class="{ active: activeCategory === category }" @click="activeCategory = category">{{ category }}</button></div><div class="tool-grid"><RouterLink v-for="(tool, index) in visibleTools" :key="tool.id" :to="domPath(`/${tool.id}`)" class="tool-card" :class="[`tool-card--${tool.accent}`, { 'tool-card--featured': activeCategory === 'Wszystkie' && index === 0 }]"><span class="card-top"><span class="card-category">{{ tool.category }}</span><ArrowUpRight :size="21" aria-hidden="true" /></span><span class="card-symbol" aria-hidden="true">{{ tool.symbol }}</span><span class="card-bottom"><strong>{{ tool.title }}</strong><small>{{ tool.description }}</small></span></RouterLink></div></section>
 
