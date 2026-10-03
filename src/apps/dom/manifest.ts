@@ -28,7 +28,7 @@ export const domTools = [
   {
     id: 'koszt-pradu',
     title: 'Koszt prądu',
-    description: 'Oblicza koszt pracy urządzenia z jego mocy, czasu pracy i ceny energii.',
+    description: 'Oblicza koszt pracy urządzenia i pozwala porównać koszty dwóch urządzeń.',
     category: 'Rachunki',
     symbol: 'kWh',
     accent: 'peach',

@@ -43,7 +43,7 @@ const faq = [
   {
     question: 'Co obejmują kalkulatory kosztu prądu i wody?',
     answer:
-      'Prąd liczymy z mocy, liczby godzin i ceny za kWh. Koszt wody liczymy z zużycia w m³ i jednej łącznej stawki albo osobnych cen wody i ścieków. Kalkulatory nie doliczają automatycznie opłat stałych.',
+      'Prąd liczymy z mocy, liczby godzin i ceny za kWh; można też porównać dwa urządzenia przy tym samym czasie pracy. Koszt wody liczymy z zużycia w m³ i jednej łącznej stawki albo osobnych cen wody i ścieków. Kalkulatory nie doliczają automatycznie opłat stałych.',
   },
   {
     question: 'Czy wpisane dane są wysyłane na serwer?',

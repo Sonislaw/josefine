@@ -51,6 +51,7 @@ const DomSkirtingPlan = defineAsyncComponent(() => import('./DomSkirtingPlan.vue
 const DomCompositeArea = defineAsyncComponent(() => import('./DomCompositeArea.vue'))
 const DomMultiRoomVolume = defineAsyncComponent(() => import('./DomMultiRoomVolume.vue'))
 const DomWaterRates = defineAsyncComponent(() => import('./DomWaterRates.vue'))
+const DomEnergyComparison = defineAsyncComponent(() => import('./DomEnergyComparison.vue'))
 const DomPaintPurchasePlan = defineAsyncComponent(() => import('./DomPaintPurchasePlan.vue'))
 
 const props = defineProps<{
@@ -594,6 +595,13 @@ function useMeterVolume(volume: number) {
     v-model:days-per-week="daysPerWeek"
     :power="parseDomNumber(form.power ?? '')"
     :price="parseDomNumber(form.price ?? '')"
+  />
+  <DomEnergyComparison
+    v-if="toolId === 'koszt-pradu'"
+    :base-power="form.power ?? ''"
+    :base-price="form.price ?? ''"
+    :base-hours="dailyHours"
+    :base-days="daysPerWeek"
   />
   <DomWaterMeter
     v-if="toolId === 'koszt-wody'"

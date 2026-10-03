@@ -89,8 +89,8 @@ export const domSeoContent: Record<DomToolId, ToolContent> = {
   },
   'koszt-pradu': {
     intro:
-      'Kalkulator kosztu prądu pozwala oszacować wydatek dla jednego okresu pracy urządzenia albo regularnego używania. Zobacz koszt dnia, średniego miesiąca i roku bez zmiany podstawowego obliczenia.',
-    how: 'Moc w watach dzielimy przez 1 000, aby otrzymać kilowaty. Podstawowy wynik mnoży tę wartość przez łączną liczbę godzin i cenę kWh. Prognoza regularnego używania uwzględnia dodatkowo godziny w dniu używania i liczbę takich dni w tygodniu. Średni miesiąc to 1/12 roku.',
+      'Kalkulator kosztu prądu pozwala oszacować wydatek dla jednego okresu pracy urządzenia, regularnego używania albo porównać dwa urządzenia. Dla porównania wpisujesz moce A i B, wspólny czas używania oraz cenę kWh. Zobaczysz koszt dnia, średniego miesiąca, roku i różnicę bez zmiany podstawowego obliczenia.',
+    how: 'Moc w watach dzielimy przez 1 000, aby otrzymać kilowaty. Podstawowy wynik mnoży tę wartość przez łączną liczbę godzin i cenę kWh. Prognoza i porównanie uwzględniają godziny w dniu używania oraz liczbę takich dni w tygodniu. Przyjmujemy 365 dni w roku, a średni miesiąc to 1/12 roku. Oba porównywane urządzenia mają ten sam harmonogram i stawkę; różnica kosztów nie mówi nic o ich wydajności ani o rzeczywistym poborze mocy przy termostacie.',
     faqs: [
       {
         question: 'Ile kosztuje godzina pracy urządzenia 1000 W?',
@@ -106,6 +106,11 @@ export const domSeoContent: Record<DomToolId, ToolContent> = {
         question: 'Jak policzyć roczny koszt regularnie używanego urządzenia?',
         answer:
           'Podaj moc urządzenia, cenę kWh, godziny pracy w dniu używania i liczbę dni tygodniowo. Prognoza zakłada 365 dni w roku i stały pobór mocy, więc dla urządzeń z termostatem może różnić się od rzeczywistego zużycia.',
+      },
+      {
+        question: 'Jak porównać koszt używania dwóch urządzeń?',
+        answer:
+          'Otwórz panel porównania, wpisz moc urządzenia A i B oraz wspólną cenę energii i czas pracy. Wynik pokaże oba koszty oraz różnicę dla dnia używania, średniego miesiąca i roku. To porównanie rachunku za energię przy przyjętych danych, a nie ocena skuteczności urządzeń.',
       },
     ],
   },

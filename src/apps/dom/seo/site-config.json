@@ -36,8 +36,8 @@
     {
       "key": "koszt-pradu",
       "path": "/koszt-pradu",
-      "title": "Kalkulator kosztu prądu — moc, czas i cena kWh | Dom",
-      "description": "Policz koszt pracy urządzenia i prognozę regularnego używania: dziennie, miesięcznie i rocznie na podstawie mocy oraz ceny kWh.",
+      "title": "Kalkulator kosztu prądu — porównaj urządzenia | Dom",
+      "description": "Policz koszt pracy urządzenia i porównaj dwa urządzenia przy tym samym czasie używania oraz cenie kWh. Zobacz dzień, miesiąc, rok i różnicę.",
       "socialImage": "/og/dom.png",
       "socialImageAlt": "Dom — praktyczne kalkulatory"
     },
