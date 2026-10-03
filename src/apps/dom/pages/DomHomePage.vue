@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { ArrowRight, ArrowUpRight, Check, House, Ruler, Sparkles } from '@lucide/vue'
+import { ArrowRight, ArrowUpRight, Check, House, Ruler, ShoppingBasket, Sparkles } from '@lucide/vue'
 import { RouterLink } from 'vue-router'
 import FaqSection from '@/shared/components/FaqSection.vue'
 import DomRoomPlanner from '../components/DomRoomPlanner.vue'
@@ -39,6 +39,8 @@ useDomSeo('home', {
 
     <DomRoomPlanner />
 
+    <section class="shopping-teaser"><div class="teaser-icon"><ShoppingBasket :size="30" aria-hidden="true" /></div><div><p class="section-kicker">OD OBLICZEŃ DO ZAKUPÓW</p><h2>Mój remont, jedna lista.</h2><p>Zapisuj wyniki paneli, płytek i listew, a podane ceny zobaczysz razem. Lista zostaje w tej przeglądarce — bez konta i bez synchronizacji.</p></div><RouterLink :to="domPath('/moj-remont')">Otwórz listę <ArrowUpRight :size="18" aria-hidden="true" /></RouterLink></section>
+
     <section id="kalkulatory" class="tools-section"><div class="section-heading"><div><p class="section-kicker"><Sparkles :size="16" aria-hidden="true" /> TWOJA SKRZYNKA NARZĘDZI</p><h2>Co dziś planujesz?</h2><p>Wybierz temat. Każdy kalkulator podpowie, jak powstaje wynik.</p></div><span class="tool-count">08 <small>kalkulatorów</small></span></div><div class="category-tabs" role="group" aria-label="Filtruj kalkulatory"><button v-for="category in categories" :key="category" type="button" :aria-pressed="activeCategory === category" :class="{ active: activeCategory === category }" @click="activeCategory = category">{{ category }}</button></div><div class="tool-grid"><RouterLink v-for="(tool, index) in visibleTools" :key="tool.id" :to="domPath(`/${tool.id}`)" class="tool-card" :class="[`tool-card--${tool.accent}`, { 'tool-card--featured': activeCategory === 'Wszystkie' && index === 0 }]"><span class="card-top"><span class="card-category">{{ tool.category }}</span><ArrowUpRight :size="21" aria-hidden="true" /></span><span class="card-symbol" aria-hidden="true">{{ tool.symbol }}</span><span class="card-bottom"><strong>{{ tool.title }}</strong><small>{{ tool.description }}</small></span></RouterLink></div></section>
 
     <section class="guide-section"><div class="guide-inner"><div class="guide-title"><p class="section-kicker">JAK TO DZIAŁA</p><h2>Od pomysłu<br />do konkretu.</h2><p>Obliczenia mają pomagać w decyzji, nie ją utrudniać. Dlatego przy każdym wyniku widzisz także wzór i krótkie wyjaśnienie.</p></div><div class="guide-steps"><div><span>01</span><strong>Zmierz lub sprawdź</strong><p>Przygotuj wymiary, dane urządzenia albo informacje z opakowania produktu.</p></div><div><span>02</span><strong>Wpisz wartości</strong><p>Podaj liczby w opisanych jednostkach. Wynik przelicza się automatycznie.</p></div><div><span>03</span><strong>Zaplanuj zakupy</strong><p>Porównaj wynik z ceną i zaleceniami producenta. Przy materiałach uwzględnij zapas.</p></div></div></div></section>
@@ -71,6 +73,12 @@ h1, h2 { font-family: var(--font-heading); letter-spacing: -.06em; }
 .topic-number { grid-row: span 2; color: #bdc8b7; font-family: var(--font-heading); font-size: 2rem; font-weight: 800; }
 .topic-strip strong { font-family: var(--font-heading); font-size: 1rem; }
 .topic-strip small { margin-top: .1rem; color: #7c8a7d; font-size: .75rem; }
+.shopping-teaser { width: min(100% - 2.5rem, 1280px); margin: 4rem auto 0; display: flex; align-items: center; gap: 1.5rem; padding: 1.5rem 2rem; border: 1px solid #d3e3cf; border-radius: 22px; background: #eff5e9; }
+.teaser-icon { flex: 0 0 64px; display: grid; place-items: center; height: 64px; border-radius: 18px; background: #d8e9d2; color: #2d6142; }
+.shopping-teaser h2 { margin-top: .35rem; font-size: clamp(1.35rem, 2.4vw, 2rem); }
+.shopping-teaser p:last-child { margin-top: .35rem; color: #647a68; font-size: .82rem; line-height: 1.55; }
+.shopping-teaser > a { display: inline-flex; align-items: center; gap: .5rem; flex: 0 0 auto; margin-left: auto; padding: .75rem 1rem; border-radius: 10px; background: #28573e; color: #fff; font-size: .8rem; font-weight: 800; text-decoration: none; }
+.shopping-teaser > a:hover { background: #1d4530; }
 .tools-section, .faq-wrap { width: min(100% - 2.5rem, 1280px); margin-inline: auto; }
 .tools-section { padding-top: 6.5rem; scroll-margin-top: 1.5rem; }
 .section-heading { display: flex; align-items: end; justify-content: space-between; gap: 2rem; }
@@ -108,7 +116,7 @@ h1, h2 { font-family: var(--font-heading); letter-spacing: -.06em; }
 .guide-steps p { margin-top: .7rem; color: #718174; font-size: .82rem; line-height: 1.65; }
 .faq-wrap { padding-top: 3.5rem; }
 @media (max-width: 1050px) { .hero-inner { grid-template-columns: 1fr .9fr; } .guide-inner { grid-template-columns: 1fr; gap: 2rem; } }
-@media (max-width: 800px) { .hero-inner { display: block; } .hero-copy { padding-block: 4rem 0; } .hero-art { max-width: 580px; margin-inline: auto; } .topic-strip { grid-template-columns: 1fr; } .topic-strip > div + div { border-left: 0; border-top: 1px solid #e8eadf; } .tool-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .guide-steps { grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 800px) { .hero-inner { display: block; } .hero-copy { padding-block: 4rem 0; } .hero-art { max-width: 580px; margin-inline: auto; } .topic-strip { grid-template-columns: 1fr; } .topic-strip > div + div { border-left: 0; border-top: 1px solid #e8eadf; } .shopping-teaser { flex-wrap: wrap; } .shopping-teaser > a { margin-left: 0; } .tool-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .guide-steps { grid-template-columns: repeat(3, 1fr); } }
 @media (max-width: 560px) { .hero h1 { font-size: clamp(3rem, 12vw, 4rem); } .hero-copy > p { font-size: 1rem; } .art-note { right: 0; bottom: 0; font-size: .66rem; } .tool-count { display: none; } .tool-grid { grid-template-columns: 1fr; } .tool-card--featured { grid-column: span 1; } .guide-steps { grid-template-columns: 1fr; } }
 @media (prefers-reduced-motion: reduce) { .hero-cta, .tool-card { transition: none; } }
 </style>

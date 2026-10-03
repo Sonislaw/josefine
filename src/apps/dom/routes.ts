@@ -15,6 +15,7 @@ export function createDomRoutes(mode: RouteMode): RouteRecordRaw[] {
         component: () => import('./pages/DomToolPage.vue'),
         props: { toolId: tool.id },
       })),
+      { path: 'moj-remont', name: 'dom-shopping-list', component: () => import('./pages/DomShoppingListPage.vue') },
       { path: 'polityka-prywatnosci', name: 'dom-privacy', component: () => import('./pages/PrivacyPolicyPage.vue') },
       { path: ':pathMatch(.*)*', name: 'dom-not-found', component: () => import('@/views/NotFoundView.vue') },
     ],

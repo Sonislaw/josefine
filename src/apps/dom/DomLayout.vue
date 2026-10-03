@@ -1,14 +1,22 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { onMounted, onUnmounted, ref } from 'vue'
 import { useHead } from '@unhead/vue'
-import { Download, House, Share2, X } from '@lucide/vue'
+import { Download, House, Share2, ShoppingBasket, X } from '@lucide/vue'
 import { RouterLink, RouterView } from 'vue-router'
+import { storeToRefs } from 'pinia'
 import { usePwaInstall } from '@/shared/composables/usePwaInstall'
 import PwaInstallHint from '@/shared/components/PwaInstallHint.vue'
+import { domShoppingListStorageKey, useDomShoppingList } from './stores/shoppingList'
 import { domPath } from './seo/useDomSeo'
 
 const { canOfferInstall, isIos, install } = usePwaInstall()
 const showIosInstructions = ref(false)
+const shoppingList = useDomShoppingList()
+const { items } = storeToRefs(shoppingList)
+
+function syncShoppingList(event: StorageEvent) {
+  if (event.key === domShoppingListStorageKey || event.key === null) shoppingList.refreshFromStorage()
+}
 
 async function installApp() {
   if (isIos.value) showIosInstructions.value = !showIosInstructions.value
@@ -22,8 +30,11 @@ useHead({
 })
 
 onMounted(() => {
+  shoppingList.hydrate()
+  window.addEventListener('storage', syncShoppingList)
   if (import.meta.env.PROD && 'serviceWorker' in navigator) void navigator.serviceWorker.register('/sw.js')
 })
+onUnmounted(() => window.removeEventListener('storage', syncShoppingList))
 </script>
 
 <template>
@@ -34,6 +45,7 @@ onMounted(() => {
           <span class="brand-mark"><House :size="25" :stroke-width="2.4" aria-hidden="true" /></span>
           <span><strong>dom<span class="brand-dot">.</span></strong><small>praktyczne kalkulatory</small></span>
         </RouterLink>
+        <RouterLink :to="domPath('/moj-remont')" class="shopping-link" :aria-label="`Mój remont — lista zakupów, ${items.length} pozycji`"><ShoppingBasket :size="18" aria-hidden="true" /><span>Mój remont</span><small v-if="items.length">{{ items.length }}</small></RouterLink>
         <PwaInstallHint v-if="canOfferInstall">
           <button type="button" class="install-button" aria-label="Dodaj do ekranu głównego" @click="installApp"><Download :size="17" aria-hidden="true" /> <span>Dodaj do ekranu</span></button>
         </PwaInstallHint>
@@ -57,6 +69,9 @@ onMounted(() => {
 .brand strong, .footer-brand strong { display: block; font-family: var(--font-heading); font-size: 1.42rem; font-weight: 800; letter-spacing: -.075em; line-height: 1; }
 .brand-dot { color: #e3936d; }
 .brand small { display: block; margin-top: .28rem; color: #829089; font-size: .64rem; font-weight: 800; letter-spacing: .13em; text-transform: uppercase; }
+.shopping-link { display: inline-flex; align-items: center; gap: .5rem; margin-left: auto; padding: .7rem .85rem; border-radius: 11px; color: #28573e; font-size: .8rem; font-weight: 800; text-decoration: none; }
+.shopping-link:hover, .shopping-link.router-link-active { background: #eef4e9; }
+.shopping-link small { display: grid; place-items: center; min-width: 20px; height: 20px; padding-inline: .3rem; border-radius: 999px; background: #28573e; color: #fff; font-size: .67rem; }
 .footer-inner a:hover { color: #bc694b; }
 .install-button { display: inline-flex; align-items: center; gap: .5rem; padding: .7rem .85rem; border: 1px solid #cddcd0; border-radius: 11px; background: #f3f7ee; color: #26543e; font-size: .8rem; font-weight: 800; cursor: pointer; }
 .install-button:hover { background: #e6f0df; }
@@ -72,5 +87,5 @@ onMounted(() => {
 .footer-brand p { margin-top: .35rem; color: #77877e; font-size: .8rem; }
 .footer-inner nav { display: flex; flex-wrap: wrap; gap: 1.5rem; }
 .footer-inner a { color: #52685c; font-size: .83rem; font-weight: 700; text-decoration: none; }
-@media (max-width: 620px) { .install-button { margin-left: auto; } .install-button span { display: none; } .footer-inner { flex-direction: column; align-items: flex-start; } }
+@media (max-width: 620px) { .shopping-link { gap: .3rem; padding-inline: .35rem; } .shopping-link span { display: none; } .install-button span { display: none; } .footer-inner { flex-direction: column; align-items: flex-start; } }
 </style>

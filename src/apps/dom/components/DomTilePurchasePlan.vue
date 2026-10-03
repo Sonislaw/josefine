@@ -3,6 +3,8 @@ import { computed } from 'vue'
 import { Package } from '@lucide/vue'
 import { parseDomNumber } from '../lib/calculations'
 import { calculateTilePurchase } from '../lib/tiles'
+import AddToDomShoppingList from './AddToDomShoppingList.vue'
+import type { ShoppingDraft } from '../stores/shoppingList'
 
 const props = defineProps<{ tilesNeeded: number | null }>()
 const includeBoxes = defineModel<boolean>('includeBoxes', { required: true })
@@ -37,6 +39,15 @@ const purchase = computed(() => {
     parseDomNumber(tilesPerBox.value)!,
     boxPrice.value.trim() === '' ? null : parseDomNumber(boxPrice.value),
   )
+})
+
+const shoppingItems = computed<ShoppingDraft[]>(() => {
+  if (includeBoxes.value) {
+    return purchase.value ? [{ kind: 'tileBoxes', quantity: purchase.value.boxCount, cost: purchase.value.estimatedCost }] : []
+  }
+  return props.tilesNeeded !== null && props.tilesNeeded > 0
+    ? [{ kind: 'tilePieces', quantity: props.tilesNeeded, cost: null }]
+    : []
 })
 
 const formatCount = (value: number) => new Intl.NumberFormat('pl-PL').format(value)
@@ -154,6 +165,7 @@ function boxUnit(count: number) {
       </div>
     </div>
 
+    <AddToDomShoppingList :items="shoppingItems" />
     <p class="plan-note">
       Liczbę kartonów zaokrąglamy w górę. Nadwyżka oznacza sztuki ponad wynik podstawowy, który już
       uwzględnia wpisany zapas na docinki. Koszt nie obejmuje kleju, fug, dostawy ani montażu.

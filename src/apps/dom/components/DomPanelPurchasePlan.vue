@@ -5,6 +5,8 @@ import { RouterLink } from 'vue-router'
 import { parseDomNumber } from '../lib/calculations'
 import { calculatePanelPurchase } from '../lib/panels'
 import { domPath } from '../seo/useDomSeo'
+import AddToDomShoppingList from './AddToDomShoppingList.vue'
+import type { ShoppingDraft } from '../stores/shoppingList'
 
 const props = defineProps<{
   area: number | null
@@ -52,6 +54,15 @@ const purchase = computed(() => {
         }
       : null,
   })
+})
+
+const shoppingItems = computed<ShoppingDraft[]>(() => {
+  if (!purchase.value) return []
+  const result: ShoppingDraft[] = [{ kind: 'panels', quantity: purchase.value.panels.packCount, cost: purchase.value.panelCost }]
+  if (includeUnderlay.value && purchase.value.underlayCount !== null) {
+    result.push({ kind: 'underlay', quantity: purchase.value.underlayCount, cost: purchase.value.underlayCost })
+  }
+  return result
 })
 
 const formatArea = (value: number) =>
@@ -200,6 +211,7 @@ const formatMoney = (value: number) =>
         </p>
       </div>
     </div>
+    <AddToDomShoppingList :items="shoppingItems" :label="includeUnderlay ? 'Dodaj panele i podkład do Mojego remontu' : undefined" />
     <p class="plan-caveat">
       To orientacyjny plan materiałów, bez listew, montażu i transportu. Podkład liczymy z
       powierzchni podłogi bez zapasu na docinki paneli; sprawdź zalecenia producenta i zawartość
