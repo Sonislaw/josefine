@@ -1,6 +1,7 @@
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 import { isRoomDimensions, type RoomDimensions } from '../lib/room-metrics'
+import { isRoomLaborRates, type RoomLaborRates } from '../lib/room-budget'
 
 // This browser-only list belongs to Dom. Other modules may have different purchase models.
 export const legacyDomShoppingListStorageKey = 'josefine:dom:shopping-list:v1'
@@ -22,7 +23,12 @@ export type ShoppingDraft =
   | { kind: StandardKind; quantity: number; cost: number | null }
   | { kind: 'paintCans'; quantity: number; cost: number | null; packageSizeLiters: number }
 export type ShoppingItem = ShoppingDraft & { id: string; roomId: string | null }
-export type ShoppingRoom = { id: string; name: string; dimensions?: RoomDimensions }
+export type ShoppingRoom = {
+  id: string
+  name: string
+  dimensions?: RoomDimensions
+  laborRates?: RoomLaborRates
+}
 
 function isDraft(value: unknown): value is ShoppingDraft {
   if (!value || typeof value !== 'object') return false
@@ -69,7 +75,8 @@ function isRoom(value: unknown): value is ShoppingRoom {
     typeof room.name === 'string' &&
     room.name.trim().length > 0 &&
     room.name.length <= 40 &&
-    (room.dimensions === undefined || isRoomDimensions(room.dimensions))
+    (room.dimensions === undefined || isRoomDimensions(room.dimensions)) &&
+    (room.laborRates === undefined || isRoomLaborRates(room.laborRates))
   )
 }
 
@@ -220,6 +227,17 @@ export const useDomShoppingList = defineStore('dom-shopping-list', () => {
     return true
   }
 
+  function setRoomLaborRates(id: string, rates: RoomLaborRates | null): boolean {
+    hydrate()
+    const room = rooms.value.find((entry) => entry.id === id)
+    if (!room || (rates !== null && !isRoomLaborRates(rates))) return false
+    // Optional fields preserve the existing v2 storage envelope and older saved rooms.
+    if (rates === null || Object.keys(rates).length === 0) delete room.laborRates
+    else room.laborRates = { ...rates }
+    persist()
+    return true
+  }
+
   function deleteRoom(id: string): boolean {
     hydrate()
     if (!rooms.value.some((room) => room.id === id)) return false
@@ -269,6 +287,7 @@ export const useDomShoppingList = defineStore('dom-shopping-list', () => {
     createRoom,
     renameRoom,
     setRoomDimensions,
+    setRoomLaborRates,
     deleteRoom,
     assignItem,
     removeItem,

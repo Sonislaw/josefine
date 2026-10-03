@@ -27,11 +27,13 @@ import {
   type RoomMetrics,
 } from '../lib/room-metrics'
 import { createRoomToolLinks } from '../lib/room-links'
+import { calculateRoomLabor, type RoomLaborSummary } from '../lib/room-budget'
+import DomRoomBudget from '../components/DomRoomBudget.vue'
 
 useDomSeo('shopping-list', {
   '@context': 'https://schema.org',
   '@type': 'WebPage',
-  name: 'Mój remont — lista zakupów',
+  name: 'Mój remont — lista zakupów i budżet pokoju',
   url: `${domSiteUrl}/moj-remont`,
   isPartOf: { '@type': 'WebSite', name: domSiteName, url: domSiteUrl },
 })
@@ -62,9 +64,11 @@ interface RoomGroup {
   missingPrices: number
   metrics: RoomMetrics | null
   links: ReturnType<typeof createRoomToolLinks>
+  labor: RoomLaborSummary
 }
 
 function makeGroup(room: ShoppingRoom | null, name: string, groupItems: ShoppingItem[]): RoomGroup {
+  const metrics = room?.dimensions ? calculateRoomMetrics(room.dimensions) : null
   return {
     id: room?.id ?? null,
     room,
@@ -76,8 +80,9 @@ function makeGroup(room: ShoppingRoom | null, name: string, groupItems: Shopping
         0,
       ) / 100,
     missingPrices: groupItems.filter((item) => item.cost === null).length,
-    metrics: room?.dimensions ? calculateRoomMetrics(room.dimensions) : null,
+    metrics,
     links: room?.dimensions ? createRoomToolLinks(room.dimensions, room.id) : [],
+    labor: calculateRoomLabor(metrics, room?.laborRates),
   }
 }
 
@@ -94,6 +99,16 @@ const groups = computed(() => {
     result.push(makeGroup(null, 'Bez pomieszczenia', unassigned))
   return result
 })
+const laborTotal = computed(
+  () => groups.value.reduce((cents, group) => cents + Math.round(group.labor.total * 100), 0) / 100,
+)
+const laborLineCount = computed(() =>
+  groups.value.reduce((count, group) => count + group.labor.lines.length, 0),
+)
+const hasIncludedCost = computed(() => pricedCount.value > 0 || laborLineCount.value > 0)
+const includedTotal = computed(
+  () => (Math.round(knownTotal.value * 100) + Math.round(laborTotal.value * 100)) / 100,
+)
 const formatMoney = (value: number) =>
   new Intl.NumberFormat('pl-PL', { style: 'currency', currency: 'PLN' }).format(value)
 const formatCount = (value: number) => new Intl.NumberFormat('pl-PL').format(value)
@@ -114,7 +129,7 @@ function itemAmount(item: ShoppingItem): string {
 function clearAll() {
   if (
     window.confirm(
-      'Usunąć wszystkie pozycje z listy Mój remont? Utworzone pomieszczenia pozostaną.',
+      'Usunąć wszystkie zakupy z listy Mój remont? Pomieszczenia, ich wymiary i stawki robocizny pozostaną.',
     )
   )
     list.clearItems()
@@ -165,7 +180,7 @@ function saveDimensions() {
 function clearDimensions(room: ShoppingRoom) {
   if (
     window.confirm(
-      `Usunąć zapisane wymiary pomieszczenia „${room.name}”? Zakupy pozostaną bez zmian.`,
+      `Usunąć zapisane wymiary pomieszczenia „${room.name}”? Zakupy i stawki pozostaną, ale koszt robocizny nie będzie liczony do czasu ponownego wpisania wymiarów.`,
     )
   ) {
     list.setRoomDimensions(room.id, null)
@@ -213,7 +228,7 @@ function assignItem(itemId: string, event: Event) {
         <p>
           W jednym miejscu zbierz materiały policzone w kalkulatorach Dom. Panele, płytki, listwy i
           farbę zapiszesz z wyniku i rozdzielisz według pomieszczeń. Ceny dodasz tylko wtedy, gdy je
-          znasz.
+          znasz. Dla każdego pokoju możesz też oszacować robociznę z własnych stawek.
         </p>
       </div>
       <div class="hero-graphic" aria-hidden="true">
@@ -222,10 +237,10 @@ function assignItem(itemId: string, event: Event) {
     </header>
 
     <div class="local-note">
-      <strong>Lista jest tylko na tym urządzeniu.</strong>
+      <strong>Plan jest tylko na tym urządzeniu.</strong>
       <span
-        >Zapisujemy ją w pamięci tej przeglądarki. Nie synchronizuje się między telefonem a
-        komputerem; wyczyszczenie danych przeglądarki lub tryb prywatny mogą ją usunąć.</span
+        >Zapisujemy go w pamięci tej przeglądarki. Nie synchronizuje się między telefonem a
+        komputerem; wyczyszczenie danych przeglądarki lub tryb prywatny mogą go usunąć.</span
       >
     </div>
 
@@ -290,8 +305,8 @@ function assignItem(itemId: string, event: Event) {
                 >{{ group.items.length }} {{ group.items.length === 1 ? 'pozycja' : 'pozycji' }} ·
                 {{
                   group.items.length > group.missingPrices
-                    ? formatMoney(group.knownTotal)
-                    : 'brak podanych cen'
+                    ? `materiały: ${formatMoney(group.knownTotal)}`
+                    : 'brak podanych cen materiałów'
                 }}</span
               >
             </div>
@@ -474,9 +489,19 @@ function assignItem(itemId: string, event: Event) {
           <p v-else class="empty-room">
             Nie ma tu jeszcze zakupów. Dodaj je z kalkulatora albo przenieś z innej grupy.
           </p>
-          <p v-if="group.missingPrices" class="group-note">
+          <p v-if="group.missingPrices && !group.room" class="group-note">
             Pozycji bez ceny: {{ group.missingPrices }}. Suma tej grupy jest niepełna.
           </p>
+          <DomRoomBudget
+            v-if="group.room"
+            :room="group.room"
+            :metrics="group.metrics"
+            :labor="group.labor"
+            :material-total="group.knownTotal"
+            :item-count="group.items.length"
+            :missing-prices="group.missingPrices"
+            @request-dimensions="beginDimensionEdit(group.room)"
+          />
         </section>
         <p v-if="items.length" class="snapshot-note">
           Pozycje są zapisanymi wynikami. Ponowne obliczenie w kalkulatorze nie zmieni listy — usuń
@@ -486,16 +511,28 @@ function assignItem(itemId: string, event: Event) {
 
       <aside class="summary-card" aria-labelledby="summary-heading">
         <p class="eyebrow">CAŁY REMONT</p>
-        <h2 id="summary-heading">Suma podanych cen</h2>
-        <strong class="total">{{ pricedCount ? formatMoney(knownTotal) : 'Brak cen' }}</strong>
+        <h2 id="summary-heading">Suma ujętych kosztów</h2>
+        <strong class="total">{{
+          hasIncludedCost ? formatMoney(includedTotal) : 'Brak kosztów'
+        }}</strong>
+        <div class="summary-breakdown">
+          <div>
+            <span>Materiały</span
+            ><strong>{{ pricedCount ? formatMoney(knownTotal) : 'Brak cen' }}</strong>
+          </div>
+          <div>
+            <span>Robocizna</span
+            ><strong>{{ laborLineCount ? formatMoney(laborTotal) : 'Nie wyliczono' }}</strong>
+          </div>
+        </div>
         <p>Pozycji: {{ items.length }} · Utworzone pomieszczenia: {{ rooms.length }}.</p>
         <p v-if="unknownPriceCount">
           Liczba pozycji bez ceny: {{ unknownPriceCount }}. Nie uwzględniono ich w sumie, więc nie
           jest to pełny koszt remontu.
         </p>
-        <p v-else>
-          To orientacyjny koszt zapisanych materiałów. Nie obejmuje robocizny, transportu ani innych
-          zakupów.
+        <p>
+          Robocizna obejmuje tylko wpisane stawki dla pokoi z wymiarami. Nie uwzględniamy
+          transportu, pozostałych prac ani zakupów spoza listy.
         </p>
       </aside>
     </div>
@@ -1127,6 +1164,25 @@ h1 span {
   font-family: var(--font-heading);
   font-size: clamp(1.7rem, 3vw, 2.6rem);
   letter-spacing: -0.05em;
+}
+.summary-breakdown {
+  display: grid;
+  gap: 0.55rem;
+  margin-top: 1.2rem;
+  padding-top: 1rem;
+  border-top: 1px solid #cadfca;
+}
+.summary-breakdown > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.7rem;
+  color: #5d7864;
+  font-size: 0.78rem;
+}
+.summary-breakdown strong {
+  color: #2b553c;
+  text-align: right;
 }
 .summary-card > p:not(.eyebrow) {
   margin-top: 1rem;
