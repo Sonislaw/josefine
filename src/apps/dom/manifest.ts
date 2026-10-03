@@ -69,7 +69,8 @@ export const domTools = [
   {
     id: 'liczba-rolek-tapety',
     title: 'Liczba rolek tapety',
-    description: 'Oblicza liczbę pełnych rolek z wymiarów ścian, pasów, raportu wzoru i zapasu.',
+    description:
+      'Oblicza liczbę pełnych rolek na cały pokój lub jedną ścianę z uwzględnieniem wzoru i zapasu.',
     category: 'Remont',
     symbol: '▥',
     accent: 'blue',

@@ -2,15 +2,30 @@
 import { computed, reactive, ref, toRef } from 'vue'
 import { Layers3, RotateCcw } from '@lucide/vue'
 import ShareResultButton from '@/shared/components/ShareResultButton.vue'
-import { textShareField, useShareableCalculator } from '@/shared/composables/useShareableCalculator'
+import {
+  choiceShareField,
+  textShareField,
+  useShareableCalculator,
+  type ShareField,
+} from '@/shared/composables/useShareableCalculator'
 import { parseDomNumber } from '../lib/calculations'
-import { calculateWallpaper } from '../lib/wallpaper'
+import { calculateWallpaper, type WallpaperInput } from '../lib/wallpaper'
 import type { ShoppingDraft, ShoppingRoom } from '../stores/shoppingList'
 import AddToDomShoppingList from './AddToDomShoppingList.vue'
 import DomRoomPicker from './DomRoomPicker.vue'
 
 type FieldId =
-  'length' | 'width' | 'height' | 'rollWidth' | 'rollLength' | 'trim' | 'repeat' | 'reserve'
+  | 'length'
+  | 'width'
+  | 'height'
+  | 'wallWidth'
+  | 'wallHeight'
+  | 'rollWidth'
+  | 'rollLength'
+  | 'trim'
+  | 'repeat'
+  | 'reserve'
+type WallpaperMode = 'room' | 'wall'
 
 interface Field {
   id: FieldId
@@ -25,16 +40,24 @@ const defaults: Record<FieldId, string> = {
   length: '5',
   width: '4',
   height: '2,5',
+  wallWidth: '5',
+  wallHeight: '2,5',
   rollWidth: '53',
   rollLength: '10,05',
   trim: '10',
   repeat: '0',
   reserve: '10',
 }
-const fields: Field[] = [
+const roomFields: Field[] = [
   { id: 'length', label: 'Długość pokoju', unit: 'm', max: 1000, positive: true },
   { id: 'width', label: 'Szerokość pokoju', unit: 'm', max: 1000, positive: true },
   { id: 'height', label: 'Wysokość ścian', unit: 'm', max: 1000, positive: true },
+]
+const wallFields: Field[] = [
+  { id: 'wallWidth', label: 'Szerokość wybranej ściany', unit: 'm', max: 1000, positive: true },
+  { id: 'wallHeight', label: 'Wysokość wybranej ściany', unit: 'm', max: 1000, positive: true },
+]
+const rollFields: Field[] = [
   {
     id: 'rollWidth',
     label: 'Szerokość rolki',
@@ -58,6 +81,8 @@ const fields: Field[] = [
     max: 500,
     hint: 'Wpisz 0 dla tapety bez powtarzalnego wzoru.',
   },
+]
+const purchaseFields: Field[] = [
   {
     id: 'reserve',
     label: 'Dodatkowy zapas pasów',
@@ -66,26 +91,37 @@ const fields: Field[] = [
     hint: 'Na uszkodzenia i trudniejsze miejsca.',
   },
 ]
-const sections = [
+const fields = [...roomFields, ...wallFields, ...rollFields, ...purchaseFields]
+
+const selectedMode = ref<WallpaperMode>('room')
+const activeFields = computed(() => [
+  ...(selectedMode.value === 'room' ? roomFields : wallFields),
+  ...rollFields,
+  ...purchaseFields,
+])
+const sections = computed(() => [
   {
-    title: '01 / Pokój',
-    intro: 'Zmierz prostokątny pokój. Każdą z czterech ścian liczymy osobno.',
-    fields: fields.slice(0, 3),
+    title: selectedMode.value === 'room' ? '01 / Pokój' : '01 / Jedna ściana',
+    intro:
+      selectedMode.value === 'room'
+        ? 'Zmierz prostokątny pokój. Każdą z czterech ścian liczymy osobno.'
+        : 'Zmierz tylko ścianę, którą chcesz wytapetować.',
+    fields: selectedMode.value === 'room' ? roomFields : wallFields,
     includePrice: false,
   },
   {
     title: '02 / Tapeta i wzór',
     intro: 'Podaj parametry jednej rolki i rodzaj dopasowania wzoru.',
-    fields: fields.slice(3, 7),
+    fields: rollFields,
     includePrice: false,
   },
   {
     title: '03 / Zakup',
     intro: 'Dolicz zapas i opcjonalnie wpisz cenę rolki.',
-    fields: fields.slice(7),
+    fields: purchaseFields,
     includePrice: true,
   },
-]
+])
 
 const form = reactive<Record<FieldId, string>>({ ...defaults })
 const price = ref('')
@@ -99,26 +135,28 @@ function errorFor(field: Field, raw = form[field.id]): string | null {
   return null
 }
 
-const values = computed(() => {
+const values = computed<WallpaperInput | null>(() => {
   const parsed = {} as Record<FieldId, number>
-  for (const field of fields) {
+  for (const field of activeFields.value) {
     if (errorFor(field)) return null
     parsed[field.id] = parseDomNumber(form[field.id])!
   }
-  return parsed
+  return {
+    surface:
+      selectedMode.value === 'room'
+        ? {
+            kind: 'room',
+            room: { length: parsed.length, width: parsed.width, height: parsed.height },
+          }
+        : { kind: 'wall', widthM: parsed.wallWidth, heightM: parsed.wallHeight },
+    rollWidthCm: parsed.rollWidth,
+    rollLengthM: parsed.rollLength,
+    trimCm: parsed.trim,
+    repeatCm: parsed.repeat,
+    reservePercent: parsed.reserve,
+  }
 })
-const result = computed(() => {
-  const current = values.value
-  if (!current) return null
-  return calculateWallpaper({
-    room: { length: current.length, width: current.width, height: current.height },
-    rollWidthCm: current.rollWidth,
-    rollLengthM: current.rollLength,
-    trimCm: current.trim,
-    repeatCm: current.repeat,
-    reservePercent: current.reserve,
-  })
-})
+const result = computed(() => (values.value ? calculateWallpaper(values.value) : null))
 
 function parsePriceCents(raw: string): number | null | undefined {
   const normalized = raw
@@ -149,11 +187,28 @@ const shoppingItems = computed<ShoppingDraft[]>(() =>
 )
 
 const { buildShareUrl, canShareInputs } = useShareableCalculator([
-  ...fields.map((field) =>
-    textShareField(field.id, toRef(form, field.id), (raw) => errorFor(field, raw) === null),
-  ),
+  choiceShareField('mode', selectedMode, ['room', 'wall']),
+  ...fields.map((field): ShareField => {
+    const shared = textShareField(
+      field.id,
+      toRef(form, field.id),
+      (raw) => errorFor(field, raw) === null,
+    )
+    return {
+      ...shared,
+      // Inactive dimensions cannot invalidate the result or prevent sharing.
+      read: () => (activeFields.value.includes(field) ? shared.read() : ''),
+    }
+  }),
   textShareField('price', price, (raw) => parsePriceCents(raw) !== undefined),
 ])
+
+function buildCleanShareUrl() {
+  const url = new URL(buildShareUrl())
+  for (const field of selectedMode.value === 'room' ? wallFields : roomFields)
+    url.searchParams.delete(field.id)
+  return url.href
+}
 
 const formatCount = (value: number) => new Intl.NumberFormat('pl-PL').format(value)
 const pluralRules = new Intl.PluralRules('pl-PL')
@@ -176,10 +231,13 @@ function chooseRoom(room: ShoppingRoom | null) {
   form.length = String(room.dimensions.length)
   form.width = String(room.dimensions.width)
   form.height = String(room.dimensions.height)
+  // A saved room has two wall widths; never guess which wall was chosen.
+  form.wallHeight = String(room.dimensions.height)
 }
 
 function reset() {
   Object.assign(form, defaults)
+  selectedMode.value = 'room'
   price.value = ''
   selectedRoomId.value = ''
 }
@@ -199,6 +257,34 @@ function reset() {
       <button type="button" class="reset-button" @click="reset">
         <RotateCcw :size="16" aria-hidden="true" /> Przywróć przykład
       </button>
+    </div>
+
+    <div class="mode-selector">
+      <div>
+        <strong>Co chcesz wytapetować?</strong>
+        <p>Wybierz cały pokój albo jedną ścianę, np. akcentową.</p>
+      </div>
+      <div class="mode-options" role="group" aria-label="Zakres tapetowania">
+        <button
+          type="button"
+          :aria-pressed="selectedMode === 'room'"
+          :class="{ 'is-active': selectedMode === 'room' }"
+          @click="selectedMode = 'room'"
+        >
+          Cały pokój
+        </button>
+        <button
+          type="button"
+          :aria-pressed="selectedMode === 'wall'"
+          :class="{ 'is-active': selectedMode === 'wall' }"
+          @click="selectedMode = 'wall'"
+        >
+          Jedna ściana
+        </button>
+      </div>
+      <p v-if="selectedMode === 'wall'" class="mode-note">
+        Zapisany pokój może uzupełnić wysokość ściany. Jej szerokość wpisz samodzielnie.
+      </p>
     </div>
 
     <div class="calculator-grid">
@@ -269,16 +355,20 @@ function reset() {
           </div>
           <dl class="result-rows">
             <div>
-              <dt>Powierzchnia ścian brutto</dt>
+              <dt>
+                {{
+                  selectedMode === 'room'
+                    ? 'Powierzchnia ścian brutto'
+                    : 'Powierzchnia ściany brutto'
+                }}
+              </dt>
               <dd>{{ formatLength(result.wallArea) }} m²</dd>
             </div>
-            <div>
-              <dt>Dwie dłuższe ściany</dt>
-              <dd>2 × {{ result.longWallStrips }} {{ stripUnit(result.longWallStrips) }}</dd>
-            </div>
-            <div>
-              <dt>Dwie krótsze ściany</dt>
-              <dd>2 × {{ result.shortWallStrips }} {{ stripUnit(result.shortWallStrips) }}</dd>
+            <div v-for="row in result.stripRows" :key="row.label">
+              <dt>{{ row.label }}</dt>
+              <dd>
+                {{ row.wallCount }} × {{ row.stripsPerWall }} {{ stripUnit(row.stripsPerWall) }}
+              </dd>
             </div>
             <div>
               <dt>Pasy łącznie</dt>
@@ -319,7 +409,7 @@ function reset() {
           </p>
         </div>
         <ShareResultButton
-          :get-url="buildShareUrl"
+          :get-url="buildCleanShareUrl"
           :disabled="!result || !canShareInputs || !!priceError"
           class="share-action"
         />
@@ -344,7 +434,7 @@ function reset() {
     </div>
     <div class="formula-strip">
       <span>JAK LICZYMY</span>
-      <strong>pasy na czterech ścianach → pełne pasy z rolki → pełne rolki</strong>
+      <strong>pasy na wybranych ścianach → pełne pasy z rolki → pełne rolki</strong>
       <small>Raport wzoru: dopasowanie proste. Przy wzorze z przesunięciem sprawdź etykietę.</small>
     </div>
   </section>
@@ -411,6 +501,65 @@ h2 {
 }
 .reset-button:hover {
   background: #eef4e9;
+}
+.mode-selector {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.85rem 1.5rem;
+  margin: 0 2rem 1.25rem;
+  padding: 1rem 1.2rem;
+  border: 1px solid #d9e6da;
+  border-radius: 15px;
+  background: #f0f7ef;
+}
+.mode-selector strong {
+  color: #315b40;
+  font-family: var(--font-heading);
+  font-size: 0.9rem;
+}
+.mode-selector p {
+  margin-top: 0.2rem;
+  color: #607a65;
+  font-size: 0.73rem;
+  line-height: 1.5;
+}
+.mode-options {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  padding: 0.25rem;
+  border: 1px solid #d1e0d0;
+  border-radius: 12px;
+  background: #fffefa;
+}
+.mode-options button {
+  min-height: 39px;
+  padding: 0.5rem 0.8rem;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: #52715a;
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+.mode-options button:hover {
+  background: #eaf3e9;
+}
+.mode-options button.is-active {
+  background: #315b40;
+  color: #fff;
+}
+.mode-options button:focus-visible {
+  outline: 2px solid #315b40;
+  outline-offset: 2px;
+}
+.mode-selector .mode-note {
+  flex-basis: 100%;
+  margin: 0;
 }
 .calculator-grid {
   display: grid;
@@ -687,6 +836,9 @@ h2 {
 @media (max-width: 560px) {
   .calculator-header {
     padding: 1.3rem;
+  }
+  .mode-selector {
+    margin: 0 1.3rem 1.3rem;
   }
   .calculator-grid {
     padding: 0 1.3rem 1.3rem;

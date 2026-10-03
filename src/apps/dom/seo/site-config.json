@@ -76,8 +76,8 @@
     {
       "key": "liczba-rolek-tapety",
       "path": "/liczba-rolek-tapety",
-      "title": "Kalkulator tapety — ile rolek na pokój? | Dom",
-      "description": "Policz pełne rolki tapety z wymiarów pokoju, szerokości i długości rolki, zapasu na przycięcie oraz raportu wzoru. Sprawdź koszt i zapisz zakup.",
+      "title": "Kalkulator tapety — ile rolek na pokój lub ścianę? | Dom",
+      "description": "Policz pełne rolki tapety na cały pokój albo jedną ścianę. Uwzględnij szerokość i długość rolki, przycięcie, raport wzoru i zapas. Sprawdź koszt zakupu.",
       "socialImage": "/og/dom.png",
       "socialImageAlt": "Dom — praktyczne kalkulatory"
     },

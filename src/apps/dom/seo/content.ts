@@ -223,13 +223,18 @@ export const domSeoContent: Record<DomToolId, ToolContent> = {
   },
   'liczba-rolek-tapety': {
     intro:
-      'Kalkulator rolek tapety pomaga przejść od wymiarów pokoju do liczby pełnych rolek. Uwzględnia szerokość i długość produktu, wysokość ścian, zapas na przycięcie każdego pasa, prosty raport wzoru oraz dodatkowy zapas. Jeśli masz pokój zapisany w Moim remoncie, możesz wstawić jego wymiary jednym wyborem.',
-    how: 'Na każdej z czterech prostokątnych ścian liczymy pełne pionowe pasy z szerokości rolki i długości ściany. Do wysokości pasa dodajemy centymetry na przycięcie; przy prostym dopasowaniu wzoru zaokrąglamy długość cięcia w górę do pełnego raportu. Z długości rolki wyznaczamy liczbę pełnych pasów, a liczbę potrzebnych pasów — po doliczeniu wybranego zapasu — dzielimy przez tę wydajność i zaokrąglamy do pełnych rolek. Nie odejmujemy automatycznie okien i drzwi: krótsze kawałki nie zawsze nadają się do wykorzystania na innej ścianie.',
+      'Kalkulator rolek tapety pozwala zaplanować zakup na cały prostokątny pokój albo na jedną wybraną ścianę, na przykład akcentową. Uwzględnia szerokość i długość rolki, wysokość ściany, zapas na przycięcie każdego pasa, prosty raport wzoru oraz dodatkowy zapas. Zapisany pokój z Mojego remontu może uzupełnić wymiary pokoju lub wysokość pojedynczej ściany.',
+    how: 'W trybie całego pokoju liczymy pełne pionowe pasy osobno na każdej z czterech ścian. W trybie jednej ściany bierzemy tylko jej szerokość i wysokość. Do wysokości pasa dodajemy centymetry na przycięcie; przy prostym dopasowaniu wzoru zaokrąglamy długość cięcia w górę do pełnego raportu. Z długości rolki wyznaczamy liczbę pełnych pasów, a liczbę potrzebnych pasów — po doliczeniu wybranego zapasu — dzielimy przez tę wydajność i zaokrąglamy do pełnych rolek. Nie odejmujemy automatycznie okien i drzwi: krótsze kawałki nie zawsze nadają się do wykorzystania gdzie indziej.',
     faqs: [
       {
         question: 'Jak obliczyć liczbę rolek tapety do pokoju?',
         answer:
           'Policz pionowe pasy potrzebne na każdej ścianie, dodaj zapas, a następnie sprawdź, ile pełnych pasów da się wyciąć z jednej rolki. Wynik dzielenia zaokrąglij w górę do całej rolki. Samo podzielenie powierzchni ścian przez powierzchnię rolki może zaniżyć wynik.',
+      },
+      {
+        question: 'Jak policzyć tapetę tylko na jedną ścianę?',
+        answer:
+          'Wybierz tryb „Jedna ściana” i podaj szerokość oraz wysokość ściany, którą chcesz okleić. Kalkulator policzy pasy tylko dla tej powierzchni, a następnie uwzględni przycięcie, raport wzoru i wybrany zapas. Wymiary pozostałych ścian nie wpływają na wynik.',
       },
       {
         question: 'Co oznacza raport wzoru na tapecie?',
