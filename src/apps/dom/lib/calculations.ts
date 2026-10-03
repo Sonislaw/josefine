@@ -1,4 +1,5 @@
 import type { DomToolId } from '../manifest'
+import { calculatePanelMaterial } from './panels'
 
 export interface InputField {
   id: string
@@ -78,7 +79,7 @@ export function calculateDom(toolId: DomToolId, values: Record<string, number>):
     case 'koszt-wody': return [{ label: 'Szacowany koszt', value: volume * price, unit: 'zł', kind: 'money' }, { label: 'Zużycie w litrach', value: volume * 1000, unit: 'l' }]
     case 'ilosc-farby': { const liters = area * coats / coverage; return [{ label: 'Potrzebna farba', value: liters, unit: 'l' }, { label: 'Z zapasem 10%', value: liters * 1.1, unit: 'l' }] }
     case 'liczba-plytek': { const tileArea = tileLength * tileWidth / 10_000; return [{ label: 'Płytki z zapasem', value: Math.ceil(area * (1 + waste / 100) / tileArea), unit: 'szt.', kind: 'integer' }, { label: 'Bez zapasu', value: Math.ceil(area / tileArea), unit: 'szt.', kind: 'integer' }] }
-    case 'liczba-paczek-paneli': { const count = Math.ceil(area * (1 + waste / 100) / packCoverage); return [{ label: 'Potrzebne paczki', value: count, unit: 'paczek', kind: 'integer' }, { label: 'Zakupiona powierzchnia', value: count * packCoverage, unit: 'm²' }] }
+    case 'liczba-paczek-paneli': { const panels = calculatePanelMaterial(area, packCoverage, waste); return [{ label: 'Potrzebne paczki', value: panels.packCount, unit: 'paczek', kind: 'integer' }, { label: 'Zakupiona powierzchnia', value: panels.purchasedArea, unit: 'm²' }] }
   }
 }
 

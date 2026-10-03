@@ -69,11 +69,13 @@ export const domSeoContent: Record<DomToolId, ToolContent> = {
     ],
   },
   'liczba-paczek-paneli': {
-    intro: 'Panele sprzedawane są w paczkach, a każda paczka pokrywa określoną powierzchnię. Kalkulator pomaga oszacować liczbę pełnych opakowań potrzebnych do wykończenia podłogi.',
-    how: 'Powierzchnię podłogi powiększamy o wybrany zapas na docinki, a następnie dzielimy przez wydajność jednej paczki. Wynik zaokrąglamy w górę do całej paczki.',
+    intro: 'Panele sprzedawane są w paczkach, a każda paczka pokrywa określoną powierzchnię. Kalkulator pomaga oszacować liczbę pełnych opakowań potrzebnych do wykończenia podłogi. Opcjonalny plan zakupu pokaże też nadwyżkę materiału, cenę paneli i liczbę opakowań osobnego podkładu.',
+    how: 'Powierzchnię podłogi powiększamy o wybrany zapas na docinki, dzielimy przez wydajność jednej paczki i zaokrąglamy w górę. Nadwyżka to zakupiony metraż minus metraż już powiększony o zapas. Podkład liczymy oddzielnie z rzeczywistej powierzchni podłogi i wydajności jego opakowania. Koszt jest wyświetlany tylko dla podanych cen; suma pojawia się dopiero po wpisaniu wszystkich potrzebnych cen.',
     faqs: [
       { question: 'Ile paczek paneli na 25 m²?', answer: 'Jeśli jedna paczka pokrywa 2,2 m², a zapas wynosi 10%, potrzeba 13 pełnych paczek.' },
       { question: 'Gdzie znaleźć wydajność paczki paneli?', answer: 'Powierzchnia w m² na paczkę jest zwykle podana na opakowaniu lub karcie produktu. Wpisz ją w kalkulatorze.' },
+      { question: 'Jak oszacować koszt paneli?', answer: 'Podaj cenę jednej paczki. Kalkulator pomnoży ją przez liczbę pełnych paczek potrzebnych po uwzględnieniu zapasu na docinki. Cena montażu i transportu nie jest doliczana.' },
+      { question: 'Czy zawsze trzeba kupować osobny podkład?', answer: 'Nie. Niektóre panele mają podkład zintegrowany. Sprawdź opis wybranego produktu i zalecenia producenta; osobny podkład zaznacz w kalkulatorze tylko wtedy, gdy jest potrzebny.' },
     ],
   },
 }

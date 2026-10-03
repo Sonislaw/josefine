@@ -1,9 +1,13 @@
 <script setup lang="ts">
-import { computed, reactive, ref, toRef } from 'vue'
+import { computed, defineAsyncComponent, reactive, ref, toRef } from 'vue'
 import { ArrowUpRight, RotateCcw, Sparkles } from '@lucide/vue'
 import { RouterLink } from 'vue-router'
 import ShareResultButton from '@/shared/components/ShareResultButton.vue'
-import { textShareField, useShareableCalculator } from '@/shared/composables/useShareableCalculator'
+import {
+  booleanShareField,
+  textShareField,
+  useShareableCalculator,
+} from '@/shared/composables/useShareableCalculator'
 import {
   calculateDom,
   domCalculators,
@@ -17,6 +21,9 @@ import { domPath } from '../seo/useDomSeo'
 import DomEnergyProjection from './DomEnergyProjection.vue'
 import DomWaterMeter from './DomWaterMeter.vue'
 
+// Rozbudowany plan zakupów pobieramy tylko na stronie paneli.
+const DomPanelPurchasePlan = defineAsyncComponent(() => import('./DomPanelPurchasePlan.vue'))
+
 const props = defineProps<{ toolId: DomToolId }>()
 const definition = domCalculators[props.toolId]
 const form = reactive<Record<string, string>>(
@@ -26,6 +33,25 @@ const dailyHours = ref('3')
 const daysPerWeek = ref('7')
 const meterPrevious = ref('')
 const meterCurrent = ref('')
+const panelPackPrice = ref('')
+const includeUnderlay = ref(false)
+const underlayCoverage = ref('10')
+const underlayPackPrice = ref('')
+
+// Pola nieaktywnego podkładu nie powinny blokować linku do wyniku ani zapisywać starych błędów.
+const shareUnderlayCoverage = computed({
+  get: () => (includeUnderlay.value ? underlayCoverage.value : '10'),
+  set: (value: string) => {
+    underlayCoverage.value = value
+  },
+})
+const shareUnderlayPackPrice = computed({
+  get: () => (includeUnderlay.value ? underlayPackPrice.value : ''),
+  set: (value: string) => {
+    underlayPackPrice.value = value
+  },
+})
+const validOptionalPrice = (raw: string) => raw.trim() === '' || parseDomNumber(raw) !== null
 const { buildShareUrl, canShareInputs } = useShareableCalculator([
   ...definition.fields.map((field) =>
     textShareField(field.id, toRef(form, field.id), (raw) => parseDomNumber(raw) !== null),
@@ -48,6 +74,17 @@ const { buildShareUrl, canShareInputs } = useShareableCalculator([
           meterCurrent,
           (raw) => raw === '' || parseDomNumber(raw) !== null,
         ),
+      ]
+    : []),
+  ...(props.toolId === 'liczba-paczek-paneli'
+    ? [
+        textShareField('packPrice', panelPackPrice, validOptionalPrice),
+        booleanShareField('includeUnderlay', includeUnderlay),
+        textShareField('underlayCoverage', shareUnderlayCoverage, (raw) => {
+          const value = parseDomNumber(raw)
+          return value !== null && value > 0
+        }),
+        textShareField('underlayPackPrice', shareUnderlayPackPrice, validOptionalPrice),
       ]
     : []),
 ])
@@ -91,6 +128,10 @@ function reset() {
   daysPerWeek.value = '7'
   meterPrevious.value = ''
   meterCurrent.value = ''
+  panelPackPrice.value = ''
+  includeUnderlay.value = false
+  underlayCoverage.value = '10'
+  underlayPackPrice.value = ''
 }
 
 function useMeterVolume(volume: number) {
@@ -213,6 +254,16 @@ function useMeterVolume(volume: number) {
     v-model:previous="meterPrevious"
     v-model:current="meterCurrent"
     @use-volume="useMeterVolume"
+  />
+  <DomPanelPurchasePlan
+    v-if="toolId === 'liczba-paczek-paneli'"
+    v-model:pack-price="panelPackPrice"
+    v-model:include-underlay="includeUnderlay"
+    v-model:underlay-coverage="underlayCoverage"
+    v-model:underlay-pack-price="underlayPackPrice"
+    :area="parseDomNumber(form.area ?? '')"
+    :pack-coverage="parseDomNumber(form.packCoverage ?? '')"
+    :waste="parseDomNumber(form.waste ?? '')"
   />
 </template>
 
