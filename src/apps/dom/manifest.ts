@@ -1,6 +1,6 @@
 /** Shared metadata for cards, route registration and page headings. */
 export const domTools = [
-  { id: 'powierzchnia-prostokata', title: 'Powierzchnia prostokąta', description: 'Oblicza powierzchnię z długości i szerokości.', category: 'Wymiary', symbol: 'm²', accent: 'sage' },
+  { id: 'powierzchnia-prostokata', title: 'Powierzchnia prostokąta', description: 'Oblicza powierzchnię z długości i szerokości albo z kilku dodawanych i odejmowanych fragmentów.', category: 'Wymiary', symbol: 'm²', accent: 'sage' },
   { id: 'obwod-prostokata', title: 'Obwód prostokąta', description: 'Oblicza łączną długość czterech boków.', category: 'Wymiary', symbol: '4 ×', accent: 'sand' },
   { id: 'objetosc-pomieszczenia', title: 'Objętość pomieszczenia', description: 'Oblicza objętość z długości, szerokości i wysokości.', category: 'Wymiary', symbol: 'm³', accent: 'blue' },
   { id: 'koszt-pradu', title: 'Koszt prądu', description: 'Oblicza koszt pracy urządzenia z jego mocy, czasu pracy i ceny energii.', category: 'Rachunki', symbol: 'kWh', accent: 'peach' },

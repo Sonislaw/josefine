@@ -7,7 +7,14 @@ import {
   booleanShareField,
   textShareField,
   useShareableCalculator,
+  type ShareField,
 } from '@/shared/composables/useShareableCalculator'
+import {
+  calculateCompositeArea,
+  parseAreaFragments,
+  serializeAreaFragments,
+  type AreaFragment,
+} from '../lib/composite-area'
 import {
   calculateDom,
   domCalculators,
@@ -26,6 +33,7 @@ import DomWaterMeter from './DomWaterMeter.vue'
 const DomPanelPurchasePlan = defineAsyncComponent(() => import('./DomPanelPurchasePlan.vue'))
 const DomTilePurchasePlan = defineAsyncComponent(() => import('./DomTilePurchasePlan.vue'))
 const DomSkirtingPlan = defineAsyncComponent(() => import('./DomSkirtingPlan.vue'))
+const DomCompositeArea = defineAsyncComponent(() => import('./DomCompositeArea.vue'))
 
 const props = defineProps<{ toolId: DomToolId }>()
 const definition = domCalculators[props.toolId]
@@ -47,6 +55,17 @@ const openings = ref('0')
 const boardLength = ref('2,4')
 const reserve = ref('10')
 const boardPrice = ref('')
+const compositeEnabled = ref(false)
+const areaFragments = ref<AreaFragment[]>([])
+
+const fragmentsShareField: ShareField = {
+  key: 'parts',
+  read: () => compositeEnabled.value ? serializeAreaFragments(areaFragments.value) : '',
+  restore: (raw) => {
+    const restored = parseAreaFragments(raw)
+    if (restored !== null) areaFragments.value = restored
+  },
+}
 
 // Pola nieaktywnego podkładu nie powinny blokować linku do wyniku ani zapisywać starych błędów.
 const shareUnderlayCoverage = computed({
@@ -130,6 +149,9 @@ const { buildShareUrl, canShareInputs } = useShareableCalculator([
         textShareField('boardPrice', boardPrice, validOptionalPrice),
       ]
     : []),
+  ...(props.toolId === 'powierzchnia-prostokata'
+    ? [booleanShareField('multi', compositeEnabled), fragmentsShareField]
+    : []),
 ])
 const canSharePractical = computed(() => {
   if (props.toolId !== 'koszt-wody') return true
@@ -154,6 +176,7 @@ const results = computed(() => {
   const rows = calculateDom(props.toolId, values)
   return rows.every((row) => Number.isFinite(row.value)) ? rows : null
 })
+const compositeResult = computed(() => calculateCompositeArea(areaFragments.value))
 
 const canShareSkirting = computed(() => {
   if (props.toolId !== 'obwod-prostokata') return true
@@ -169,13 +192,18 @@ const canShareSkirting = computed(() => {
 })
 
 const nextTools = computed(() => {
-  if (props.toolId !== 'powierzchnia-prostokata' || !results.value) return []
-  const area = String(Number(results.value[0]!.value.toFixed(6)))
-  return [
+  if (props.toolId !== 'powierzchnia-prostokata') return []
+  const value = compositeEnabled.value ? compositeResult.value?.total : results.value?.[0]?.value
+  if (value === undefined || !Number.isFinite(value) || value <= 0) return []
+  const area = String(Number(value.toFixed(9)))
+  if (Number(area) <= 0) return []
+  const destinations = [
     { title: 'Panele', detail: 'Jeśli mierzysz podłogę', path: '/liczba-paczek-paneli' },
     { title: 'Płytki', detail: 'Na podłogę lub ścianę', path: '/liczba-plytek' },
     { title: 'Farba', detail: 'Jeśli mierzysz ścianę', path: '/ilosc-farby' },
-  ].map((item) => ({ ...item, to: { path: domPath(item.path), query: { area } } }))
+  ]
+  return (compositeEnabled.value ? destinations.slice(0, 2) : destinations)
+    .map((item) => ({ ...item, to: { path: domPath(item.path), query: { area } } }))
 })
 
 function reset() {
@@ -195,6 +223,8 @@ function reset() {
   boardLength.value = '2,4'
   reserve.value = '10'
   boardPrice.value = ''
+  compositeEnabled.value = false
+  areaFragments.value = []
 }
 
 function useMeterVolume(volume: number) {
@@ -203,7 +233,20 @@ function useMeterVolume(volume: number) {
 </script>
 
 <template>
-  <section class="calculator" aria-labelledby="calculator-title">
+  <DomCompositeArea
+    v-if="toolId === 'powierzchnia-prostokata'"
+    v-model:enabled="compositeEnabled"
+    v-model:fragments="areaFragments"
+    :base-length="form.length ?? ''"
+    :base-width="form.width ?? ''"
+    :get-share-url="buildShareUrl"
+    :can-share="canShareInputs"
+  />
+  <section
+    v-if="toolId !== 'powierzchnia-prostokata' || !compositeEnabled"
+    class="calculator"
+    aria-labelledby="calculator-title"
+  >
     <div class="calculator-header">
       <div>
         <p class="section-kicker"><Sparkles :size="14" aria-hidden="true" /> KALKULATOR</p>

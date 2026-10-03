@@ -9,11 +9,14 @@ interface ToolContent {
 /** Practical explanations stay next to Dom calculators and render into static page HTML. */
 export const domSeoContent: Record<DomToolId, ToolContent> = {
   'powierzchnia-prostokata': {
-    intro: 'Powierzchnia prostokąta mówi, ile miejsca zajmuje podłoga, ściana lub działka o prostokątnym kształcie. To podstawowy wynik potrzebny przed zakupem farby, paneli czy innych materiałów wykończeniowych.',
-    how: 'Zmierz długość i szerokość w tych samych jednostkach, najlepiej w metrach. Pomnóż obie wartości. Dla pomieszczenia o wymiarach 5 × 4 m wynik to 20 m².',
+    intro: 'Powierzchnia prostokąta mówi, ile miejsca zajmuje podłoga lub ściana. Prosty tryb liczy długość razy szerokość. Jeśli pokój ma wnękę, kształt litery L lub miejsce zajęte przez komin, możesz dodać i odjąć kilka prostokątnych fragmentów, a łączny metraż przenieść do kalkulatora paneli albo płytek.',
+    how: 'W prostym trybie pomnóż długość przez szerokość. W trybie wielu fragmentów zmierz każdą część osobno: dodaj powierzchnie zajmowane przez pokój i odejmij powierzchnie przeszkód. Na przykład 5 × 4 m oraz wnęka 1,5 × 1 m, po odjęciu komina 1 × 0,5 m, dają łącznie 21 m². Fragmenty nie powinny nakładać się na siebie. Sama suma pól nie wystarcza do obliczenia obwodu ani liczby listew przypodłogowych.',
     faqs: [
       { question: 'Jak obliczyć metry kwadratowe pokoju?', answer: 'Pomnóż długość pokoju w metrach przez jego szerokość w metrach. Jeśli pokój nie jest prostokątny, podziel go na prostsze części i dodaj ich powierzchnie.' },
       { question: 'Czy mogę wpisać wymiar z przecinkiem?', answer: 'Tak. Możesz wpisać na przykład 3,5 m lub 3.5 m. Oba zapisy są akceptowane.' },
+      { question: 'Jak policzyć powierzchnię pokoju w kształcie litery L?', answer: 'Podziel podłogę na dwa nienakładające się prostokąty, wpisz długość i szerokość każdego jako dodawany fragment, a kalkulator zsumuje ich powierzchnie.' },
+      { question: 'Jak odjąć komin lub zabudowę?', answer: 'Dodaj powierzchnię całego prostokątnego obszaru, a potem dodaj fragment oznaczony jako odejmowany. Jego powierzchnia zostanie odjęta od sumy.' },
+      { question: 'Czy z łącznej powierzchni obliczę liczbę listew?', answer: 'Nie. Dwa pokoje o takiej samej powierzchni mogą mieć różny obwód. Aby policzyć listwy, zmierz rzeczywiste odcinki ścian.' },
     ],
   },
   'obwod-prostokata': {
