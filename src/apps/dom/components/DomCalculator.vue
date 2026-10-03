@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { computed, defineAsyncComponent, reactive, ref, toRef } from 'vue'
+import { computed, defineAsyncComponent, reactive, ref, toRef, watch } from 'vue'
 import { ArrowUpRight, RotateCcw, Sparkles } from '@lucide/vue'
-import { RouterLink } from 'vue-router'
+import { RouterLink, useRoute } from 'vue-router'
 import ShareResultButton from '@/shared/components/ShareResultButton.vue'
 import {
   booleanShareField,
+  choiceShareField,
   textShareField,
   useShareableCalculator,
   type ShareField,
@@ -24,6 +25,8 @@ import {
 } from '../lib/calculations'
 import { calculateMeterUsage, parseDailyHours, parseDaysPerWeek } from '../lib/practical'
 import { calculateSkirtingPlan } from '../lib/skirting'
+import { parseRoomDimension } from '../lib/room-metrics'
+import type { TileOrientation } from '../lib/tile-layout'
 import { isValidOptionalPaintCanPrice, parsePaintCanSize } from '../lib/paint-purchase'
 import type { DomToolId } from '../manifest'
 import { domPath } from '../seo/useDomSeo'
@@ -33,11 +36,13 @@ import DomWaterMeter from './DomWaterMeter.vue'
 // Rozbudowane plany zakupów pobieramy tylko na stronach odpowiednich materiałów.
 const DomPanelPurchasePlan = defineAsyncComponent(() => import('./DomPanelPurchasePlan.vue'))
 const DomTilePurchasePlan = defineAsyncComponent(() => import('./DomTilePurchasePlan.vue'))
+const DomTileLayoutPreview = defineAsyncComponent(() => import('./DomTileLayoutPreview.vue'))
 const DomSkirtingPlan = defineAsyncComponent(() => import('./DomSkirtingPlan.vue'))
 const DomCompositeArea = defineAsyncComponent(() => import('./DomCompositeArea.vue'))
 const DomPaintPurchasePlan = defineAsyncComponent(() => import('./DomPaintPurchasePlan.vue'))
 
 const props = defineProps<{ toolId: DomToolId }>()
+const route = useRoute()
 const definition = domCalculators[props.toolId]
 const form = reactive<Record<string, string>>(
   Object.fromEntries(definition.fields.map((field) => [field.id, field.defaultValue])),
@@ -53,6 +58,10 @@ const underlayPackPrice = ref('')
 const includeBoxes = ref(false)
 const tilesPerBox = ref('4')
 const boxPrice = ref('')
+const tileLayoutEnabled = ref(false)
+const tileRoomLength = ref('')
+const tileRoomWidth = ref('')
+const tileOrientation = ref<TileOrientation>('standard')
 const openings = ref('0')
 const boardLength = ref('2,4')
 const reserve = ref('10')
@@ -64,7 +73,7 @@ const paintCanPrice = defineModel<string>('paintCanPrice', { default: '' })
 
 const fragmentsShareField: ShareField = {
   key: 'parts',
-  read: () => compositeEnabled.value ? serializeAreaFragments(areaFragments.value) : '',
+  read: () => (compositeEnabled.value ? serializeAreaFragments(areaFragments.value) : ''),
   restore: (raw) => {
     const restored = parseAreaFragments(raw)
     if (restored !== null) areaFragments.value = restored
@@ -97,6 +106,54 @@ const shareBoxPrice = computed({
   },
 })
 const validOptionalPrice = (raw: string) => raw.trim() === '' || parseDomNumber(raw) !== null
+const validPreviewDimension = (raw: string) => {
+  const value = parseRoomDimension(raw)
+  return value !== null && value >= 0.01
+}
+// Invalid optional preview values never prevent sharing the main calculator result.
+const tileLayoutShareField: ShareField = {
+  key: 'showLayout',
+  read: () =>
+    tileLayoutEnabled.value &&
+    validPreviewDimension(tileRoomLength.value) &&
+    validPreviewDimension(tileRoomWidth.value)
+      ? '1'
+      : '0',
+  restore: (raw) => {
+    if (raw === '1' || raw === '0') tileLayoutEnabled.value = raw === '1'
+  },
+}
+const tileRoomLengthShareField: ShareField = {
+  key: 'roomLength',
+  read: () =>
+    tileLayoutEnabled.value && validPreviewDimension(tileRoomLength.value)
+      ? tileRoomLength.value
+      : '',
+  restore: (raw) => {
+    if (raw === '' || validPreviewDimension(raw)) tileRoomLength.value = raw
+  },
+}
+const tileRoomWidthShareField: ShareField = {
+  key: 'roomWidth',
+  read: () =>
+    tileLayoutEnabled.value && validPreviewDimension(tileRoomWidth.value)
+      ? tileRoomWidth.value
+      : '',
+  restore: (raw) => {
+    if (raw === '' || validPreviewDimension(raw)) tileRoomWidth.value = raw
+  },
+}
+watch(
+  () => route.fullPath,
+  () => {
+    if (props.toolId !== 'liczba-plytek') return
+    // A second URL on the same calculator must not inherit an earlier room preview.
+    tileLayoutEnabled.value = false
+    tileRoomLength.value = ''
+    tileRoomWidth.value = ''
+    tileOrientation.value = 'standard'
+  },
+)
 const { buildShareUrl, canShareInputs } = useShareableCalculator([
   ...definition.fields.map((field) =>
     textShareField(field.id, toRef(form, field.id), (raw) => parseDomNumber(raw) !== null),
@@ -134,6 +191,10 @@ const { buildShareUrl, canShareInputs } = useShareableCalculator([
     : []),
   ...(props.toolId === 'liczba-plytek'
     ? [
+        tileLayoutShareField,
+        tileRoomLengthShareField,
+        tileRoomWidthShareField,
+        choiceShareField('tileOrientation', tileOrientation, ['standard', 'rotated']),
         booleanShareField('includeBoxes', includeBoxes),
         textShareField('tilesPerBox', shareTilesPerBox, (raw) => {
           const value = parseDomNumber(raw)
@@ -192,13 +253,15 @@ const canShareSkirting = computed(() => {
   if (props.toolId !== 'obwod-prostokata') return true
   const perimeter = results.value?.[0]?.value
   if (perimeter === undefined) return false
-  return calculateSkirtingPlan({
-    perimeter,
-    openings: parseDomNumber(openings.value)!,
-    boardLength: parseDomNumber(boardLength.value)!,
-    reserve: parseDomNumber(reserve.value)!,
-    boardPrice: boardPrice.value.trim() === '' ? null : parseDomNumber(boardPrice.value),
-  }) !== null
+  return (
+    calculateSkirtingPlan({
+      perimeter,
+      openings: parseDomNumber(openings.value)!,
+      boardLength: parseDomNumber(boardLength.value)!,
+      reserve: parseDomNumber(reserve.value)!,
+      boardPrice: boardPrice.value.trim() === '' ? null : parseDomNumber(boardPrice.value),
+    }) !== null
+  )
 })
 
 const nextTools = computed(() => {
@@ -212,8 +275,10 @@ const nextTools = computed(() => {
     { title: 'Płytki', detail: 'Na podłogę lub ścianę', path: '/liczba-plytek' },
     { title: 'Farba', detail: 'Jeśli mierzysz ścianę', path: '/ilosc-farby' },
   ]
-  return (compositeEnabled.value ? destinations.slice(0, 2) : destinations)
-    .map((item) => ({ ...item, to: { path: domPath(item.path), query: { area } } }))
+  return (compositeEnabled.value ? destinations.slice(0, 2) : destinations).map((item) => ({
+    ...item,
+    to: { path: domPath(item.path), query: { area } },
+  }))
 })
 
 function reset() {
@@ -229,6 +294,10 @@ function reset() {
   includeBoxes.value = false
   tilesPerBox.value = '4'
   boxPrice.value = ''
+  tileLayoutEnabled.value = false
+  tileRoomLength.value = ''
+  tileRoomWidth.value = ''
+  tileOrientation.value = 'standard'
   openings.value = '0'
   boardLength.value = '2,4'
   reserve.value = '10'
@@ -384,6 +453,17 @@ function useMeterVolume(volume: number) {
     :area="parseDomNumber(form.area ?? '')"
     :pack-coverage="parseDomNumber(form.packCoverage ?? '')"
     :waste="parseDomNumber(form.waste ?? '')"
+  />
+  <DomTileLayoutPreview
+    v-if="toolId === 'liczba-plytek'"
+    v-model:enabled="tileLayoutEnabled"
+    v-model:room-length="tileRoomLength"
+    v-model:room-width="tileRoomWidth"
+    v-model:orientation="tileOrientation"
+    :tile-length="parseDomNumber(form.tileLength ?? '')"
+    :tile-width="parseDomNumber(form.tileWidth ?? '')"
+    :calculator-area="parseDomNumber(form.area ?? '')"
+    @apply-area="form.area = $event"
   />
   <DomTilePurchasePlan
     v-if="toolId === 'liczba-plytek'"

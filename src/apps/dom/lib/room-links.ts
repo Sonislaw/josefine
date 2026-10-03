@@ -10,6 +10,14 @@ export function createRoomToolLinks(dimensions: RoomDimensions, roomId?: string)
   const metrics = calculateRoomMetrics(dimensions)
   if (!metrics) return []
   const context = roomId ? { roomId } : {}
+  const tilePreviewQuery =
+    dimensions.length >= 0.01 && dimensions.width >= 0.01
+      ? {
+          showLayout: '1',
+          roomLength: String(dimensions.length),
+          roomWidth: String(dimensions.width),
+        }
+      : {}
   return [
     {
       title: 'Panele na podłogę',
@@ -32,7 +40,11 @@ export function createRoomToolLinks(dimensions: RoomDimensions, roomId?: string)
       detail: `${format(metrics.floor)} m² podłogi`,
       to: {
         path: domPath('/liczba-plytek'),
-        query: { area: toQueryNumber(metrics.floor), ...context },
+        query: {
+          area: toQueryNumber(metrics.floor),
+          ...tilePreviewQuery,
+          ...context,
+        },
       },
     },
     {
