@@ -2,7 +2,8 @@ import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 
 // This browser-only list belongs to Dom. Other modules may have different purchase models.
-export const domShoppingListStorageKey = 'josefine:dom:shopping-list:v1'
+export const legacyDomShoppingListStorageKey = 'josefine:dom:shopping-list:v1'
+export const domShoppingListStorageKey = 'josefine:dom:shopping-list:v2'
 
 export const shoppingKinds = {
   panels: { label: 'Panele podłogowe', unit: 'pacz.', path: '/liczba-paczek-paneli' },
@@ -19,7 +20,8 @@ type StandardKind = Exclude<ShoppingKind, 'paintCans'>
 export type ShoppingDraft =
   | { kind: StandardKind; quantity: number; cost: number | null }
   | { kind: 'paintCans'; quantity: number; cost: number | null; packageSizeLiters: number }
-export type ShoppingItem = ShoppingDraft & { id: string }
+export type ShoppingItem = ShoppingDraft & { id: string; roomId: string | null }
+export type ShoppingRoom = { id: string; name: string }
 
 function isDraft(value: unknown): value is ShoppingDraft {
   if (!value || typeof value !== 'object') return false
@@ -42,7 +44,7 @@ function isDraft(value: unknown): value is ShoppingDraft {
   )
 }
 
-function isItem(value: unknown): value is ShoppingItem {
+function isLegacyItem(value: unknown): value is ShoppingDraft & { id: string } {
   return (
     isDraft(value) &&
     typeof (value as ShoppingItem).id === 'string' &&
@@ -50,18 +52,68 @@ function isItem(value: unknown): value is ShoppingItem {
   )
 }
 
-function parseSavedItems(raw: string): ShoppingItem[] {
+function isItemWithRoom(value: unknown): value is ShoppingItem {
+  return (
+    isLegacyItem(value) &&
+    ((value as ShoppingItem).roomId === null || typeof (value as ShoppingItem).roomId === 'string')
+  )
+}
+
+function isRoom(value: unknown): value is ShoppingRoom {
+  if (!value || typeof value !== 'object') return false
+  const room = value as Partial<ShoppingRoom>
+  return (
+    typeof room.id === 'string' &&
+    room.id.length > 0 &&
+    typeof room.name === 'string' &&
+    room.name.trim().length > 0 &&
+    room.name.length <= 40
+  )
+}
+
+function parseLegacyItems(raw: string): ShoppingItem[] {
   const data: unknown = JSON.parse(raw)
   if (!data || typeof data !== 'object') throw new Error('Invalid shopping list')
   const saved = data as { version?: unknown; items?: unknown }
-  if (saved.version !== 1 || !Array.isArray(saved.items) || !saved.items.every(isItem)) {
+  if (saved.version !== 1 || !Array.isArray(saved.items) || !saved.items.every(isLegacyItem)) {
     throw new Error('Unsupported shopping list')
   }
-  return saved.items
+  return saved.items.map((item) => ({ ...item, roomId: null }))
+}
+
+function parseSavedState(raw: string): { rooms: ShoppingRoom[]; items: ShoppingItem[] } {
+  const data: unknown = JSON.parse(raw)
+  if (!data || typeof data !== 'object') throw new Error('Invalid shopping list')
+  const saved = data as { version?: unknown; rooms?: unknown; items?: unknown }
+  if (
+    saved.version !== 2 ||
+    !Array.isArray(saved.rooms) ||
+    !saved.rooms.every(isRoom) ||
+    !Array.isArray(saved.items) ||
+    !saved.items.every(isItemWithRoom)
+  ) {
+    throw new Error('Unsupported shopping list')
+  }
+  const roomIds = new Set(saved.rooms.map((room) => room.id))
+  if (
+    roomIds.size !== saved.rooms.length ||
+    !saved.items.every(
+      (item) =>
+        item.roomId === null || (typeof item.roomId === 'string' && roomIds.has(item.roomId)),
+    )
+  ) {
+    throw new Error('Invalid shopping list references')
+  }
+  return { rooms: saved.rooms, items: saved.items }
+}
+
+function cleanRoomName(raw: string): string {
+  return raw.trim().replace(/\s+/g, ' ')
 }
 
 export const useDomShoppingList = defineStore('dom-shopping-list', () => {
   const items = ref<ShoppingItem[]>([])
+  const rooms = ref<ShoppingRoom[]>([])
   const hydrated = ref(false)
   const storageError = ref(false)
 
@@ -79,8 +131,17 @@ export const useDomShoppingList = defineStore('dom-shopping-list', () => {
     hydrated.value = true
     try {
       const raw = window.localStorage.getItem(domShoppingListStorageKey)
-      items.value = raw === null ? [] : parseSavedItems(raw)
-      storageError.value = false
+      if (raw !== null) {
+        const state = parseSavedState(raw)
+        rooms.value = state.rooms
+        items.value = state.items
+        storageError.value = false
+      } else {
+        const legacy = window.localStorage.getItem(legacyDomShoppingListStorageKey)
+        rooms.value = []
+        items.value = legacy === null ? [] : parseLegacyItems(legacy)
+        storageError.value = legacy === null ? false : !persist()
+      }
     } catch {
       storageError.value = true
     }
@@ -90,7 +151,7 @@ export const useDomShoppingList = defineStore('dom-shopping-list', () => {
     try {
       window.localStorage.setItem(
         domShoppingListStorageKey,
-        JSON.stringify({ version: 1, items: items.value }),
+        JSON.stringify({ version: 2, rooms: rooms.value, items: items.value }),
       )
       storageError.value = false
       return true
@@ -100,11 +161,70 @@ export const useDomShoppingList = defineStore('dom-shopping-list', () => {
     }
   }
 
-  function addItems(drafts: ShoppingDraft[]): boolean {
+  function addItems(drafts: ShoppingDraft[], roomId: string | null = null): boolean {
     hydrate()
-    if (!drafts.length || !drafts.every(isDraft) || typeof window === 'undefined') return false
-    items.value.push(...drafts.map((draft) => ({ ...draft, id: window.crypto.randomUUID() })))
+    if (
+      !drafts.length ||
+      !drafts.every(isDraft) ||
+      typeof window === 'undefined' ||
+      (roomId !== null && !rooms.value.some((room) => room.id === roomId))
+    )
+      return false
+    items.value.push(
+      ...drafts.map((draft) => ({ ...draft, id: window.crypto.randomUUID(), roomId })),
+    )
     return persist()
+  }
+
+  function canUseRoomName(name: string, exceptId: string | null = null): boolean {
+    const normalized = name.toLocaleLowerCase('pl-PL')
+    return (
+      name.length > 0 &&
+      name.length <= 40 &&
+      normalized !== 'bez pomieszczenia' &&
+      !rooms.value.some(
+        (room) => room.id !== exceptId && room.name.toLocaleLowerCase('pl-PL') === normalized,
+      )
+    )
+  }
+
+  function createRoom(rawName: string): string | null {
+    hydrate()
+    const name = cleanRoomName(rawName)
+    if (!canUseRoomName(name) || typeof window === 'undefined') return null
+    const id = window.crypto.randomUUID()
+    rooms.value.push({ id, name })
+    persist()
+    return id
+  }
+
+  function renameRoom(id: string, rawName: string): boolean {
+    hydrate()
+    const room = rooms.value.find((entry) => entry.id === id)
+    const name = cleanRoomName(rawName)
+    if (!room || !canUseRoomName(name, id)) return false
+    room.name = name
+    persist()
+    return true
+  }
+
+  function deleteRoom(id: string): boolean {
+    hydrate()
+    if (!rooms.value.some((room) => room.id === id)) return false
+    // Deleting a room never deletes purchases; they return to the unassigned group.
+    items.value = items.value.map((item) => (item.roomId === id ? { ...item, roomId: null } : item))
+    rooms.value = rooms.value.filter((room) => room.id !== id)
+    persist()
+    return true
+  }
+
+  function assignItem(itemId: string, roomId: string | null): boolean {
+    hydrate()
+    const item = items.value.find((entry) => entry.id === itemId)
+    if (!item || (roomId !== null && !rooms.value.some((room) => room.id === roomId))) return false
+    item.roomId = roomId
+    persist()
+    return true
   }
 
   function removeItem(id: string) {
@@ -127,12 +247,17 @@ export const useDomShoppingList = defineStore('dom-shopping-list', () => {
 
   return {
     items,
+    rooms,
     hydrated,
     storageError,
     knownTotal,
     unknownPriceCount,
     hydrate,
     addItems,
+    createRoom,
+    renameRoom,
+    deleteRoom,
+    assignItem,
     removeItem,
     clearItems,
     refreshFromStorage,
