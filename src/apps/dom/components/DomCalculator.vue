@@ -24,6 +24,7 @@ import {
 } from '../lib/calculations'
 import { calculateMeterUsage, parseDailyHours, parseDaysPerWeek } from '../lib/practical'
 import { calculateSkirtingPlan } from '../lib/skirting'
+import { isValidOptionalPaintCanPrice, parsePaintCanSize } from '../lib/paint-purchase'
 import type { DomToolId } from '../manifest'
 import { domPath } from '../seo/useDomSeo'
 import DomEnergyProjection from './DomEnergyProjection.vue'
@@ -34,6 +35,7 @@ const DomPanelPurchasePlan = defineAsyncComponent(() => import('./DomPanelPurcha
 const DomTilePurchasePlan = defineAsyncComponent(() => import('./DomTilePurchasePlan.vue'))
 const DomSkirtingPlan = defineAsyncComponent(() => import('./DomSkirtingPlan.vue'))
 const DomCompositeArea = defineAsyncComponent(() => import('./DomCompositeArea.vue'))
+const DomPaintPurchasePlan = defineAsyncComponent(() => import('./DomPaintPurchasePlan.vue'))
 
 const props = defineProps<{ toolId: DomToolId }>()
 const definition = domCalculators[props.toolId]
@@ -57,6 +59,8 @@ const reserve = ref('10')
 const boardPrice = ref('')
 const compositeEnabled = ref(false)
 const areaFragments = ref<AreaFragment[]>([])
+const paintCanSize = defineModel<string>('paintCanSize', { default: '5' })
+const paintCanPrice = defineModel<string>('paintCanPrice', { default: '' })
 
 const fragmentsShareField: ShareField = {
   key: 'parts',
@@ -149,6 +153,12 @@ const { buildShareUrl, canShareInputs } = useShareableCalculator([
         textShareField('boardPrice', boardPrice, validOptionalPrice),
       ]
     : []),
+  ...(props.toolId === 'ilosc-farby'
+    ? [
+        textShareField('canSize', paintCanSize, (raw) => parsePaintCanSize(raw) !== null),
+        textShareField('canPrice', paintCanPrice, isValidOptionalPaintCanPrice),
+      ]
+    : []),
   ...(props.toolId === 'powierzchnia-prostokata'
     ? [booleanShareField('multi', compositeEnabled), fragmentsShareField]
     : []),
@@ -225,6 +235,10 @@ function reset() {
   boardPrice.value = ''
   compositeEnabled.value = false
   areaFragments.value = []
+  if (props.toolId === 'ilosc-farby') {
+    paintCanSize.value = '5'
+    paintCanPrice.value = ''
+  }
 }
 
 function useMeterVolume(volume: number) {
@@ -385,6 +399,13 @@ function useMeterVolume(volume: number) {
     v-model:reserve="reserve"
     v-model:board-price="boardPrice"
     :perimeter="results?.[0]?.value ?? null"
+  />
+  <DomPaintPurchasePlan
+    v-if="toolId === 'ilosc-farby'"
+    v-model:can-size="paintCanSize"
+    v-model:can-price="paintCanPrice"
+    :required-liters="results?.[1]?.value ?? null"
+    id-prefix="paint-area"
   />
 </template>
 

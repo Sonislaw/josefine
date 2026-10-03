@@ -3,7 +3,7 @@ import { computed } from 'vue'
 import { ArrowLeft, ArrowUpRight, ShoppingBasket, Trash2 } from '@lucide/vue'
 import { RouterLink } from 'vue-router'
 import { storeToRefs } from 'pinia'
-import { useDomShoppingList, shoppingKinds } from '../stores/shoppingList'
+import { useDomShoppingList, shoppingKinds, type ShoppingItem } from '../stores/shoppingList'
 import { domPath, domSiteName, domSiteUrl, useDomSeo } from '../seo/useDomSeo'
 
 useDomSeo('shopping-list', {
@@ -20,6 +20,15 @@ const pricedCount = computed(() => items.value.length - unknownPriceCount.value)
 const formatMoney = (value: number) =>
   new Intl.NumberFormat('pl-PL', { style: 'currency', currency: 'PLN' }).format(value)
 const formatCount = (value: number) => new Intl.NumberFormat('pl-PL').format(value)
+const formatLiters = (value: number) =>
+  new Intl.NumberFormat('pl-PL', { maximumFractionDigits: 6 }).format(value)
+
+function itemAmount(item: ShoppingItem): string {
+  const amount = `${formatCount(item.quantity)} ${shoppingKinds[item.kind].unit}`
+  return item.kind === 'paintCans'
+    ? `${amount} po ${formatLiters(item.packageSizeLiters)} l (${formatLiters(item.quantity * item.packageSizeLiters)} l razem)`
+    : amount
+}
 
 function clearAll() {
   if (window.confirm('Usunąć wszystkie pozycje z listy Mój remont?')) list.clearItems()
@@ -37,8 +46,8 @@ function clearAll() {
         <p class="eyebrow">PLAN ZAKUPÓW</p>
         <h1>Mój remont<span>.</span></h1>
         <p>
-          W jednym miejscu zbierz materiały policzone w kalkulatorach Dom. Panele, płytki i listwy
-          zapiszesz z wyniku, a ceny dodasz tylko wtedy, gdy je znasz.
+          W jednym miejscu zbierz materiały policzone w kalkulatorach Dom. Panele, płytki, listwy i
+          farbę zapiszesz z wyniku, a ceny dodasz tylko wtedy, gdy je znasz.
         </p>
       </div>
       <div class="hero-graphic" aria-hidden="true">
@@ -79,7 +88,7 @@ function clearAll() {
             <div class="item-copy">
               <strong>{{ shoppingKinds[item.kind].label }}</strong
               ><span
-                >{{ formatCount(item.quantity) }} {{ shoppingKinds[item.kind].unit }} ·
+                >{{ itemAmount(item) }} ·
                 <RouterLink :to="domPath(shoppingKinds[item.kind].path)"
                   >Otwórz kalkulator <ArrowUpRight :size="13" aria-hidden="true" /></RouterLink
               ></span>
@@ -88,7 +97,7 @@ function clearAll() {
               <strong>{{ item.cost === null ? 'Cena niepodana' : formatMoney(item.cost) }}</strong
               ><button
                 type="button"
-                :aria-label="`Usuń pozycję: ${shoppingKinds[item.kind].label}, ${item.quantity} ${shoppingKinds[item.kind].unit}`"
+                :aria-label="`Usuń pozycję: ${shoppingKinds[item.kind].label}, ${itemAmount(item)}`"
                 @click="list.removeItem(item.id)"
               >
                 <Trash2 :size="17" aria-hidden="true" />
@@ -122,7 +131,7 @@ function clearAll() {
       <h2 id="empty-heading">Lista jeszcze czeka na pierwszy zakup.</h2>
       <p>
         Policz potrzebną ilość materiału, a następnie wybierz „Dodaj do Mojego remontu” obok wyniku.
-        Zacznij od jednego z trzech planów:
+        Zacznij od jednego z planów:
       </p>
       <div class="start-links">
         <RouterLink :to="domPath('/liczba-paczek-paneli')"
@@ -131,6 +140,9 @@ function clearAll() {
           >Płytki <ArrowUpRight :size="16" aria-hidden="true" /></RouterLink
         ><RouterLink :to="domPath('/obwod-prostokata')"
           >Listwy <ArrowUpRight :size="16" aria-hidden="true"
+        /></RouterLink>
+        <RouterLink :to="domPath('/ilosc-farby')"
+          >Farba <ArrowUpRight :size="16" aria-hidden="true"
         /></RouterLink>
       </div>
     </section>

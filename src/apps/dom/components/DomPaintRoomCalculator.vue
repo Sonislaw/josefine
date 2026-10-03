@@ -10,6 +10,8 @@ import {
 } from '@/shared/composables/useShareableCalculator'
 import { parseDomNumber } from '../lib/calculations'
 import { calculatePaintRoom, PAINT_RESERVE_RATE } from '../lib/paint'
+import { isValidOptionalPaintCanPrice, parsePaintCanSize } from '../lib/paint-purchase'
+import DomPaintPurchasePlan from './DomPaintPurchasePlan.vue'
 
 type PaintFieldId = 'length' | 'width' | 'height' | 'doors' | 'windows' | 'coats' | 'coverage'
 interface PaintField {
@@ -42,6 +44,8 @@ const fields: PaintField[] = [
 
 const form = reactive<Record<PaintFieldId, string>>({ ...defaults })
 const includeCeiling = ref(false)
+const paintCanSize = defineModel<string>('paintCanSize', { default: '5' })
+const paintCanPrice = defineModel<string>('paintCanPrice', { default: '' })
 const shareMode = ref<'room'>('room')
 const { buildShareUrl, canShareInputs } = useShareableCalculator([
   choiceShareField('mode', shareMode, ['room']),
@@ -49,6 +53,8 @@ const { buildShareUrl, canShareInputs } = useShareableCalculator([
     textShareField(field.id, toRef(form, field.id), (raw) => parseDomNumber(raw) !== null),
   ),
   booleanShareField('ceiling', includeCeiling),
+  textShareField('canSize', paintCanSize, (raw) => parsePaintCanSize(raw) !== null),
+  textShareField('canPrice', paintCanPrice, isValidOptionalPaintCanPrice),
 ])
 
 function errorFor(field: PaintField): string | null {
@@ -94,6 +100,8 @@ const format = (value: number) =>
 function reset() {
   Object.assign(form, defaults)
   includeCeiling.value = false
+  paintCanSize.value = '5'
+  paintCanPrice.value = ''
 }
 </script>
 
@@ -256,6 +264,12 @@ function reset() {
       ><small>Zapas: +10%</small>
     </div>
   </section>
+  <DomPaintPurchasePlan
+    v-model:can-size="paintCanSize"
+    v-model:can-price="paintCanPrice"
+    :required-liters="result?.litersWithReserve ?? null"
+    id-prefix="paint-room"
+  />
 </template>
 
 <style scoped>

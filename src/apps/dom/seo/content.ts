@@ -57,12 +57,13 @@ export const domSeoContent: Record<DomToolId, ToolContent> = {
   },
   'ilosc-farby': {
     intro: 'Możesz zacząć od znanej powierzchni albo od wymiarów prostokątnego pokoju. W drugim trybie kalkulator oblicza ściany, odejmuje wpisane drzwi i okna oraz opcjonalnie dodaje sufit. W obu trybach wynik zależy od liczby warstw i wydajności wybranej farby.',
-    how: 'Dla pokoju mnożymy obwód podłogi przez wysokość. Od powierzchni ścian odejmujemy łączną powierzchnię drzwi i okien; sufit, jeśli go zaznaczysz, liczymy jako długość razy szerokość. Otrzymaną powierzchnię mnożymy przez liczbę warstw i dzielimy przez wydajność farby w m²/l. Pokazujemy też wariant z 10% zapasem. Tryb „Znam powierzchnię” zachowuje dotychczasowy sposób obliczenia.',
+    how: 'Dla pokoju mnożymy obwód podłogi przez wysokość. Od powierzchni ścian odejmujemy łączną powierzchnię drzwi i okien; sufit, jeśli go zaznaczysz, liczymy jako długość razy szerokość. Otrzymaną powierzchnię mnożymy przez liczbę warstw i dzielimy przez wydajność farby w m²/l. Pokazujemy też wariant z 10% zapasem. Po wybraniu pojemności puszki zaokrąglamy liczbę opakowań w górę; cenę możesz podać opcjonalnie. Tryb „Znam powierzchnię” zachowuje dotychczasowy sposób obliczenia.',
     faqs: [
       { question: 'Ile farby potrzeba na 40 m² przy dwóch warstwach?', answer: 'Przy wydajności 10 m²/l potrzeba około 8 litrów farby. Z 10% zapasem byłoby to 8,8 litra.' },
       { question: 'Jak policzyć powierzchnię ścian pokoju do malowania?', answer: 'Dodaj długość i szerokość pokoju, pomnóż przez dwa, a następnie przez wysokość. Od wyniku odejmij łączną powierzchnię drzwi i okien. Sufit dodaj osobno, jeżeli zamierzasz malować go tą samą farbą i liczbą warstw.' },
       { question: 'Czy kalkulator farby uwzględnia okna, drzwi i sufit?', answer: 'W trybie „Mam wymiary pokoju” możesz wpisać sumę powierzchni drzwi i okien oraz zaznaczyć malowanie sufitu. Kalkulator nie zakłada domyślnych wymiarów otworów, więc podaj własne pomiary.' },
       { question: 'Czy wydajność farby zawsze jest taka sama?', answer: 'Nie. Zależy od produktu, chłonności podłoża, koloru i sposobu malowania. Wpisz wartość z etykiety wybranej farby.' },
+      { question: 'Jak obliczyć, ile puszek farby kupić?', answer: 'Podziel potrzebne litry wraz z 10% zapasem przez pojemność jednej puszki i zaokrąglij wynik w górę do pełnego opakowania. Przykładowo 7,6 l przy puszkach 5 l oznacza zakup 2 puszek, czyli 10 l farby i około 2,4 l nadwyżki.' },
     ],
   },
   'liczba-plytek': {

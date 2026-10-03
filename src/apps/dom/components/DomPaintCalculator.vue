@@ -6,6 +6,9 @@ import DomPaintRoomCalculator from './DomPaintRoomCalculator.vue'
 
 const route = useRoute()
 const selectedMode = ref<'area' | 'room'>('area')
+// One purchase choice follows the visitor when switching between area and room modes.
+const canSize = ref('5')
+const canPrice = ref('')
 
 // SSG renders the simple mode for every URL; select query-dependent UI after hydration.
 onMounted(() => {
@@ -34,8 +37,16 @@ watch(
       </button>
     </div>
   </section>
-  <div v-show="selectedMode === 'area'"><DomCalculator tool-id="ilosc-farby" /></div>
-  <div v-show="selectedMode === 'room'"><DomPaintRoomCalculator /></div>
+  <div v-show="selectedMode === 'area'">
+    <DomCalculator
+      tool-id="ilosc-farby"
+      v-model:paint-can-size="canSize"
+      v-model:paint-can-price="canPrice"
+    />
+  </div>
+  <div v-show="selectedMode === 'room'">
+    <DomPaintRoomCalculator v-model:paint-can-size="canSize" v-model:paint-can-price="canPrice" />
+  </div>
 </template>
 
 <style scoped>

@@ -10,16 +10,21 @@ export const shoppingKinds = {
   tilePieces: { label: 'Płytki', unit: 'szt.', path: '/liczba-plytek' },
   tileBoxes: { label: 'Płytki', unit: 'kart.', path: '/liczba-plytek' },
   skirting: { label: 'Listwy przypodłogowe', unit: 'szt.', path: '/obwod-prostokata' },
+  paintCans: { label: 'Farba', unit: 'pusz.', path: '/ilosc-farby' },
 } as const
 
 export type ShoppingKind = keyof typeof shoppingKinds
-export type ShoppingDraft = { kind: ShoppingKind; quantity: number; cost: number | null }
+type StandardKind = Exclude<ShoppingKind, 'paintCans'>
+// Paint adds one optional branch to the existing v1 envelope; older saved items still validate.
+export type ShoppingDraft =
+  | { kind: StandardKind; quantity: number; cost: number | null }
+  | { kind: 'paintCans'; quantity: number; cost: number | null; packageSizeLiters: number }
 export type ShoppingItem = ShoppingDraft & { id: string }
 
 function isDraft(value: unknown): value is ShoppingDraft {
   if (!value || typeof value !== 'object') return false
-  const item = value as Partial<ShoppingDraft>
-  return (
+  const item = value as Record<string, unknown>
+  const basic =
     typeof item.kind === 'string' &&
     Object.hasOwn(shoppingKinds, item.kind) &&
     typeof item.quantity === 'number' &&
@@ -27,6 +32,13 @@ function isDraft(value: unknown): value is ShoppingDraft {
     item.quantity > 0 &&
     (item.cost === null ||
       (typeof item.cost === 'number' && Number.isFinite(item.cost) && item.cost >= 0))
+  if (!basic) return false
+  return (
+    item.kind !== 'paintCans' ||
+    (typeof item.packageSizeLiters === 'number' &&
+      Number.isFinite(item.packageSizeLiters) &&
+      item.packageSizeLiters > 0 &&
+      Number.isFinite((item.quantity as number) * item.packageSizeLiters))
   )
 }
 
