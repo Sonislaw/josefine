@@ -39,6 +39,14 @@ const nextSteps = computed(() => {
       },
     },
     {
+      title: 'Listwy przypodłogowe',
+      detail: `${format(room.value.perimeter)} m obwodu`,
+      to: {
+        path: domPath('/obwod-prostokata'),
+        query: { length: dimensions.length, width: dimensions.width },
+      },
+    },
+    {
       title: 'Płytki na podłogę',
       detail: `${format(room.value.floor)} m² podłogi`,
       to: { path: domPath('/liczba-plytek'), query: { area: toQueryNumber(room.value.floor) } },
@@ -68,8 +76,8 @@ const nextSteps = computed(() => {
         <p class="eyebrow"><Ruler :size="15" aria-hidden="true" /> ZACZNIJ OD POMIARU</p>
         <h2 id="room-planner-title">Jeden pokój. Kilka przydatnych wyników.</h2>
         <p>
-          Podaj wymiary prostokątnego pokoju, a potem przejdź do kalkulatora z już wpisaną
-          powierzchnią.
+          Podaj wymiary prostokątnego pokoju, a potem przejdź do kalkulatora z już wpisanymi
+          danymi.
         </p>
       </div>
       <span class="planner-mark" aria-hidden="true">m²</span>
@@ -300,7 +308,7 @@ h2 {
 }
 .action-list {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 0.7rem;
 }
 .action-list a {
@@ -350,6 +358,9 @@ h2 {
 @media (max-width: 900px) {
   .planner-body {
     grid-template-columns: 1fr;
+  }
+  .action-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 @media (max-width: 650px) {

@@ -17,11 +17,13 @@ export const domSeoContent: Record<DomToolId, ToolContent> = {
     ],
   },
   'obwod-prostokata': {
-    intro: 'Obwód prostokąta to suma długości jego czterech boków. W domu przydaje się przy planowaniu listew przypodłogowych, obrzeży, taśm dekoracyjnych czy ogrodzenia prostokątnego fragmentu terenu.',
-    how: 'Dodaj długość i szerokość, a następnie pomnóż wynik przez dwa. Kalkulator zakłada, że przeciwległe boki prostokąta mają taką samą długość.',
+    intro: 'Obwód prostokąta to suma długości jego czterech boków. W domu przydaje się przy planowaniu listew przypodłogowych, obrzeży, taśm dekoracyjnych czy ogrodzenia prostokątnego fragmentu terenu. Dodatkowy plan zakupu pomaga oszacować liczbę listew i ich koszt.',
+    how: 'Dodaj długość i szerokość, a następnie pomnóż wynik przez dwa. W planie listew odejmij łączną szerokość miejsc bez listew, dolicz wybrany zapas i podziel otrzymaną długość przez długość jednej listwy. Liczbę sztuk zaokrąglamy w górę. To szacunek łącznej długości, a nie plan cięcia odcinków na poszczególnych ścianach.',
     faqs: [
       { question: 'Jaki jest wzór na obwód prostokąta?', answer: 'Obwód = 2 × (długość + szerokość). Dla boków 5 m i 4 m obwód wynosi 18 m.' },
       { question: 'Czy obwód to powierzchnia?', answer: 'Nie. Obwód określa długość granicy i podaje się go w metrach, a powierzchnię podaje się w metrach kwadratowych.' },
+      { question: 'Jak oszacować liczbę listew przypodłogowych?', answer: 'Od obwodu odejmij łączną szerokość drzwi i innych miejsc bez listew, dolicz zapas na docinki, a wynik podziel przez długość jednej listwy i zaokrąglij w górę do pełnej sztuki.' },
+      { question: 'Czy kalkulator uwzględnia docinki na każdej ścianie?', answer: 'Nie. Plan korzysta z sumy długości i wybranego zapasu. Przy narożnikach i krótkich odcinkach część resztek może być nieprzydatna, dlatego sprawdź rzeczywisty układ pokoju przed zakupem.' },
     ],
   },
   'objetosc-pomieszczenia': {

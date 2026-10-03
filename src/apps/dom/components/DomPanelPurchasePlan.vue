@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { Layers3, ShoppingBasket } from '@lucide/vue'
+import { ArrowUpRight, Layers3, ShoppingBasket } from '@lucide/vue'
+import { RouterLink } from 'vue-router'
 import { parseDomNumber } from '../lib/calculations'
 import { calculatePanelPurchase } from '../lib/panels'
+import { domPath } from '../seo/useDomSeo'
 
 const props = defineProps<{
   area: number | null
@@ -203,6 +205,10 @@ const formatMoney = (value: number) =>
       powierzchni podłogi bez zapasu na docinki paneli; sprawdź zalecenia producenta i zawartość
       opakowań.
     </p>
+    <RouterLink class="skirting-link" :to="domPath('/obwod-prostokata')">
+      <span><strong>Policz też listwy przypodłogowe</strong><small>Podaj długość i szerokość pokoju — sam metraż podłogi nie wystarczy do obliczenia obwodu.</small></span>
+      <ArrowUpRight :size="18" aria-hidden="true" />
+    </RouterLink>
   </section>
 </template>
 
@@ -472,6 +478,24 @@ label small {
 .plan-caveat {
   margin-top: 1.2rem;
 }
+.skirting-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 1rem;
+  padding: .9rem 1rem;
+  border: 1px solid #d3e2cf;
+  border-radius: 12px;
+  background: #f3f8ef;
+  color: #2d6040;
+  text-decoration: none;
+}
+.skirting-link:hover, .skirting-link:focus-visible { border-color: #77a582; background: #eaf4e6; }
+.skirting-link strong, .skirting-link small { display: block; }
+.skirting-link strong { font-size: .8rem; }
+.skirting-link small { margin-top: .2rem; color: #6b806e; font-size: .7rem; line-height: 1.45; }
+.skirting-link svg { flex: 0 0 auto; }
 @media (max-width: 850px) {
   .plan-grid {
     grid-template-columns: 1fr;

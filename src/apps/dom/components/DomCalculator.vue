@@ -16,6 +16,7 @@ import {
   type InputField,
 } from '../lib/calculations'
 import { calculateMeterUsage, parseDailyHours, parseDaysPerWeek } from '../lib/practical'
+import { calculateSkirtingPlan } from '../lib/skirting'
 import type { DomToolId } from '../manifest'
 import { domPath } from '../seo/useDomSeo'
 import DomEnergyProjection from './DomEnergyProjection.vue'
@@ -24,6 +25,7 @@ import DomWaterMeter from './DomWaterMeter.vue'
 // Rozbudowane plany zakupów pobieramy tylko na stronach odpowiednich materiałów.
 const DomPanelPurchasePlan = defineAsyncComponent(() => import('./DomPanelPurchasePlan.vue'))
 const DomTilePurchasePlan = defineAsyncComponent(() => import('./DomTilePurchasePlan.vue'))
+const DomSkirtingPlan = defineAsyncComponent(() => import('./DomSkirtingPlan.vue'))
 
 const props = defineProps<{ toolId: DomToolId }>()
 const definition = domCalculators[props.toolId]
@@ -41,6 +43,10 @@ const underlayPackPrice = ref('')
 const includeBoxes = ref(false)
 const tilesPerBox = ref('4')
 const boxPrice = ref('')
+const openings = ref('0')
+const boardLength = ref('2,4')
+const reserve = ref('10')
+const boardPrice = ref('')
 
 // Pola nieaktywnego podkładu nie powinny blokować linku do wyniku ani zapisywać starych błędów.
 const shareUnderlayCoverage = computed({
@@ -113,6 +119,17 @@ const { buildShareUrl, canShareInputs } = useShareableCalculator([
         textShareField('boxPrice', shareBoxPrice, validOptionalPrice),
       ]
     : []),
+  ...(props.toolId === 'obwod-prostokata'
+    ? [
+        textShareField('openings', openings, (raw) => parseDomNumber(raw) !== null),
+        textShareField('boardLength', boardLength, (raw) => {
+          const value = parseDomNumber(raw)
+          return value !== null && value > 0
+        }),
+        textShareField('reserve', reserve, (raw) => parseDomNumber(raw) !== null),
+        textShareField('boardPrice', boardPrice, validOptionalPrice),
+      ]
+    : []),
 ])
 const canSharePractical = computed(() => {
   if (props.toolId !== 'koszt-wody') return true
@@ -138,6 +155,19 @@ const results = computed(() => {
   return rows.every((row) => Number.isFinite(row.value)) ? rows : null
 })
 
+const canShareSkirting = computed(() => {
+  if (props.toolId !== 'obwod-prostokata') return true
+  const perimeter = results.value?.[0]?.value
+  if (perimeter === undefined) return false
+  return calculateSkirtingPlan({
+    perimeter,
+    openings: parseDomNumber(openings.value)!,
+    boardLength: parseDomNumber(boardLength.value)!,
+    reserve: parseDomNumber(reserve.value)!,
+    boardPrice: boardPrice.value.trim() === '' ? null : parseDomNumber(boardPrice.value),
+  }) !== null
+})
+
 const nextTools = computed(() => {
   if (props.toolId !== 'powierzchnia-prostokata' || !results.value) return []
   const area = String(Number(results.value[0]!.value.toFixed(6)))
@@ -161,6 +191,10 @@ function reset() {
   includeBoxes.value = false
   tilesPerBox.value = '4'
   boxPrice.value = ''
+  openings.value = '0'
+  boardLength.value = '2,4'
+  reserve.value = '10'
+  boardPrice.value = ''
 }
 
 function useMeterVolume(volume: number) {
@@ -245,7 +279,7 @@ function useMeterVolume(volume: number) {
         </div>
         <ShareResultButton
           :get-url="buildShareUrl"
-          :disabled="!results || !canShareInputs || !canSharePractical"
+          :disabled="!results || !canShareInputs || !canSharePractical || !canShareSkirting"
           class="share-action"
         />
         <p class="output-note">{{ definition.note }}</p>
@@ -300,6 +334,14 @@ function useMeterVolume(volume: number) {
     v-model:tiles-per-box="tilesPerBox"
     v-model:box-price="boxPrice"
     :tiles-needed="results?.[0]?.value ?? null"
+  />
+  <DomSkirtingPlan
+    v-if="toolId === 'obwod-prostokata'"
+    v-model:openings="openings"
+    v-model:board-length="boardLength"
+    v-model:reserve="reserve"
+    v-model:board-price="boardPrice"
+    :perimeter="results?.[0]?.value ?? null"
   />
 </template>
 
