@@ -50,3 +50,36 @@ export function calculateMeterUsage(previousRaw: string, currentRaw: string): nu
   if (previous === null || current === null || current < previous) return null
   return Number((current - previous).toFixed(6))
 }
+
+/** Separate water/sewage rates may be zero, but cannot be negative or implausibly large. */
+export function parseWaterRate(raw: string): number | null {
+  const value = parseDomNumber(raw)
+  return value !== null && value <= 100_000 ? value : null
+}
+
+/** Round each bill line to grosze before summing, so displayed parts match the total. */
+export function calculateSplitWaterCost(
+  volume: number | null,
+  waterRate: number | null,
+  sewageRate: number | null,
+) {
+  if (
+    volume === null ||
+    !Number.isFinite(volume) ||
+    volume <= 0 ||
+    waterRate === null ||
+    sewageRate === null ||
+    ![waterRate, sewageRate].every((rate) => Number.isFinite(rate) && rate >= 0 && rate <= 100_000)
+  )
+    return null
+
+  const waterCents = Math.round(volume * waterRate * 100)
+  const sewageCents = Math.round(volume * sewageRate * 100)
+  const totalCents = waterCents + sewageCents
+  if (![waterCents, sewageCents, totalCents].every(Number.isSafeInteger)) return null
+  return {
+    waterCost: waterCents / 100,
+    sewageCost: sewageCents / 100,
+    totalCost: totalCents / 100,
+  }
+}

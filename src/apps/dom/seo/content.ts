@@ -111,8 +111,8 @@ export const domSeoContent: Record<DomToolId, ToolContent> = {
   },
   'koszt-wody': {
     intro:
-      'Kalkulator kosztu wody pomaga oszacować cenę zużycia w metrach sześciennych. Jeśli masz dwa odczyty wodomierza, pomocnik obliczy różnicę i wstawi ją do podstawowego kalkulatora.',
-    how: 'Zużycie to aktualny odczyt minus poprzedni. Otrzymaną liczbę metrów sześciennych pomnóż przez cenę za 1 m³; jeden metr sześcienny to 1 000 litrów. Jeśli chcesz uwzględnić ścieki, wpisz łączną cenę wody i odprowadzania ścieków z rachunku.',
+      'Kalkulator kosztu wody pomaga oszacować cenę zużycia w metrach sześciennych. Możesz podać jedną łączną stawkę za m³ albo osobne ceny wody i odprowadzania ścieków. Jeśli masz dwa odczyty wodomierza, pomocnik obliczy różnicę i wstawi ją do wybranego wariantu kalkulatora.',
+    how: 'Zużycie to aktualny odczyt minus poprzedni; jeden metr sześcienny to 1 000 litrów. Przy jednej stawce mnożymy zużycie przez wpisaną cenę za m³. W trybie „Woda + ścieki” mnożymy to samo zużycie przez każdą z dwóch stawek, zaokrąglamy obie pozycje do groszy i sumujemy. Kalkulator nie dolicza opłat stałych ani nie uwzględnia sytuacji, w których ilość ścieków jest rozliczana inaczej niż pobór wody.',
     faqs: [
       {
         question: 'Ile litrów ma 1 m³ wody?',
@@ -121,7 +121,12 @@ export const domSeoContent: Record<DomToolId, ToolContent> = {
       {
         question: 'Czy kalkulator uwzględnia opłatę za ścieki?',
         answer:
-          'Tylko wtedy, gdy dodasz cenę ścieków do wpisanej ceny za 1 m³. Opłaty stałe nie są dodawane automatycznie.',
+          'Tak, jeśli wybierzesz tryb „Woda + ścieki” i wpiszesz obie stawki albo uwzględnisz ścieki we wspólnej cenie za m³. W obu wariantach opłaty stałe nie są doliczane automatycznie.',
+      },
+      {
+        question: 'Jak policzyć osobno koszt wody i ścieków?',
+        answer:
+          'Wybierz „Woda + ścieki”, podaj zużycie w m³ i wpisz ceny obu pozycji z rachunku. Kalkulator pokaże koszt wody, koszt ścieków i sumę. Zakłada przy tym, że dla obu pozycji rozliczono tę samą liczbę metrów sześciennych.',
       },
       {
         question: 'Jak obliczyć zużycie wody z odczytów wodomierza?',

@@ -44,8 +44,8 @@
     {
       "key": "koszt-wody",
       "path": "/koszt-wody",
-      "title": "Kalkulator kosztu wody — zużycie m³ i cena | Dom",
-      "description": "Oblicz zużycie z dwóch odczytów wodomierza, przelicz je na litry i sprawdź koszt przy podanej cenie za 1 m³.",
+      "title": "Kalkulator kosztu wody i ścieków — zużycie w m³ | Dom",
+      "description": "Oblicz zużycie z odczytów wodomierza i sprawdź koszt przy jednej stawce albo osobnych cenach wody i ścieków. Zobacz rozbicie rachunku.",
       "socialImage": "/og/dom.png",
       "socialImageAlt": "Dom — praktyczne kalkulatory"
     },

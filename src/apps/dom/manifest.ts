@@ -36,7 +36,7 @@ export const domTools = [
   {
     id: 'koszt-wody',
     title: 'Koszt wody',
-    description: 'Oblicza koszt zużytej wody z liczby metrów sześciennych i ceny.',
+    description: 'Oblicza koszt zużycia z jednej stawki lub osobnych cen wody i ścieków.',
     category: 'Rachunki',
     symbol: 'm³',
     accent: 'blue',

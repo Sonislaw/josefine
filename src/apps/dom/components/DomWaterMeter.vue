@@ -27,7 +27,7 @@ function applyUsage() {
     </div>
     <p class="intro">
       Nie musisz odejmować wskazań ręcznie. Podaj poprzedni i aktualny odczyt, a następnie przenieś
-      zużycie do kalkulatora kosztu powyżej.
+      zużycie do wybranego wariantu kalkulatora kosztu powyżej.
     </p>
     <div class="meter-grid">
       <div class="meter-fields">
