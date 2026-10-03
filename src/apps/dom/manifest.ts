@@ -45,7 +45,7 @@ export const domTools = [
     id: 'ilosc-farby',
     title: 'Ilość farby',
     description:
-      'Oblicza ilość farby z metrażu lub wymiarów pokoju, z uwzględnieniem okien i drzwi.',
+      'Oblicza ilość farby z metrażu lub wymiarów pokoju, także dla ściany w innym kolorze.',
     category: 'Remont',
     symbol: 'L',
     accent: 'peach',

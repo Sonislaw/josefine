@@ -22,7 +22,13 @@ type StandardKind = Exclude<ShoppingKind, 'paintCans'>
 // Paint adds one optional branch to the existing v1 envelope; older saved items still validate.
 export type ShoppingDraft =
   | { kind: StandardKind; quantity: number; cost: number | null }
-  | { kind: 'paintCans'; quantity: number; cost: number | null; packageSizeLiters: number }
+  | {
+      kind: 'paintCans'
+      quantity: number
+      cost: number | null
+      packageSizeLiters: number
+      paintVariant?: 'main' | 'accent'
+    }
 export type ShoppingItem = ShoppingDraft & { id: string; roomId: string | null; purchased: boolean }
 type StoredShoppingItem = ShoppingDraft & {
   id: string
@@ -53,7 +59,10 @@ function isDraft(value: unknown): value is ShoppingDraft {
     (typeof item.packageSizeLiters === 'number' &&
       Number.isFinite(item.packageSizeLiters) &&
       item.packageSizeLiters > 0 &&
-      Number.isFinite((item.quantity as number) * item.packageSizeLiters))
+      Number.isFinite((item.quantity as number) * item.packageSizeLiters) &&
+      (item.paintVariant === undefined ||
+        item.paintVariant === 'main' ||
+        item.paintVariant === 'accent'))
   )
 }
 

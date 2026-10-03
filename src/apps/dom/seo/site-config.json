@@ -53,7 +53,7 @@
       "key": "ilosc-farby",
       "path": "/ilosc-farby",
       "title": "Kalkulator ilości farby — ile litrów i puszek kupić? | Dom",
-      "description": "Oblicz farbę z metrażu lub wymiarów pokoju. Uwzględnij okna, drzwi, warstwy i zapas, a potem sprawdź liczbę puszek i orientacyjny koszt zakupu.",
+      "description": "Oblicz farbę z metrażu lub wymiarów pokoju. Rozdziel kolor główny i ścianę akcentową, uwzględnij otwory, warstwy i zapas oraz sprawdź osobne plany zakupu.",
       "socialImage": "/og/dom.png",
       "socialImageAlt": "Dom — praktyczne kalkulatory"
     },

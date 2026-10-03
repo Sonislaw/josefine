@@ -146,6 +146,12 @@ function itemAmount(item: ShoppingItem): string {
     : amount
 }
 
+function itemLabel(item: ShoppingItem): string {
+  if (item.kind === 'paintCans' && item.paintVariant === 'main') return 'Farba · kolor główny'
+  if (item.kind === 'paintCans' && item.paintVariant === 'accent') return 'Farba · kolor akcentowy'
+  return shoppingKinds[item.kind].label
+}
+
 function clearAll() {
   if (
     window.confirm(
@@ -545,7 +551,7 @@ function togglePurchased(itemId: string, event: Event) {
             >
               <div class="item-icon"><ShoppingBasket :size="21" aria-hidden="true" /></div>
               <div class="item-copy">
-                <strong>{{ shoppingKinds[item.kind].label }}</strong
+                <strong>{{ itemLabel(item) }}</strong
                 ><span
                   >{{ itemAmount(item) }} ·
                   <RouterLink :to="domPath(shoppingKinds[item.kind].path)"
@@ -555,7 +561,7 @@ function togglePurchased(itemId: string, event: Event) {
                   >Pomieszczenie
                   <select
                     :value="item.roomId ?? ''"
-                    :aria-label="`Przypisz ${shoppingKinds[item.kind].label} do pomieszczenia`"
+                    :aria-label="`Przypisz ${itemLabel(item)} do pomieszczenia`"
                     @change="assignItem(item.id, $event)"
                   >
                     <option value="">Bez pomieszczenia</option>
@@ -568,7 +574,7 @@ function togglePurchased(itemId: string, event: Event) {
                   <input
                     type="checkbox"
                     :checked="item.purchased"
-                    :aria-label="`${item.purchased ? 'Oznacz jako do kupienia' : 'Oznacz jako kupione'}: ${shoppingKinds[item.kind].label}, ${itemAmount(item)}`"
+                    :aria-label="`${item.purchased ? 'Oznacz jako do kupienia' : 'Oznacz jako kupione'}: ${itemLabel(item)}, ${itemAmount(item)}`"
                     @change="togglePurchased(item.id, $event)"
                   />
                   <span>{{ item.purchased ? 'Kupione' : 'Oznacz jako kupione' }}</span>
@@ -579,14 +585,14 @@ function togglePurchased(itemId: string, event: Event) {
                 ><button
                   type="button"
                   class="edit-item"
-                  :aria-label="`Zmień ilość i cenę: ${shoppingKinds[item.kind].label}`"
+                  :aria-label="`Zmień ilość i cenę: ${itemLabel(item)}`"
                   :aria-expanded="editingItemId === item.id"
                   @click="editingItemId = editingItemId === item.id ? null : item.id"
                 >
                   <Pencil :size="17" aria-hidden="true" /></button
                 ><button
                   type="button"
-                  :aria-label="`Usuń pozycję: ${shoppingKinds[item.kind].label}, ${itemAmount(item)}`"
+                  :aria-label="`Usuń pozycję: ${itemLabel(item)}, ${itemAmount(item)}`"
                   @click="removeItem(item.id)"
                 >
                   <Trash2 :size="17" aria-hidden="true" />

@@ -22,6 +22,26 @@ export interface PaintRoomResult {
   litersWithReserve: number
 }
 
+export type AccentWall = 'length' | 'width'
+
+export interface PaintAccentInput {
+  room: PaintRoomInput
+  wall: AccentWall
+  openings: number
+  coats: number
+  coverage: number
+}
+
+export interface PaintAccentResult {
+  accentGrossArea: number
+  accentArea: number
+  mainArea: number
+  mainLiters: number
+  mainLitersWithReserve: number
+  accentLiters: number
+  accentLitersWithReserve: number
+}
+
 /** The room mode is an estimate for a rectangular room; product-specific coverage stays editable. */
 export function calculatePaintRoom(input: PaintRoomInput): PaintRoomResult | null {
   const { length, width, height, doors, windows, ceiling, coats, coverage } = input
@@ -70,5 +90,63 @@ export function calculatePaintRoom(input: PaintRoomInput): PaintRoomResult | nul
     coatedArea,
     liters,
     litersWithReserve,
+  }
+}
+
+/** Split one wall from the room total; its openings are a subset of the already-entered openings. */
+export function calculatePaintAccent(input: PaintAccentInput): PaintAccentResult | null {
+  const roomResult = calculatePaintRoom(input.room)
+  const { wall, openings, coats, coverage } = input
+  if (
+    !roomResult ||
+    (wall !== 'length' && wall !== 'width') ||
+    !Number.isFinite(openings) ||
+    openings < 0 ||
+    !Number.isSafeInteger(coats) ||
+    coats <= 0 ||
+    !Number.isFinite(coverage) ||
+    coverage <= 0
+  )
+    return null
+
+  const accentGrossArea = input.room[wall] * input.room.height
+  const tolerance = Number.EPSILON * Math.max(1, roomResult.grossWalls) * 16
+  const otherOpenings = roomResult.openings - openings
+  if (
+    openings > roomResult.openings + tolerance ||
+    openings > accentGrossArea + tolerance ||
+    otherOpenings > roomResult.grossWalls - accentGrossArea + tolerance
+  )
+    return null
+
+  const accentArea = Math.max(0, accentGrossArea - openings)
+  const mainArea = Math.max(0, roomResult.paintArea - accentArea)
+  if (accentArea <= tolerance || mainArea <= tolerance) return null
+
+  const mainLiters = (mainArea * input.room.coats) / input.room.coverage
+  const accentLiters = (accentArea * coats) / coverage
+  const mainLitersWithReserve = mainLiters * (1 + PAINT_RESERVE_RATE)
+  const accentLitersWithReserve = accentLiters * (1 + PAINT_RESERVE_RATE)
+  if (
+    ![
+      accentGrossArea,
+      accentArea,
+      mainArea,
+      mainLiters,
+      accentLiters,
+      mainLitersWithReserve,
+      accentLitersWithReserve,
+    ].every(Number.isFinite)
+  )
+    return null
+
+  return {
+    accentGrossArea,
+    accentArea,
+    mainArea,
+    mainLiters,
+    mainLitersWithReserve,
+    accentLiters,
+    accentLitersWithReserve,
   }
 }

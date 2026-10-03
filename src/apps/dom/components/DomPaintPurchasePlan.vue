@@ -14,6 +14,7 @@ const props = defineProps<{
   requiredLiters: number | null
   idPrefix: string
   preferredRoomId?: string
+  paintVariant?: 'main' | 'accent'
 }>()
 const canSize = defineModel<string>('canSize', { required: true })
 const canPrice = defineModel<string>('canPrice', { required: true })
@@ -42,6 +43,7 @@ const shoppingItems = computed<ShoppingDraft[]>(() => {
       quantity: purchase.value.canCount,
       packageSizeLiters: parsePaintCanSize(canSize.value)!,
       cost: purchase.value.estimatedCost,
+      ...(props.paintVariant ? { paintVariant: props.paintVariant } : {}),
     },
   ]
 })
@@ -55,12 +57,24 @@ const formatMoney = (value: number) =>
 </script>
 
 <template>
-  <section class="paint-plan" :aria-labelledby="fieldId('title')">
+  <section
+    class="paint-plan"
+    :class="{ 'paint-plan--accent': paintVariant === 'accent' }"
+    :aria-labelledby="fieldId('title')"
+  >
     <div class="plan-heading">
       <span class="heading-icon"><PaintBucket :size="22" aria-hidden="true" /></span>
       <div>
         <p class="eyebrow">KROK DALEJ</p>
-        <h3 :id="fieldId('title')">Ile puszek farby kupić?</h3>
+        <h3 :id="fieldId('title')">
+          {{
+            paintVariant === 'main'
+              ? 'Ile puszek koloru głównego kupić?'
+              : paintVariant === 'accent'
+                ? 'Ile puszek koloru akcentowego kupić?'
+                : 'Ile puszek farby kupić?'
+          }}
+        </h3>
       </div>
     </div>
     <p class="plan-intro">
@@ -151,11 +165,17 @@ const formatMoney = (value: number) =>
     <AddToDomShoppingList
       :items="shoppingItems"
       :preferred-room-id="preferredRoomId"
-      label="Dodaj farbę do Mojego remontu"
+      :label="
+        paintVariant === 'main'
+          ? 'Dodaj kolor główny do Mojego remontu'
+          : paintVariant === 'accent'
+            ? 'Dodaj kolor akcentowy do Mojego remontu'
+            : 'Dodaj farbę do Mojego remontu'
+      "
     />
     <p class="plan-note">
       Liczymy pełne puszki jednego rozmiaru, bez mieszania pojemności. Sprawdź rzeczywistą wydajność
-      i dostępne opakowania wybranej farby. Osobne kolory lub produkty policz oddzielnie.
+      i dostępne opakowania wybranej farby. Każdy kolor ma osobny plan zakupu.
     </p>
   </section>
 </template>
@@ -167,6 +187,17 @@ const formatMoney = (value: number) =>
   border: 1px solid #e8e3d8;
   border-radius: 22px;
   background: linear-gradient(125deg, #fffefa, #f8f1e8);
+}
+.paint-plan--accent {
+  border-color: #e7d0bf;
+  background: linear-gradient(125deg, #fffaf4, #f4e5d9);
+}
+.paint-plan--accent .heading-icon {
+  background: #ecd4c5;
+  color: #90543d;
+}
+.paint-plan--accent .primary-result {
+  background: #9a6049;
 }
 .plan-heading {
   display: flex;
