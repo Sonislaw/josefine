@@ -38,7 +38,7 @@ const faq = [
   {
     question: 'Czy kalkulatory nadają się do planowania remontu?',
     answer:
-      'Tak, pomagają oszacować ilość farby, rolek tapety, płytek i paczek paneli. Przy zakupie sprawdź także zalecenia producenta, zapas na docinki oraz rzeczywiste wymiary pomieszczenia.',
+      'Tak, pomagają oszacować ilość farby, rolek tapety, płytek, fugi i paczek paneli. Przy zakupie sprawdź także zalecenia producenta, zapas na docinki oraz rzeczywiste wymiary pomieszczenia.',
   },
   {
     question: 'Co obejmują kalkulatory kosztu prądu i wody?',
@@ -115,7 +115,7 @@ useDomSeo('home', {
       </div>
       <div>
         <span class="topic-number">03</span><strong>Remont</strong
-        ><small>Farba, tapeta, płytki i panele</small>
+        ><small>Farba, tapeta, płytki, fuga i panele</small>
       </div>
     </section>
 

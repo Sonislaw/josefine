@@ -141,9 +141,11 @@ const formatMetric = (value: number) =>
 
 function itemAmount(item: ShoppingItem): string {
   const amount = `${formatCount(item.quantity)} ${shoppingKinds[item.kind].unit}`
-  return item.kind === 'paintCans'
-    ? `${amount} po ${formatLiters(item.packageSizeLiters)} l (${formatLiters(item.quantity * item.packageSizeLiters)} l razem)`
-    : amount
+  if (item.kind === 'paintCans')
+    return `${amount} po ${formatLiters(item.packageSizeLiters)} l (${formatLiters(item.quantity * item.packageSizeLiters)} l razem)`
+  if (item.kind === 'groutPacks')
+    return `${amount} po ${formatLiters(item.packageWeightKg)} kg (${formatLiters(item.quantity * item.packageWeightKg)} kg razem)`
+  return amount
 }
 
 function itemLabel(item: ShoppingItem): string {
@@ -270,9 +272,10 @@ function togglePurchased(itemId: string, event: Event) {
         <p class="eyebrow">PLAN ZAKUPÓW</p>
         <h1>Mój remont<span>.</span></h1>
         <p>
-          W jednym miejscu zbierz materiały policzone w kalkulatorach Dom. Panele, płytki, listwy,
-          farbę i tapetę zapiszesz z wyniku i rozdzielisz według pomieszczeń. Ceny dodasz tylko
-          wtedy, gdy je znasz. Dla każdego pokoju możesz też oszacować robociznę z własnych stawek.
+          W jednym miejscu zbierz materiały policzone w kalkulatorach Dom. Panele, płytki, fugę,
+          listwy, farbę i tapetę zapiszesz z wyniku i rozdzielisz według pomieszczeń. Ceny dodasz
+          tylko wtedy, gdy je znasz. Dla każdego pokoju możesz też oszacować robociznę z własnych
+          stawek.
         </p>
       </div>
       <div class="hero-graphic" aria-hidden="true">
@@ -669,6 +672,8 @@ function togglePurchased(itemId: string, event: Event) {
           >Panele <ArrowUpRight :size="16" aria-hidden="true" /></RouterLink
         ><RouterLink :to="domPath('/liczba-plytek')"
           >Płytki <ArrowUpRight :size="16" aria-hidden="true" /></RouterLink
+        ><RouterLink :to="domPath('/kalkulator-fugi')"
+          >Fuga <ArrowUpRight :size="16" aria-hidden="true" /></RouterLink
         ><RouterLink :to="domPath('/obwod-prostokata')"
           >Listwy <ArrowUpRight :size="16" aria-hidden="true"
         /></RouterLink>

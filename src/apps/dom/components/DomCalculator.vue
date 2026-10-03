@@ -393,6 +393,29 @@ const nextTools = computed(() => {
   }))
 })
 
+const groutNextLink = computed(() => {
+  if (props.toolId !== 'liczba-plytek' || !results.value) return null
+  const area = form.area ?? ''
+  const tileLength = form.tileLength ?? ''
+  const tileWidth = form.tileWidth ?? ''
+  if (
+    ![area, tileLength, tileWidth].every((raw) => {
+      const value = parseDomNumber(raw)
+      return value !== null && value > 0
+    })
+  )
+    return null
+  return {
+    path: domPath('/kalkulator-fugi'),
+    query: {
+      area,
+      tileLength,
+      tileWidth,
+      ...(effectiveRoomId.value ? { roomId: effectiveRoomId.value } : {}),
+    },
+  }
+})
+
 function reset() {
   for (const field of definition.fields) form[field.id] = field.defaultValue
   dailyHours.value = '3'
@@ -639,6 +662,16 @@ function useMeterVolume(volume: number) {
     :tiles-needed="results?.[0]?.value ?? null"
     :preferred-room-id="effectiveRoomId"
   />
+  <section v-if="groutNextLink" class="grout-next" aria-labelledby="grout-next-title">
+    <div>
+      <p class="section-kicker">NASTĘPNY MATERIAŁ</p>
+      <h3 id="grout-next-title">Płytki policzone. A ile fugi?</h3>
+      <p>Przeniesiemy metraż i format płytki. Szerokość spoiny oraz produkt uzupełnisz dalej.</p>
+    </div>
+    <RouterLink :to="groutNextLink">
+      Policz fugę <ArrowUpRight :size="17" aria-hidden="true" />
+    </RouterLink>
+  </section>
   <DomSkirtingPlan
     v-if="toolId === 'obwod-prostokata'"
     v-model:openings="openings"
@@ -659,6 +692,51 @@ function useMeterVolume(volume: number) {
 </template>
 
 <style scoped>
+.grout-next {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-top: 1.25rem;
+  padding: 1.35rem 1.6rem;
+  border: 1px solid #cee2da;
+  border-radius: 18px;
+  background: linear-gradient(105deg, #edf6ef, #f8f5e9);
+}
+.grout-next h3 {
+  margin-top: 0.3rem;
+  color: #285941;
+  font-family: var(--font-heading);
+  font-size: 1.2rem;
+  letter-spacing: -0.04em;
+}
+.grout-next p:last-child {
+  margin-top: 0.3rem;
+  color: #6f8374;
+  font-size: 0.76rem;
+  line-height: 1.5;
+}
+.grout-next a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 42px;
+  padding: 0.65rem 0.85rem;
+  border-radius: 10px;
+  background: #2c654a;
+  color: #fff;
+  font-size: 0.77rem;
+  font-weight: 800;
+  text-decoration: none;
+}
+.grout-next a:hover {
+  background: #24543d;
+}
+.grout-next a:focus-visible {
+  outline: 2px solid #24543d;
+  outline-offset: 2px;
+}
 .next-tools {
   display: grid;
   grid-template-columns: 0.8fr 1.2fr;

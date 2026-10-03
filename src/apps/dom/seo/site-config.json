@@ -5,7 +5,7 @@
       "key": "home",
       "path": "/",
       "title": "Kalkulatory domowe: metry, remont i rachunki | Dom",
-      "description": "Podaj wymiary pokoju raz i przejdź do obliczeń podłogi, ścian, farby, tapety, płytek i paneli. Sprawdź też koszt prądu i wody.",
+      "description": "Podaj wymiary pokoju raz i przejdź do obliczeń podłogi, ścian, farby, tapety, płytek, fugi i paneli. Sprawdź też koszt prądu i wody.",
       "socialImage": "/og/dom.png",
       "socialImageAlt": "Dom — praktyczne kalkulatory"
     },
@@ -66,6 +66,14 @@
       "socialImageAlt": "Dom — praktyczne kalkulatory"
     },
     {
+      "key": "kalkulator-fugi",
+      "path": "/kalkulator-fugi",
+      "title": "Kalkulator fugi — ile kg i opakowań na płytki? | Dom",
+      "description": "Oszacuj ilość fugi z powierzchni, formatu płytki i wymiarów spoiny. Podaj gęstość produktu, zapas oraz wagę opakowania, aby policzyć zakup i koszt.",
+      "socialImage": "/og/dom.png",
+      "socialImageAlt": "Dom — praktyczne kalkulatory"
+    },
+    {
       "key": "liczba-paczek-paneli",
       "path": "/liczba-paczek-paneli",
       "title": "Kalkulator paczek paneli — ile paczek potrzeba? | Dom",
@@ -85,7 +93,7 @@
       "key": "shopping-list",
       "path": "/moj-remont",
       "title": "Mój remont — lista zakupów i budżet pokoju | Dom",
-      "description": "Zapisz wymiary pokoi, planuj zakupy paneli, płytek, listew, farby i tapety. Dodaj własne stawki robocizny i sprawdź ujęte koszty każdego pomieszczenia.",
+      "description": "Zapisz wymiary pokoi, planuj zakupy paneli, płytek, fugi, listew, farby i tapety. Dodaj własne stawki robocizny i sprawdź ujęte koszty każdego pomieszczenia.",
       "socialImage": "/og/dom.png",
       "socialImageAlt": "Dom — praktyczne kalkulatory"
     },

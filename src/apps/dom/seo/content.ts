@@ -214,6 +214,38 @@ export const domSeoContent: Record<DomToolId, ToolContent> = {
       },
     ],
   },
+  'kalkulator-fugi': {
+    intro:
+      'Po policzeniu płytek warto oszacować także fugę. Zużycie zależy nie tylko od powierzchni, ale również od formatu płytki, szerokości i głębokości spoiny oraz gęstości użytej zaprawy. Kalkulator pokaże masę fugi i liczbę pełnych opakowań; dane płytek możesz przenieść z poprzedniego narzędzia.',
+    how: 'Długość i szerokość płytki przeliczamy z centymetrów na milimetry. Przy prostym, regularnym układzie szacujemy kg/m² ze wzoru: (długość + szerokość) ÷ (długość × szerokość) × szerokość spoiny × głębokość spoiny × gęstość gotowej fugi. Następnie mnożymy wynik przez powierzchnię, dodajemy wybrany zapas i zaokrąglamy zakup do pełnych opakowań. Gęstość musi pochodzić z danych konkretnego produktu; rzeczywiste zużycie może się różnić.',
+    faqs: [
+      {
+        question: 'Jak obliczyć, ile fugi potrzeba na płytki?',
+        answer:
+          'Podaj powierzchnię okładziny, rozmiar płytki oraz szerokość i głębokość spoiny. Dodaj gęstość gotowej fugi z karty produktu. Kalkulator wyznaczy orientacyjne kg/m² i masę dla całej powierzchni.',
+      },
+      {
+        question: 'Dlaczego format płytek wpływa na ilość fugi?',
+        answer:
+          'Przy tej samej powierzchni mniejsze płytki tworzą więcej spoin. Większa szerokość i głębokość spoiny również zwiększają jej objętość, a więc zużycie materiału.',
+      },
+      {
+        question: 'Skąd wziąć gęstość fugi?',
+        answer:
+          'Sprawdź kartę techniczną wybranego produktu. Chodzi o gęstość gotowej spoiny, nie o wagę suchego proszku w opakowaniu. Jeśli producent podaje własne zużycie dla Twojego formatu i spoiny, porównaj wynik kalkulatora z jego danymi.',
+      },
+      {
+        question: 'Czy zapas płytek zwiększa powierzchnię do fugowania?',
+        answer:
+          'Nie. Zapas płytek dotyczy sztuk kupionych na docinki i uszkodzenia. Fugę licz od powierzchni faktycznie pokrytej płytkami; osobny procent zapasu w tym kalkulatorze dotyczy samej fugi.',
+      },
+      {
+        question: 'Czy kalkulator uwzględnia silikon i szczeliny dylatacyjne?',
+        answer:
+          'Nie. Wynik dotyczy regularnych spoin między płytkami. Silikon, szczeliny przy ścianach, odpady i nierówności mogą wymagać osobnych zakupów; sprawdź zalecenia producenta.',
+      },
+    ],
+  },
   'liczba-paczek-paneli': {
     intro:
       'Panele sprzedawane są w paczkach, a każda paczka pokrywa określoną powierzchnię. Kalkulator pomaga oszacować liczbę pełnych opakowań potrzebnych do wykończenia podłogi. Opcjonalny plan zakupu pokaże też nadwyżkę materiału, cenę paneli i liczbę opakowań osobnego podkładu.',

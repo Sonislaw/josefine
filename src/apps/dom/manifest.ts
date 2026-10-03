@@ -59,6 +59,14 @@ export const domTools = [
     accent: 'sand',
   },
   {
+    id: 'kalkulator-fugi',
+    title: 'Kalkulator fugi',
+    description: 'Szacuje zużycie fugi oraz liczbę pełnych opakowań dla wybranych płytek i spoin.',
+    category: 'Remont',
+    symbol: '▦',
+    accent: 'blue',
+  },
+  {
     id: 'liczba-paczek-paneli',
     title: 'Liczba paczek paneli',
     description: 'Oblicza liczbę paczek z powierzchni i wydajności paczki.',
@@ -78,7 +86,7 @@ export const domTools = [
 ] as const
 
 export type DomToolId = (typeof domTools)[number]['id']
-export type DomBasicToolId = Exclude<DomToolId, 'liczba-rolek-tapety'>
+export type DomBasicToolId = Exclude<DomToolId, 'liczba-rolek-tapety' | 'kalkulator-fugi'>
 
 export const domModule = {
   name: 'Dom',

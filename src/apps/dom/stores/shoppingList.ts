@@ -12,13 +12,14 @@ export const shoppingKinds = {
   underlay: { label: 'Podkład pod panele', unit: 'opak.', path: '/liczba-paczek-paneli' },
   tilePieces: { label: 'Płytki', unit: 'szt.', path: '/liczba-plytek' },
   tileBoxes: { label: 'Płytki', unit: 'kart.', path: '/liczba-plytek' },
+  groutPacks: { label: 'Fuga', unit: 'opak.', path: '/kalkulator-fugi' },
   skirting: { label: 'Listwy przypodłogowe', unit: 'szt.', path: '/obwod-prostokata' },
   paintCans: { label: 'Farba', unit: 'pusz.', path: '/ilosc-farby' },
   wallpaperRolls: { label: 'Tapeta', unit: 'rol.', path: '/liczba-rolek-tapety' },
 } as const
 
 export type ShoppingKind = keyof typeof shoppingKinds
-type StandardKind = Exclude<ShoppingKind, 'paintCans'>
+type StandardKind = Exclude<ShoppingKind, 'paintCans' | 'groutPacks'>
 // Paint adds one optional branch to the existing v1 envelope; older saved items still validate.
 export type ShoppingDraft =
   | { kind: StandardKind; quantity: number; cost: number | null }
@@ -29,6 +30,7 @@ export type ShoppingDraft =
       packageSizeLiters: number
       paintVariant?: 'main' | 'accent'
     }
+  | { kind: 'groutPacks'; quantity: number; cost: number | null; packageWeightKg: number }
 export type ShoppingItem = ShoppingDraft & { id: string; roomId: string | null; purchased: boolean }
 type StoredShoppingItem = ShoppingDraft & {
   id: string
@@ -54,6 +56,13 @@ function isDraft(value: unknown): value is ShoppingDraft {
     (item.cost === null ||
       (typeof item.cost === 'number' && Number.isFinite(item.cost) && item.cost >= 0))
   if (!basic) return false
+  if (item.kind === 'groutPacks')
+    return (
+      typeof item.packageWeightKg === 'number' &&
+      Number.isFinite(item.packageWeightKg) &&
+      item.packageWeightKg > 0 &&
+      Number.isFinite((item.quantity as number) * item.packageWeightKg)
+    )
   return (
     item.kind !== 'paintCans' ||
     (typeof item.packageSizeLiters === 'number' &&
