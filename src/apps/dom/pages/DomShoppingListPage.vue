@@ -29,6 +29,7 @@ import {
 import { createRoomToolLinks } from '../lib/room-links'
 import { calculateRoomLabor, type RoomLaborSummary } from '../lib/room-budget'
 import DomRoomBudget from '../components/DomRoomBudget.vue'
+import DomShoppingItemEditor from '../components/DomShoppingItemEditor.vue'
 
 useDomSeo('shopping-list', {
   '@context': 'https://schema.org',
@@ -49,6 +50,7 @@ const renameError = ref('')
 const editingDimensionsRoomId = ref<string | null>(null)
 const dimensionForm = reactive({ length: '', width: '', height: '' })
 const dimensionError = ref('')
+const editingItemId = ref<string | null>(null)
 const dimensionFields = [
   { id: 'length', label: 'Długość' },
   { id: 'width', label: 'Szerokość' },
@@ -131,8 +133,10 @@ function clearAll() {
     window.confirm(
       'Usunąć wszystkie zakupy z listy Mój remont? Pomieszczenia, ich wymiary i stawki robocizny pozostaną.',
     )
-  )
+  ) {
     list.clearItems()
+    editingItemId.value = null
+  }
 }
 
 function createRoom() {
@@ -212,6 +216,11 @@ function deleteRoom(room: ShoppingRoom) {
 function assignItem(itemId: string, event: Event) {
   const value = (event.target as HTMLSelectElement).value
   list.assignItem(itemId, value || null)
+}
+
+function removeItem(itemId: string) {
+  list.removeItem(itemId)
+  if (editingItemId.value === itemId) editingItemId.value = null
 }
 </script>
 
@@ -478,12 +487,25 @@ function assignItem(itemId: string, event: Event) {
                 <strong>{{ item.cost === null ? 'Cena niepodana' : formatMoney(item.cost) }}</strong
                 ><button
                   type="button"
+                  class="edit-item"
+                  :aria-label="`Zmień ilość i cenę: ${shoppingKinds[item.kind].label}`"
+                  :aria-expanded="editingItemId === item.id"
+                  @click="editingItemId = editingItemId === item.id ? null : item.id"
+                >
+                  <Pencil :size="17" aria-hidden="true" /></button
+                ><button
+                  type="button"
                   :aria-label="`Usuń pozycję: ${shoppingKinds[item.kind].label}, ${itemAmount(item)}`"
-                  @click="list.removeItem(item.id)"
+                  @click="removeItem(item.id)"
                 >
                   <Trash2 :size="17" aria-hidden="true" />
                 </button>
               </div>
+              <DomShoppingItemEditor
+                v-if="editingItemId === item.id"
+                :item="item"
+                @close="editingItemId = null"
+              />
             </li>
           </ul>
           <p v-else class="empty-room">
@@ -504,8 +526,8 @@ function assignItem(itemId: string, event: Event) {
           />
         </section>
         <p v-if="items.length" class="snapshot-note">
-          Pozycje są zapisanymi wynikami. Ponowne obliczenie w kalkulatorze nie zmieni listy — usuń
-          starą pozycję i dodaj nową, jeśli zmieniasz plan.
+          Pozycje są zapisanymi wynikami. Ilość i cenę możesz skorygować tutaj bez zmiany obliczenia
+          w kalkulatorze.
         </p>
       </div>
 
@@ -1065,6 +1087,7 @@ h1 span {
 .item-row {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 0.85rem;
   padding: 1rem 0;
   border-top: 1px solid #edf0e8;
@@ -1147,6 +1170,12 @@ h1 span {
 }
 .item-end button:hover {
   background: #fbede7;
+}
+.item-end button.edit-item {
+  color: #38694b;
+}
+.item-end button.edit-item:hover {
+  background: #eaf2e6;
 }
 .snapshot-note {
   margin-top: 0.65rem;

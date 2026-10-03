@@ -257,6 +257,33 @@ export const useDomShoppingList = defineStore('dom-shopping-list', () => {
     return true
   }
 
+  function updateItemPurchase(
+    itemId: string,
+    quantity: number,
+    unitPriceCents: number | null,
+  ): boolean {
+    hydrate()
+    const item = items.value.find((entry) => entry.id === itemId)
+    if (
+      !item ||
+      !Number.isSafeInteger(quantity) ||
+      quantity <= 0 ||
+      (unitPriceCents !== null &&
+        (!Number.isSafeInteger(unitPriceCents) ||
+          unitPriceCents < 0 ||
+          !Number.isSafeInteger(unitPriceCents * quantity)))
+    )
+      return false
+
+    // The stored cost is the total for this line; the edit form works with a unit price.
+    const cost = unitPriceCents === null ? null : (unitPriceCents * quantity) / 100
+    if (!isDraft({ ...item, quantity, cost })) return false
+    item.quantity = quantity
+    item.cost = cost
+    persist()
+    return true
+  }
+
   function removeItem(id: string) {
     hydrate()
     items.value = items.value.filter((item) => item.id !== id)
@@ -290,6 +317,7 @@ export const useDomShoppingList = defineStore('dom-shopping-list', () => {
     setRoomLaborRates,
     deleteRoom,
     assignItem,
+    updateItemPurchase,
     removeItem,
     clearItems,
     refreshFromStorage,
