@@ -62,5 +62,18 @@ export function createRoomToolLinks(dimensions: RoomDimensions, roomId?: string)
         },
       },
     },
+    {
+      title: 'Tapeta na ściany',
+      detail: `${format(metrics.walls)} m² ścian przed odjęciem otworów`,
+      to: {
+        path: domPath('/liczba-rolek-tapety'),
+        query: {
+          length: String(dimensions.length),
+          width: String(dimensions.width),
+          height: String(dimensions.height),
+          ...context,
+        },
+      },
+    },
   ]
 }

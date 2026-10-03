@@ -1,16 +1,101 @@
 {
   "siteName": "Dom — praktyczne kalkulatory",
   "pages": [
-    { "key": "home", "path": "/", "title": "Kalkulatory domowe: metry, remont i rachunki | Dom", "description": "Podaj wymiary pokoju raz i przejdź do obliczeń podłogi, ścian, farby, płytek i paneli. Sprawdź też koszt prądu i wody.", "socialImage": "/og/dom.png", "socialImageAlt": "Dom — praktyczne kalkulatory" },
-    { "key": "powierzchnia-prostokata", "path": "/powierzchnia-prostokata", "title": "Kalkulator powierzchni pokoju — prostokąt i kształt L | Dom", "description": "Oblicz metry kwadratowe prostokąta lub pokoju z kilku fragmentów. Dodawaj i odejmuj części powierzchni, a wynik przenieś do paneli lub płytek.", "socialImage": "/og/dom.png", "socialImageAlt": "Dom — praktyczne kalkulatory" },
-    { "key": "obwod-prostokata", "path": "/obwod-prostokata", "title": "Kalkulator obwodu prostokąta — oblicz długość boków | Dom", "description": "Oblicz obwód prostokąta z długości i szerokości. Poznaj wzór i sprawdź przykładowe obliczenia.", "socialImage": "/og/dom.png", "socialImageAlt": "Dom — praktyczne kalkulatory" },
-    { "key": "objetosc-pomieszczenia", "path": "/objetosc-pomieszczenia", "title": "Kalkulator objętości pomieszczenia w m³ | Dom", "description": "Oblicz kubaturę pomieszczenia z długości, szerokości i wysokości. Wynik w m³ i litrach.", "socialImage": "/og/dom.png", "socialImageAlt": "Dom — praktyczne kalkulatory" },
-    { "key": "koszt-pradu", "path": "/koszt-pradu", "title": "Kalkulator kosztu prądu — moc, czas i cena kWh | Dom", "description": "Policz koszt pracy urządzenia i prognozę regularnego używania: dziennie, miesięcznie i rocznie na podstawie mocy oraz ceny kWh.", "socialImage": "/og/dom.png", "socialImageAlt": "Dom — praktyczne kalkulatory" },
-    { "key": "koszt-wody", "path": "/koszt-wody", "title": "Kalkulator kosztu wody — zużycie m³ i cena | Dom", "description": "Oblicz zużycie z dwóch odczytów wodomierza, przelicz je na litry i sprawdź koszt przy podanej cenie za 1 m³.", "socialImage": "/og/dom.png", "socialImageAlt": "Dom — praktyczne kalkulatory" },
-    { "key": "ilosc-farby", "path": "/ilosc-farby", "title": "Kalkulator ilości farby — ile litrów i puszek kupić? | Dom", "description": "Oblicz farbę z metrażu lub wymiarów pokoju. Uwzględnij okna, drzwi, warstwy i zapas, a potem sprawdź liczbę puszek i orientacyjny koszt zakupu.", "socialImage": "/og/dom.png", "socialImageAlt": "Dom — praktyczne kalkulatory" },
-    { "key": "liczba-plytek", "path": "/liczba-plytek", "title": "Kalkulator liczby płytek na podłogę i ścianę | Dom", "description": "Oblicz liczbę płytek i kartonów z zapasem. Włącz orientacyjny podgląd prostego układu podłogi, sprawdź docinki i obróć płytkę.", "socialImage": "/og/dom.png", "socialImageAlt": "Dom — praktyczne kalkulatory" },
-    { "key": "liczba-paczek-paneli", "path": "/liczba-paczek-paneli", "title": "Kalkulator paczek paneli — ile paczek potrzeba? | Dom", "description": "Oblicz liczbę paczek paneli z powierzchni pomieszczenia, wydajności paczki i zapasu na docinki.", "socialImage": "/og/dom.png", "socialImageAlt": "Dom — praktyczne kalkulatory" },
-    { "key": "shopping-list", "path": "/moj-remont", "title": "Mój remont — lista zakupów i budżet pokoju | Dom", "description": "Zapisz wymiary pokoi, planuj zakupy paneli, płytek, listew i farby. Dodaj własne stawki robocizny i sprawdź ujęte koszty każdego pomieszczenia.", "socialImage": "/og/dom.png", "socialImageAlt": "Dom — praktyczne kalkulatory" },
-    { "key": "privacy", "path": "/polityka-prywatnosci", "title": "Polityka prywatności | Dom", "description": "Informacje o prywatności podczas korzystania z kalkulatorów Dom.", "socialImage": "/og/dom.png", "socialImageAlt": "Dom — praktyczne kalkulatory" }
+    {
+      "key": "home",
+      "path": "/",
+      "title": "Kalkulatory domowe: metry, remont i rachunki | Dom",
+      "description": "Podaj wymiary pokoju raz i przejdź do obliczeń podłogi, ścian, farby, tapety, płytek i paneli. Sprawdź też koszt prądu i wody.",
+      "socialImage": "/og/dom.png",
+      "socialImageAlt": "Dom — praktyczne kalkulatory"
+    },
+    {
+      "key": "powierzchnia-prostokata",
+      "path": "/powierzchnia-prostokata",
+      "title": "Kalkulator powierzchni pokoju — prostokąt i kształt L | Dom",
+      "description": "Oblicz metry kwadratowe prostokąta lub pokoju z kilku fragmentów. Dodawaj i odejmuj części powierzchni, a wynik przenieś do paneli lub płytek.",
+      "socialImage": "/og/dom.png",
+      "socialImageAlt": "Dom — praktyczne kalkulatory"
+    },
+    {
+      "key": "obwod-prostokata",
+      "path": "/obwod-prostokata",
+      "title": "Kalkulator obwodu prostokąta — oblicz długość boków | Dom",
+      "description": "Oblicz obwód prostokąta z długości i szerokości. Poznaj wzór i sprawdź przykładowe obliczenia.",
+      "socialImage": "/og/dom.png",
+      "socialImageAlt": "Dom — praktyczne kalkulatory"
+    },
+    {
+      "key": "objetosc-pomieszczenia",
+      "path": "/objetosc-pomieszczenia",
+      "title": "Kalkulator objętości pomieszczenia w m³ | Dom",
+      "description": "Oblicz kubaturę pomieszczenia z długości, szerokości i wysokości. Wynik w m³ i litrach.",
+      "socialImage": "/og/dom.png",
+      "socialImageAlt": "Dom — praktyczne kalkulatory"
+    },
+    {
+      "key": "koszt-pradu",
+      "path": "/koszt-pradu",
+      "title": "Kalkulator kosztu prądu — moc, czas i cena kWh | Dom",
+      "description": "Policz koszt pracy urządzenia i prognozę regularnego używania: dziennie, miesięcznie i rocznie na podstawie mocy oraz ceny kWh.",
+      "socialImage": "/og/dom.png",
+      "socialImageAlt": "Dom — praktyczne kalkulatory"
+    },
+    {
+      "key": "koszt-wody",
+      "path": "/koszt-wody",
+      "title": "Kalkulator kosztu wody — zużycie m³ i cena | Dom",
+      "description": "Oblicz zużycie z dwóch odczytów wodomierza, przelicz je na litry i sprawdź koszt przy podanej cenie za 1 m³.",
+      "socialImage": "/og/dom.png",
+      "socialImageAlt": "Dom — praktyczne kalkulatory"
+    },
+    {
+      "key": "ilosc-farby",
+      "path": "/ilosc-farby",
+      "title": "Kalkulator ilości farby — ile litrów i puszek kupić? | Dom",
+      "description": "Oblicz farbę z metrażu lub wymiarów pokoju. Uwzględnij okna, drzwi, warstwy i zapas, a potem sprawdź liczbę puszek i orientacyjny koszt zakupu.",
+      "socialImage": "/og/dom.png",
+      "socialImageAlt": "Dom — praktyczne kalkulatory"
+    },
+    {
+      "key": "liczba-plytek",
+      "path": "/liczba-plytek",
+      "title": "Kalkulator liczby płytek na podłogę i ścianę | Dom",
+      "description": "Oblicz liczbę płytek i kartonów z zapasem. Włącz orientacyjny podgląd prostego układu podłogi, sprawdź docinki i obróć płytkę.",
+      "socialImage": "/og/dom.png",
+      "socialImageAlt": "Dom — praktyczne kalkulatory"
+    },
+    {
+      "key": "liczba-paczek-paneli",
+      "path": "/liczba-paczek-paneli",
+      "title": "Kalkulator paczek paneli — ile paczek potrzeba? | Dom",
+      "description": "Oblicz liczbę paczek paneli z powierzchni pomieszczenia, wydajności paczki i zapasu na docinki.",
+      "socialImage": "/og/dom.png",
+      "socialImageAlt": "Dom — praktyczne kalkulatory"
+    },
+    {
+      "key": "liczba-rolek-tapety",
+      "path": "/liczba-rolek-tapety",
+      "title": "Kalkulator tapety — ile rolek na pokój? | Dom",
+      "description": "Policz pełne rolki tapety z wymiarów pokoju, szerokości i długości rolki, zapasu na przycięcie oraz raportu wzoru. Sprawdź koszt i zapisz zakup.",
+      "socialImage": "/og/dom.png",
+      "socialImageAlt": "Dom — praktyczne kalkulatory"
+    },
+    {
+      "key": "shopping-list",
+      "path": "/moj-remont",
+      "title": "Mój remont — lista zakupów i budżet pokoju | Dom",
+      "description": "Zapisz wymiary pokoi, planuj zakupy paneli, płytek, listew, farby i tapety. Dodaj własne stawki robocizny i sprawdź ujęte koszty każdego pomieszczenia.",
+      "socialImage": "/og/dom.png",
+      "socialImageAlt": "Dom — praktyczne kalkulatory"
+    },
+    {
+      "key": "privacy",
+      "path": "/polityka-prywatnosci",
+      "title": "Polityka prywatności | Dom",
+      "description": "Informacje o prywatności podczas korzystania z kalkulatorów Dom.",
+      "socialImage": "/og/dom.png",
+      "socialImageAlt": "Dom — praktyczne kalkulatory"
+    }
   ]
 }

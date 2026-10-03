@@ -97,8 +97,8 @@ const nextSteps = computed(() =>
       </div>
       <p v-else class="invalid-note">Popraw wymiary, aby przejść do kolejnego kalkulatora.</p>
       <small
-        >Powierzchnia ścian nie uwzględnia drzwi, okien ani skosów. Przed zakupem materiałów odejmij
-        otwory i sprawdź zalecany zapas.</small
+        >Powierzchnia ścian nie uwzględnia drzwi, okien ani skosów. Kalkulator farby pozwala odjąć
+        otwory, a kalkulator tapety liczy pełne pasy i zapas z rolki.</small
       >
     </div>
   </section>

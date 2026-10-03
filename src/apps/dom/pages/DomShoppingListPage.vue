@@ -264,9 +264,9 @@ function togglePurchased(itemId: string, event: Event) {
         <p class="eyebrow">PLAN ZAKUPÓW</p>
         <h1>Mój remont<span>.</span></h1>
         <p>
-          W jednym miejscu zbierz materiały policzone w kalkulatorach Dom. Panele, płytki, listwy i
-          farbę zapiszesz z wyniku i rozdzielisz według pomieszczeń. Ceny dodasz tylko wtedy, gdy je
-          znasz. Dla każdego pokoju możesz też oszacować robociznę z własnych stawek.
+          W jednym miejscu zbierz materiały policzone w kalkulatorach Dom. Panele, płytki, listwy,
+          farbę i tapetę zapiszesz z wyniku i rozdzielisz według pomieszczeń. Ceny dodasz tylko
+          wtedy, gdy je znasz. Dla każdego pokoju możesz też oszacować robociznę z własnych stawek.
         </p>
       </div>
       <div class="hero-graphic" aria-hidden="true">
@@ -668,6 +668,9 @@ function togglePurchased(itemId: string, event: Event) {
         /></RouterLink>
         <RouterLink :to="domPath('/ilosc-farby')"
           >Farba <ArrowUpRight :size="16" aria-hidden="true"
+        /></RouterLink>
+        <RouterLink :to="domPath('/liczba-rolek-tapety')"
+          >Tapeta <ArrowUpRight :size="16" aria-hidden="true"
         /></RouterLink>
       </div>
     </section>

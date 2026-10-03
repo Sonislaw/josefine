@@ -28,7 +28,7 @@ import { calculateSkirtingPlan } from '../lib/skirting'
 import { calculateRoomMetrics, parseRoomDimension, type RoomDimensions } from '../lib/room-metrics'
 import type { TileOrientation } from '../lib/tile-layout'
 import { isValidOptionalPaintCanPrice, parsePaintCanSize } from '../lib/paint-purchase'
-import type { DomToolId } from '../manifest'
+import type { DomBasicToolId } from '../manifest'
 import { domPath } from '../seo/useDomSeo'
 import DomEnergyProjection from './DomEnergyProjection.vue'
 import DomWaterMeter from './DomWaterMeter.vue'
@@ -44,7 +44,7 @@ const DomCompositeArea = defineAsyncComponent(() => import('./DomCompositeArea.v
 const DomPaintPurchasePlan = defineAsyncComponent(() => import('./DomPaintPurchasePlan.vue'))
 
 const props = defineProps<{
-  toolId: DomToolId
+  toolId: DomBasicToolId
   preferredRoomId?: string
   roomPrefill?: RoomDimensions | null
 }>()

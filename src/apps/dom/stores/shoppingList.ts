@@ -14,6 +14,7 @@ export const shoppingKinds = {
   tileBoxes: { label: 'Płytki', unit: 'kart.', path: '/liczba-plytek' },
   skirting: { label: 'Listwy przypodłogowe', unit: 'szt.', path: '/obwod-prostokata' },
   paintCans: { label: 'Farba', unit: 'pusz.', path: '/ilosc-farby' },
+  wallpaperRolls: { label: 'Tapeta', unit: 'rol.', path: '/liczba-rolek-tapety' },
 } as const
 
 export type ShoppingKind = keyof typeof shoppingKinds
