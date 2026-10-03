@@ -1,19 +1,41 @@
 <script setup lang="ts">
-import { ref, useId, watch } from 'vue'
+import { onMounted, ref, useId, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import { Check, Plus } from '@lucide/vue'
-import { RouterLink } from 'vue-router'
+import { RouterLink, useRoute } from 'vue-router'
 import type { ShoppingDraft } from '../stores/shoppingList'
 import { useDomShoppingList } from '../stores/shoppingList'
 import { domPath } from '../seo/useDomSeo'
 
 const props = defineProps<{ items: ShoppingDraft[]; label?: string }>()
 const list = useDomShoppingList()
+const route = useRoute()
 const { rooms } = storeToRefs(list)
 const added = ref(false)
 const persisted = ref(true)
 const selectedRoomId = ref('')
+const roomSelectionTouched = ref(false)
 const roomPickerId = useId()
+
+function syncRoomFromUrl() {
+  const roomId = route.query.roomId
+  // The room ID is only a local hint. Shared links on another device remain unassigned.
+  if (
+    !roomSelectionTouched.value &&
+    typeof roomId === 'string' &&
+    rooms.value.some((room) => room.id === roomId)
+  ) {
+    selectedRoomId.value = roomId
+  }
+  if (selectedRoomId.value && !rooms.value.some((room) => room.id === selectedRoomId.value)) {
+    selectedRoomId.value = ''
+  }
+}
+
+onMounted(() => {
+  list.hydrate()
+  syncRoomFromUrl()
+})
 
 watch(
   () => props.items,
@@ -25,14 +47,14 @@ watch(
 watch(selectedRoomId, () => {
   added.value = false
 })
+watch(rooms, syncRoomFromUrl, { deep: true })
 watch(
-  rooms,
+  () => route.query.roomId,
   () => {
-    if (selectedRoomId.value && !rooms.value.some((room) => room.id === selectedRoomId.value)) {
-      selectedRoomId.value = ''
-    }
+    roomSelectionTouched.value = false
+    selectedRoomId.value = ''
+    syncRoomFromUrl()
   },
-  { deep: true },
 )
 
 function add() {
@@ -47,7 +69,7 @@ function add() {
   <div v-if="items.length" class="add-row">
     <div v-if="rooms.length" class="room-picker">
       <label :for="roomPickerId">Do pomieszczenia</label>
-      <select :id="roomPickerId" v-model="selectedRoomId">
+      <select :id="roomPickerId" v-model="selectedRoomId" @change="roomSelectionTouched = true">
         <option value="">Bez pomieszczenia</option>
         <option v-for="room in rooms" :key="room.id" :value="room.id">{{ room.name }}</option>
       </select>

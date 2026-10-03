@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, reactive, ref } from 'vue'
 import {
   ArrowLeft,
   ArrowUpRight,
   House,
   Pencil,
   Plus,
+  Ruler,
   ShoppingBasket,
   Trash2,
   X,
@@ -19,6 +20,13 @@ import {
   type ShoppingRoom,
 } from '../stores/shoppingList'
 import { domPath, domSiteName, domSiteUrl, useDomSeo } from '../seo/useDomSeo'
+import {
+  calculateRoomMetrics,
+  parseRoomDimension,
+  type RoomDimensions,
+  type RoomMetrics,
+} from '../lib/room-metrics'
+import { createRoomToolLinks } from '../lib/room-links'
 
 useDomSeo('shopping-list', {
   '@context': 'https://schema.org',
@@ -36,6 +44,14 @@ const createError = ref('')
 const editingRoomId = ref<string | null>(null)
 const editingRoomName = ref('')
 const renameError = ref('')
+const editingDimensionsRoomId = ref<string | null>(null)
+const dimensionForm = reactive({ length: '', width: '', height: '' })
+const dimensionError = ref('')
+const dimensionFields = [
+  { id: 'length', label: 'Długość' },
+  { id: 'width', label: 'Szerokość' },
+  { id: 'height', label: 'Wysokość' },
+] as const
 
 interface RoomGroup {
   id: string | null
@@ -44,6 +60,8 @@ interface RoomGroup {
   items: ShoppingItem[]
   knownTotal: number
   missingPrices: number
+  metrics: RoomMetrics | null
+  links: ReturnType<typeof createRoomToolLinks>
 }
 
 function makeGroup(room: ShoppingRoom | null, name: string, groupItems: ShoppingItem[]): RoomGroup {
@@ -58,6 +76,8 @@ function makeGroup(room: ShoppingRoom | null, name: string, groupItems: Shopping
         0,
       ) / 100,
     missingPrices: groupItems.filter((item) => item.cost === null).length,
+    metrics: room?.dimensions ? calculateRoomMetrics(room.dimensions) : null,
+    links: room?.dimensions ? createRoomToolLinks(room.dimensions, room.id) : [],
   }
 }
 
@@ -79,6 +99,10 @@ const formatMoney = (value: number) =>
 const formatCount = (value: number) => new Intl.NumberFormat('pl-PL').format(value)
 const formatLiters = (value: number) =>
   new Intl.NumberFormat('pl-PL', { maximumFractionDigits: 6 }).format(value)
+const formatDimension = (value: number) =>
+  new Intl.NumberFormat('pl-PL', { maximumFractionDigits: 6 }).format(value)
+const formatMetric = (value: number) =>
+  new Intl.NumberFormat('pl-PL', { maximumFractionDigits: 3 }).format(value)
 
 function itemAmount(item: ShoppingItem): string {
   const amount = `${formatCount(item.quantity)} ${shoppingKinds[item.kind].unit}`
@@ -106,9 +130,47 @@ function createRoom() {
 }
 
 function beginRename(room: ShoppingRoom) {
+  editingDimensionsRoomId.value = null
   editingRoomId.value = room.id
   editingRoomName.value = room.name
   renameError.value = ''
+}
+
+function beginDimensionEdit(room: ShoppingRoom) {
+  editingRoomId.value = null
+  editingDimensionsRoomId.value = room.id
+  dimensionForm.length = room.dimensions ? String(room.dimensions.length) : ''
+  dimensionForm.width = room.dimensions ? String(room.dimensions.width) : ''
+  dimensionForm.height = room.dimensions ? String(room.dimensions.height) : ''
+  dimensionError.value = ''
+}
+
+function saveDimensions() {
+  const length = parseRoomDimension(dimensionForm.length)
+  const width = parseRoomDimension(dimensionForm.width)
+  const height = parseRoomDimension(dimensionForm.height)
+  if (!editingDimensionsRoomId.value || length === null || width === null || height === null) {
+    dimensionError.value = 'Podaj trzy wymiary w metrach, większe od zera i nie większe niż 1000 m.'
+    return
+  }
+  const dimensions: RoomDimensions = { length, width, height }
+  if (!list.setRoomDimensions(editingDimensionsRoomId.value, dimensions)) {
+    dimensionError.value = 'Nie udało się zapisać wymiarów. Spróbuj ponownie.'
+    return
+  }
+  editingDimensionsRoomId.value = null
+  dimensionError.value = ''
+}
+
+function clearDimensions(room: ShoppingRoom) {
+  if (
+    window.confirm(
+      `Usunąć zapisane wymiary pomieszczenia „${room.name}”? Zakupy pozostaną bez zmian.`,
+    )
+  ) {
+    list.setRoomDimensions(room.id, null)
+    if (editingDimensionsRoomId.value === room.id) editingDimensionsRoomId.value = null
+  }
 }
 
 function saveRename() {
@@ -125,7 +187,11 @@ function deleteRoom(room: ShoppingRoom) {
   const message = count
     ? `Usunąć pomieszczenie „${room.name}”? ${count} ${count === 1 ? 'zakup trafi' : 'zakupów trafi'} do „Bez pomieszczenia”.`
     : `Usunąć pomieszczenie „${room.name}”?`
-  if (window.confirm(message)) list.deleteRoom(room.id)
+  if (window.confirm(message)) {
+    list.deleteRoom(room.id)
+    if (editingRoomId.value === room.id) editingRoomId.value = null
+    if (editingDimensionsRoomId.value === room.id) editingDimensionsRoomId.value = null
+  }
 }
 
 function assignItem(itemId: string, event: Event) {
@@ -174,7 +240,8 @@ function assignItem(itemId: string, event: Event) {
         <h2 id="rooms-title">Pomieszczenia</h2>
         <p>
           Stwórz pokój i przypisz do niego zapisane materiały. Zakupy bez przypisania pozostają w
-          osobnej grupie.
+          osobnej grupie. Możesz też zapisać wymiary pokoju i otwierać kalkulatory z gotowymi
+          danymi.
         </p>
       </div>
       <form class="room-form" @submit.prevent="createRoom">
@@ -269,6 +336,104 @@ function assignItem(itemId: string, event: Event) {
               {{ renameError }}
             </p>
           </form>
+
+          <div v-if="group.room" class="room-dimensions">
+            <div class="dimension-heading">
+              <div>
+                <strong><Ruler :size="17" aria-hidden="true" /> Wymiary pokoju</strong>
+                <p v-if="group.room.dimensions">
+                  {{ formatDimension(group.room.dimensions.length) }} ×
+                  {{ formatDimension(group.room.dimensions.width) }} ×
+                  {{ formatDimension(group.room.dimensions.height) }} m
+                </p>
+                <p v-else>Opcjonalnie: długość, szerokość i wysokość prostokątnego pokoju.</p>
+              </div>
+              <div class="dimension-actions">
+                <button type="button" @click="beginDimensionEdit(group.room)">
+                  {{ group.room.dimensions ? 'Zmień wymiary' : 'Dodaj wymiary' }}
+                </button>
+                <button
+                  v-if="group.room.dimensions"
+                  type="button"
+                  class="remove-dimensions"
+                  @click="clearDimensions(group.room)"
+                >
+                  Usuń wymiary
+                </button>
+              </div>
+            </div>
+
+            <form
+              v-if="editingDimensionsRoomId === group.id"
+              class="dimension-form"
+              @submit.prevent="saveDimensions"
+            >
+              <div class="dimension-inputs">
+                <label
+                  v-for="field in dimensionFields"
+                  :key="field.id"
+                  :for="`dimension-${group.id}-${field.id}`"
+                >
+                  {{ field.label }}
+                  <span>
+                    <input
+                      :id="`dimension-${group.id}-${field.id}`"
+                      v-model="dimensionForm[field.id]"
+                      type="text"
+                      inputmode="decimal"
+                      autocomplete="off"
+                      placeholder="np. 2,5"
+                      :aria-invalid="
+                        !!dimensionError && parseRoomDimension(dimensionForm[field.id]) === null
+                      "
+                    />
+                    m
+                  </span>
+                </label>
+              </div>
+              <p>
+                Wpisz metry. Każdy wymiar powinien być większy od zera i nie przekraczać 1000 m.
+              </p>
+              <p v-if="dimensionError" class="form-error" role="alert">{{ dimensionError }}</p>
+              <div class="dimension-form-actions">
+                <button type="submit">Zapisz wymiary</button>
+                <button type="button" class="cancel-button" @click="editingDimensionsRoomId = null">
+                  <X :size="16" aria-hidden="true" /> Anuluj
+                </button>
+              </div>
+            </form>
+
+            <template v-else-if="group.metrics">
+              <div class="room-metrics">
+                <div>
+                  <span>Podłoga</span><strong>{{ formatMetric(group.metrics.floor) }} m²</strong>
+                </div>
+                <div>
+                  <span>Obwód</span><strong>{{ formatMetric(group.metrics.perimeter) }} m</strong>
+                </div>
+                <div>
+                  <span>Ściany</span><strong>{{ formatMetric(group.metrics.walls) }} m²</strong>
+                </div>
+                <div>
+                  <span>Kubatura</span><strong>{{ formatMetric(group.metrics.volume) }} m³</strong>
+                </div>
+              </div>
+              <p class="tool-links-heading">Policz dla tego pokoju</p>
+              <div class="room-tool-links">
+                <RouterLink v-for="step in group.links" :key="step.title" :to="step.to">
+                  <span
+                    ><strong>{{ step.title }}</strong
+                    ><small>{{ step.detail }}</small></span
+                  >
+                  <ArrowUpRight :size="17" aria-hidden="true" />
+                </RouterLink>
+              </div>
+              <p class="dimension-note">
+                Powierzchnia ścian nie uwzględnia okien, drzwi ani skosów. Zmiana wymiarów nie
+                aktualizuje już zapisanych zakupów.
+              </p>
+            </template>
+          </div>
 
           <ul v-if="group.items.length" class="items-list">
             <li v-for="item in group.items" :key="item.id" class="item-row">
@@ -628,6 +793,192 @@ h1 span {
   font-weight: 800;
   cursor: pointer;
 }
+.room-dimensions {
+  margin-top: 1.2rem;
+  padding: 1rem;
+  border: 1px solid #dce8d7;
+  border-radius: 15px;
+  background: #f7faf4;
+}
+.dimension-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.7rem;
+}
+.dimension-heading strong {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: #315c43;
+  font-size: 0.84rem;
+}
+.dimension-heading p {
+  margin-top: 0.25rem;
+  color: #6a806e;
+  font-size: 0.73rem;
+  line-height: 1.5;
+}
+.dimension-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+.dimension-actions button,
+.dimension-form-actions button[type='submit'] {
+  min-height: 36px;
+  padding: 0.45rem 0.7rem;
+  border: 1px solid #bfd4bd;
+  border-radius: 8px;
+  background: #fffefa;
+  color: #315d42;
+  font-size: 0.72rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+.dimension-actions button:hover {
+  background: #eaf2e6;
+}
+.dimension-actions .remove-dimensions {
+  color: #9c5947;
+}
+.dimension-form {
+  margin-top: 0.9rem;
+  padding-top: 0.9rem;
+  border-top: 1px solid #dce8d7;
+}
+.dimension-inputs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.6rem;
+}
+.dimension-inputs label {
+  color: #315c43;
+  font-size: 0.73rem;
+  font-weight: 800;
+}
+.dimension-inputs label span {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.35rem;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid #c9d8c5;
+  border-radius: 8px;
+  background: #fffefa;
+  color: #6a806e;
+}
+.dimension-inputs input {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #294b36;
+  font: inherit;
+  font-size: 0.82rem;
+}
+.dimension-inputs label span:focus-within {
+  outline: 2px solid #5e9670;
+  outline-offset: 2px;
+}
+.dimension-inputs label span:has(input[aria-invalid='true']) {
+  border-color: #c97561;
+}
+.dimension-form > p,
+.dimension-note {
+  margin-top: 0.6rem;
+  color: #748778;
+  font-size: 0.71rem;
+  line-height: 1.55;
+}
+.dimension-form > .form-error {
+  color: #a34f3c;
+}
+.dimension-form-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.8rem;
+}
+.dimension-form-actions button[type='submit'] {
+  border-color: #28573e;
+  background: #28573e;
+  color: #fff;
+}
+.dimension-form-actions button[type='submit']:hover {
+  background: #1d4530;
+}
+.room-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.45rem;
+  margin-top: 0.9rem;
+}
+.room-metrics > div {
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.65rem;
+  border-radius: 9px;
+  background: #eaf2e6;
+}
+.room-metrics span {
+  color: #66806b;
+  font-size: 0.68rem;
+}
+.room-metrics strong {
+  color: #2d593e;
+  font-size: 0.86rem;
+  white-space: nowrap;
+}
+.tool-links-heading {
+  margin-top: 1rem;
+  color: #315c43;
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+.room-tool-links {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.45rem;
+  margin-top: 0.5rem;
+}
+.room-tool-links a {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
+  padding: 0.65rem;
+  border: 1px solid #d6e5d1;
+  border-radius: 9px;
+  background: #fffefa;
+  color: #315c43;
+  text-decoration: none;
+}
+.room-tool-links a:hover,
+.room-tool-links a:focus-visible {
+  border-color: #76a47c;
+  background: #edf5e9;
+}
+.room-tool-links a span {
+  min-width: 0;
+}
+.room-tool-links a strong,
+.room-tool-links a small {
+  display: block;
+}
+.room-tool-links a strong {
+  font-size: 0.74rem;
+}
+.room-tool-links a small {
+  margin-top: 0.2rem;
+  color: #748778;
+  font-size: 0.67rem;
+  line-height: 1.35;
+}
+.room-tool-links a svg {
+  flex: 0 0 auto;
+}
 .empty-room {
   margin-top: 1.3rem;
   padding: 1rem;
@@ -841,6 +1192,11 @@ h1 span {
     grid-template-columns: 1fr;
   }
 }
+@media (min-width: 831px) and (max-width: 1050px) {
+  .room-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
 @media (max-width: 600px) {
   .hero-graphic {
     display: none;
@@ -857,6 +1213,19 @@ h1 span {
   .room-form-controls,
   .rename-form > div {
     flex-wrap: wrap;
+  }
+  .dimension-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .dimension-inputs {
+    grid-template-columns: 1fr;
+  }
+  .room-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .room-tool-links {
+    grid-template-columns: 1fr;
   }
 }
 </style>

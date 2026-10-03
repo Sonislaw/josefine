@@ -1,5 +1,6 @@
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
+import { isRoomDimensions, type RoomDimensions } from '../lib/room-metrics'
 
 // This browser-only list belongs to Dom. Other modules may have different purchase models.
 export const legacyDomShoppingListStorageKey = 'josefine:dom:shopping-list:v1'
@@ -21,7 +22,7 @@ export type ShoppingDraft =
   | { kind: StandardKind; quantity: number; cost: number | null }
   | { kind: 'paintCans'; quantity: number; cost: number | null; packageSizeLiters: number }
 export type ShoppingItem = ShoppingDraft & { id: string; roomId: string | null }
-export type ShoppingRoom = { id: string; name: string }
+export type ShoppingRoom = { id: string; name: string; dimensions?: RoomDimensions }
 
 function isDraft(value: unknown): value is ShoppingDraft {
   if (!value || typeof value !== 'object') return false
@@ -67,7 +68,8 @@ function isRoom(value: unknown): value is ShoppingRoom {
     room.id.length > 0 &&
     typeof room.name === 'string' &&
     room.name.trim().length > 0 &&
-    room.name.length <= 40
+    room.name.length <= 40 &&
+    (room.dimensions === undefined || isRoomDimensions(room.dimensions))
   )
 }
 
@@ -208,6 +210,16 @@ export const useDomShoppingList = defineStore('dom-shopping-list', () => {
     return true
   }
 
+  function setRoomDimensions(id: string, dimensions: RoomDimensions | null): boolean {
+    hydrate()
+    const room = rooms.value.find((entry) => entry.id === id)
+    if (!room || (dimensions !== null && !isRoomDimensions(dimensions))) return false
+    if (dimensions === null) delete room.dimensions
+    else room.dimensions = { ...dimensions }
+    persist()
+    return true
+  }
+
   function deleteRoom(id: string): boolean {
     hydrate()
     if (!rooms.value.some((room) => room.id === id)) return false
@@ -256,6 +268,7 @@ export const useDomShoppingList = defineStore('dom-shopping-list', () => {
     addItems,
     createRoom,
     renameRoom,
+    setRoomDimensions,
     deleteRoom,
     assignItem,
     removeItem,

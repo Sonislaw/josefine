@@ -2,71 +2,28 @@
 import { computed, reactive } from 'vue'
 import { ArrowUpRight, Ruler } from '@lucide/vue'
 import { RouterLink } from 'vue-router'
-import { parseDomNumber } from '../lib/calculations'
-import { domPath } from '../seo/useDomSeo'
+import { calculateRoomMetrics, parseRoomDimension } from '../lib/room-metrics'
+import { createRoomToolLinks } from '../lib/room-links'
 
 const dimensions = reactive({ length: '5', width: '4', height: '2,5' })
 
-function parseDimension(raw: string): number | null {
-  const value = parseDomNumber(raw)
-  return value !== null && value > 0 && value <= 1000 ? value : null
-}
-
-const room = computed(() => {
-  const length = parseDimension(dimensions.length)
-  const width = parseDimension(dimensions.width)
-  const height = parseDimension(dimensions.height)
+const parsedDimensions = computed(() => {
+  const length = parseRoomDimension(dimensions.length)
+  const width = parseRoomDimension(dimensions.width)
+  const height = parseRoomDimension(dimensions.height)
   if (length === null || width === null || height === null) return null
-  const floor = length * width
-  const perimeter = 2 * (length + width)
-  return { floor, perimeter, volume: floor * height, walls: perimeter * height }
+  return { length, width, height }
 })
+const room = computed(() =>
+  parsedDimensions.value ? calculateRoomMetrics(parsedDimensions.value) : null,
+)
 
 const format = (value: number) =>
   new Intl.NumberFormat('pl-PL', { maximumFractionDigits: 2 }).format(value)
-const toQueryNumber = (value: number) => String(Number(value.toFixed(6)))
-
-// Keep the existing calculators as the source of truth: only their declared input fields travel in links.
-const nextSteps = computed(() => {
-  if (!room.value) return []
-  return [
-    {
-      title: 'Panele na podłogę',
-      detail: `${format(room.value.floor)} m² podłogi`,
-      to: {
-        path: domPath('/liczba-paczek-paneli'),
-        query: { area: toQueryNumber(room.value.floor) },
-      },
-    },
-    {
-      title: 'Listwy przypodłogowe',
-      detail: `${format(room.value.perimeter)} m obwodu`,
-      to: {
-        path: domPath('/obwod-prostokata'),
-        query: { length: dimensions.length, width: dimensions.width },
-      },
-    },
-    {
-      title: 'Płytki na podłogę',
-      detail: `${format(room.value.floor)} m² podłogi`,
-      to: { path: domPath('/liczba-plytek'), query: { area: toQueryNumber(room.value.floor) } },
-    },
-    {
-      title: 'Farba na ściany',
-      detail: `${format(room.value.walls)} m² ścian przed odjęciem otworów`,
-      to: {
-        path: domPath('/ilosc-farby'),
-        query: {
-          mode: 'room',
-          length: dimensions.length,
-          width: dimensions.width,
-          height: dimensions.height,
-          area: toQueryNumber(room.value.walls),
-        },
-      },
-    },
-  ]
-})
+// Existing calculators remain the source of truth; the planner only prepares their input URLs.
+const nextSteps = computed(() =>
+  parsedDimensions.value ? createRoomToolLinks(parsedDimensions.value) : [],
+)
 </script>
 
 <template>
@@ -76,8 +33,7 @@ const nextSteps = computed(() => {
         <p class="eyebrow"><Ruler :size="15" aria-hidden="true" /> ZACZNIJ OD POMIARU</p>
         <h2 id="room-planner-title">Jeden pokój. Kilka przydatnych wyników.</h2>
         <p>
-          Podaj wymiary prostokątnego pokoju, a potem przejdź do kalkulatora z już wpisanymi
-          danymi.
+          Podaj wymiary prostokątnego pokoju, a potem przejdź do kalkulatora z już wpisanymi danymi.
         </p>
       </div>
       <span class="planner-mark" aria-hidden="true">m²</span>
@@ -100,7 +56,7 @@ const nextSteps = computed(() => {
               type="text"
               inputmode="decimal"
               autocomplete="off"
-              :aria-invalid="parseDimension(dimensions[field]) === null"
+              :aria-invalid="parseRoomDimension(dimensions[field]) === null"
             /><small>m</small></span
           >
         </label>
