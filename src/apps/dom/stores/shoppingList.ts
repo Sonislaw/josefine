@@ -12,6 +12,7 @@ export const shoppingKinds = {
   underlay: { label: 'Podkład pod panele', unit: 'opak.', path: '/liczba-paczek-paneli' },
   tilePieces: { label: 'Płytki', unit: 'szt.', path: '/liczba-plytek' },
   tileBoxes: { label: 'Płytki', unit: 'kart.', path: '/liczba-plytek' },
+  tileAdhesiveBags: { label: 'Klej do płytek', unit: 'work.', path: '/klej-do-plytek' },
   groutPacks: { label: 'Fuga', unit: 'opak.', path: '/kalkulator-fugi' },
   skirting: { label: 'Listwy przypodłogowe', unit: 'szt.', path: '/obwod-prostokata' },
   paintCans: { label: 'Farba', unit: 'pusz.', path: '/ilosc-farby' },
@@ -19,8 +20,11 @@ export const shoppingKinds = {
 } as const
 
 export type ShoppingKind = keyof typeof shoppingKinds
-type StandardKind = Exclude<ShoppingKind, 'paintCans' | 'groutPacks' | 'tilePieces' | 'tileBoxes'>
-// Paint adds one optional branch to the existing v1 envelope; older saved items still validate.
+type StandardKind = Exclude<
+  ShoppingKind,
+  'paintCans' | 'groutPacks' | 'tilePieces' | 'tileBoxes' | 'tileAdhesiveBags'
+>
+// New purchase details are optional on old entries, preserving existing v1/v2 saved lists.
 export type ShoppingDraft =
   | { kind: StandardKind; quantity: number; cost: number | null }
   | {
@@ -31,6 +35,14 @@ export type ShoppingDraft =
       tileLengthCm?: number
       tileWidthCm?: number
       piecesPerBox?: number
+      tiledAreaM2?: number
+    }
+  | {
+      kind: 'tileAdhesiveBags'
+      quantity: number
+      cost: number | null
+      tileSurface: 'floor' | 'walls'
+      packageWeightKg: number
     }
   | {
       kind: 'paintCans'
@@ -85,7 +97,22 @@ function isDraft(value: unknown): value is ShoppingDraft {
         (item.kind === 'tileBoxes' &&
           typeof item.piecesPerBox === 'number' &&
           Number.isSafeInteger(item.piecesPerBox) &&
-          item.piecesPerBox > 0))
+          item.piecesPerBox > 0)) &&
+      (item.tiledAreaM2 === undefined ||
+        ((item.tileSurface === 'floor' || item.tileSurface === 'walls') &&
+          typeof item.tiledAreaM2 === 'number' &&
+          Number.isFinite(item.tiledAreaM2) &&
+          item.tiledAreaM2 > 0 &&
+          item.tiledAreaM2 <= 4_000_000))
+    )
+  if (item.kind === 'tileAdhesiveBags')
+    return (
+      (item.tileSurface === 'floor' || item.tileSurface === 'walls') &&
+      typeof item.packageWeightKg === 'number' &&
+      Number.isFinite(item.packageWeightKg) &&
+      item.packageWeightKg > 0 &&
+      item.packageWeightKg <= 1000 &&
+      Number.isFinite((item.quantity as number) * item.packageWeightKg)
     )
   if (item.kind === 'groutPacks')
     return (

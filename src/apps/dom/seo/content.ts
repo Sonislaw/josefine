@@ -271,6 +271,38 @@ export const domSeoContent: Record<DomToolId, ToolContent> = {
       },
     ],
   },
+  'klej-do-plytek': {
+    intro:
+      'Klej do płytek kupuje się w pełnych workach, ale jego zużycie zależy od konkretnego produktu i sposobu układania. Możesz policzyć podłogę i ściany oddzielnie, nawet gdy używasz różnych klejów lub pac. Metraż netto da się przenieść z planu płytek pokoju, a worki zapisać na liście zakupów w Moim remoncie.',
+    how: 'Metraż pod płytki mnożymy przez zużycie w kg/m² podane dla wybranego kleju. Dodajemy własny zapas, po czym dzielimy masę przez wagę worka i zaokrąglamy w górę do pełnych opakowań. Cenę worka mnożymy przez liczbę worków; bez ceny pokazujemy ilość, ale nie zgadujemy kosztu. Zapas płytek na docinki nie zwiększa powierzchni klejenia.',
+    faqs: [
+      {
+        question: 'Ile kleju do płytek potrzeba na 20 m²?',
+        answer:
+          'Przy zużyciu 4 kg/m² potrzeba 80 kg bez zapasu. Po dodaniu 10% zapasu to 88 kg, czyli 4 worki po 25 kg. Rzeczywiste zużycie sprawdź na karcie wybranego kleju.',
+      },
+      {
+        question: 'Skąd wziąć zużycie kleju w kg/m²?',
+        answer:
+          'Z opakowania albo karty technicznej konkretnego produktu. Zwróć uwagę na format płytki, wielkość zębów pacy, równość podłoża i metodę nakładania. Nie istnieje jedna stawka odpowiednia do wszystkich prac.',
+      },
+      {
+        question: 'Czy podłogę i ściany można policzyć razem?',
+        answer:
+          'Można użyć tego samego produktu, ale oddzielne obliczenia ułatwiają uwzględnienie różnych płytek, podłoży i zużycia. Kalkulator nie łączy worków w jeden zakup; osobno zaokrągla je dla każdej powierzchni.',
+      },
+      {
+        question: 'Czy do metrażu kleju doliczać zapas płytek?',
+        answer:
+          'Nie. Klej licz od powierzchni rzeczywiście pokrywanej płytkami, po odjęciu otworów. Zapas na docinki zwiększa zakup płytek, nie powierzchnię ścian ani podłogi. Osobny zapas kleju możesz wpisać w kalkulatorze.',
+      },
+      {
+        question: 'Czy wynik uwzględnia grunt i hydroizolację?',
+        answer:
+          'Nie. To tylko orientacyjny zakup kleju. Grunt, hydroizolację, fugę i inne materiały trzeba zaplanować osobno zgodnie z podłożem i zaleceniami producentów.',
+      },
+    ],
+  },
   'liczba-paczek-paneli': {
     intro:
       'Panele sprzedawane są w paczkach, a każda paczka pokrywa określoną powierzchnię. Kalkulator pomaga oszacować liczbę pełnych opakowań potrzebnych do wykończenia podłogi. Opcjonalny plan zakupu pokaże też nadwyżkę materiału, cenę paneli i liczbę opakowań osobnego podkładu.',

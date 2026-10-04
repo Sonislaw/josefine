@@ -7,6 +7,7 @@ import {
   type RoomLaborKind,
   type RoomLaborRates,
   type RoomLaborSummary,
+  type RoomTilingAreas,
 } from '../lib/room-budget'
 import type { RoomMetrics } from '../lib/room-metrics'
 import { useDomShoppingList, type ShoppingRoom } from '../stores/shoppingList'
@@ -14,6 +15,7 @@ import { useDomShoppingList, type ShoppingRoom } from '../stores/shoppingList'
 const props = defineProps<{
   room: ShoppingRoom
   metrics: RoomMetrics | null
+  tiling: RoomTilingAreas
   labor: RoomLaborSummary
   materialTotal: number
   itemCount: number
@@ -23,14 +25,20 @@ const emit = defineEmits<{ requestDimensions: [] }>()
 const list = useDomShoppingList()
 const editing = ref(false)
 const error = ref('')
-const draft = reactive<Record<RoomLaborKind, string>>({ painting: '', flooring: '', skirting: '' })
-
-watch(
-  () => props.metrics,
-  (metrics) => {
-    if (!metrics) editing.value = false
-  },
+const draft = reactive<Record<RoomLaborKind, string>>({
+  painting: '',
+  flooring: '',
+  skirting: '',
+  tilingFloor: '',
+  tilingWalls: '',
+})
+const hasLaborBasis = computed(
+  () => props.metrics !== null || props.tiling.floor > 0 || props.tiling.walls > 0,
 )
+
+watch(hasLaborBasis, (hasBasis) => {
+  if (!hasBasis) editing.value = false
+})
 
 const pricedItemCount = computed(() => props.itemCount - props.missingPrices)
 const hasIncludedCost = computed(() => pricedItemCount.value > 0 || props.labor.lines.length > 0)
@@ -78,24 +86,31 @@ function saveRates() {
         <p class="budget-kicker"><Wallet :size="16" aria-hidden="true" /> PLAN KOSZTÓW</p>
         <h3 :id="`room-budget-${room.id}`">Budżet pokoju</h3>
       </div>
-      <button v-if="metrics && !editing" type="button" class="edit-rates" @click="openEditor">
+      <button v-if="hasLaborBasis && !editing" type="button" class="edit-rates" @click="openEditor">
         {{ room.laborRates ? 'Zmień stawki' : 'Dodaj stawki robocizny' }}
       </button>
     </div>
 
-    <p v-if="!metrics" class="budget-intro">
-      Do oszacowania robocizny potrzebne są wymiary pokoju.
+    <p v-if="!hasLaborBasis" class="budget-intro">
+      Do oszacowania robocizny zapisz wymiary pokoju lub dodaj płytki z policzonym metrażem.
       <button type="button" @click="emit('requestDimensions')">Dodaj wymiary</button>
       <span v-if="room.laborRates">Wpisane wcześniej stawki pozostają zapisane.</span>
     </p>
+    <p v-else-if="!metrics" class="budget-intro">
+      Robociznę za płytki liczymy z metrażu zapisanego przy zakupie. Dla malowania, pozostałej
+      podłogi i listew dodaj wymiary pokoju.
+      <button type="button" @click="emit('requestDimensions')">Dodaj wymiary</button>
+    </p>
     <p v-else-if="!room.laborRates && !editing" class="budget-intro">
-      Jeśli znasz stawki wykonawcy, dodaj je osobno dla malowania, podłogi i listew.
+      Jeśli znasz stawki wykonawcy, dodaj je osobno dla malowania, pozostałej podłogi, listew i
+      płytek.
     </p>
 
     <form v-if="editing" class="rates-form" @submit.prevent="saveRates">
       <p>
         Wpisz koszt pracy za jednostkę. Puste pola nie są uwzględniane; 0 zł oznacza pracę bez
-        kosztu.
+        kosztu. Metraż płytek pochodzi z zapisanych pozycji, a stawki za pozostałą podłogę i ściany
+        nie obejmują tych płytek.
       </p>
       <div class="rate-fields">
         <label v-for="task in roomLaborTasks" :key="task.id" :for="`rate-${room.id}-${task.id}`">
@@ -143,7 +158,11 @@ function saveRates() {
       <div>
         <span>Robocizna z podanymi stawkami</span>
         <strong>{{
-          !metrics ? 'Brak wymiarów' : labor.lines.length ? formatMoney(labor.total) : 'Brak stawek'
+          !hasLaborBasis
+            ? 'Brak metrażu'
+            : labor.lines.length
+              ? formatMoney(labor.total)
+              : 'Brak stawek'
         }}</strong>
       </div>
       <div class="budget-total">
@@ -155,9 +174,16 @@ function saveRates() {
       {{ missingPrices }} {{ missingPrices === 1 ? 'zakup nie ma ceny' : 'zakupów nie ma ceny' }}.
       Nie uwzględniono ich w sumie — wynik jest niepełny.
     </p>
+    <p v-if="tiling.missingAreaCount" class="budget-warning">
+      {{ tiling.missingAreaCount }}
+      {{ tiling.missingAreaCount === 1 ? 'pozycja płytek nie ma' : 'pozycji płytek nie ma' }}
+      zapisanego metrażu. Nie uwzględniamy ich w robociźnie; przelicz płytki w planie pokoju i dodaj
+      wynik ponownie.
+    </p>
     <p class="budget-footnote">
-      Liczymy tylko wpisane ceny i stawki. Malowanie dotyczy powierzchni ścian przed odjęciem okien
-      i drzwi; nie doliczamy transportu ani innych prac.
+      Liczymy tylko wpisane ceny i stawki. Robocizna glazurnicza korzysta z metrażu zapisanych
+      płytek; ten metraż odejmujemy od pozostałej podłogi i ścian, aby nie liczyć pracy dwa razy.
+      Przy wielu zapisach tej samej powierzchni usuń duplikaty. Nie doliczamy transportu.
     </p>
   </section>
 </template>

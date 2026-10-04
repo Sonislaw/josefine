@@ -346,6 +346,7 @@ function purchaseItems(
       tileLengthCm: result.tileLength,
       tileWidthCm: result.tileWidth,
       piecesPerBox: result.tilesPerBox,
+      tiledAreaM2: result.area,
     },
   ]
 }
@@ -578,6 +579,16 @@ function groutLink(surface: NonNullable<(typeof views.value)[number]['result']>)
     },
   }
 }
+const adhesiveLink = computed(() => ({
+  path: domPath('/klej-do-plytek'),
+  query: {
+    useFloor: plan.value?.floor ? '1' : '0',
+    useWalls: plan.value?.walls ? '1' : '0',
+    ...(plan.value?.floor ? { floorArea: String(plan.value.floor.area) } : {}),
+    ...(plan.value?.walls ? { wallsArea: String(plan.value.walls.area) } : {}),
+    ...(props.preferredRoomId ? { roomId: props.preferredRoomId } : {}),
+  },
+}))
 </script>
 
 <template>
@@ -1063,6 +1074,9 @@ function groutLink(surface: NonNullable<(typeof views.value)[number]['result']>)
               />
             </article>
           </div>
+          <RouterLink :to="adhesiveLink" class="adhesive-link">
+            Policz klej dla tych powierzchni <ArrowUpRight :size="16" aria-hidden="true" />
+          </RouterLink>
           <div v-if="plan.missingPriceCount === 0" class="cost-summary">
             Łączny koszt podanych kartonów <strong>{{ formatMoney(plan.knownCost) }}</strong>
           </div>
@@ -1778,6 +1792,16 @@ a:focus-visible {
 }
 .share-action {
   margin-top: 1rem;
+}
+.adhesive-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 1rem;
+  color: #e5f2df;
+  font-size: 0.83rem;
+  font-weight: 800;
+  text-underline-offset: 3px;
 }
 .caveat {
   margin-top: 1rem;

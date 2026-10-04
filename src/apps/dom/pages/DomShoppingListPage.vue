@@ -27,7 +27,12 @@ import {
   type RoomMetrics,
 } from '../lib/room-metrics'
 import { createRoomToolLinks } from '../lib/room-links'
-import { calculateRoomLabor, type RoomLaborSummary } from '../lib/room-budget'
+import {
+  calculateRoomLabor,
+  calculateRoomTilingAreas,
+  type RoomLaborSummary,
+  type RoomTilingAreas,
+} from '../lib/room-budget'
 import DomRoomBudget from '../components/DomRoomBudget.vue'
 import DomShoppingItemEditor from '../components/DomShoppingItemEditor.vue'
 
@@ -69,12 +74,14 @@ interface RoomGroup {
   knownTotal: number
   missingPrices: number
   metrics: RoomMetrics | null
+  tiling: RoomTilingAreas
   links: ReturnType<typeof createRoomToolLinks>
   labor: RoomLaborSummary
 }
 
 function makeGroup(room: ShoppingRoom | null, name: string, groupItems: ShoppingItem[]): RoomGroup {
   const metrics = room?.dimensions ? calculateRoomMetrics(room.dimensions) : null
+  const tiling = calculateRoomTilingAreas(groupItems)
   return {
     id: room?.id ?? null,
     room,
@@ -88,8 +95,9 @@ function makeGroup(room: ShoppingRoom | null, name: string, groupItems: Shopping
       ) / 100,
     missingPrices: groupItems.filter((item) => item.cost === null).length,
     metrics,
+    tiling,
     links: room?.dimensions ? createRoomToolLinks(room.dimensions, room.id) : [],
-    labor: calculateRoomLabor(metrics, room?.laborRates),
+    labor: calculateRoomLabor(metrics, room?.laborRates, tiling),
   }
 }
 
@@ -142,7 +150,11 @@ const formatMetric = (value: number) =>
 function itemAmount(item: ShoppingItem): string {
   const amount = `${formatCount(item.quantity)} ${shoppingKinds[item.kind].unit}`
   if (item.kind === 'tileBoxes' && item.tileLengthCm && item.tileWidthCm && item.piecesPerBox)
-    return `${amount} po ${formatCount(item.piecesPerBox)} szt. · ${formatDimension(item.tileLengthCm)} × ${formatDimension(item.tileWidthCm)} cm`
+    return `${amount} po ${formatCount(item.piecesPerBox)} szt. · ${formatDimension(item.tileLengthCm)} × ${formatDimension(item.tileWidthCm)} cm${item.tiledAreaM2 ? ` · na ${formatMetric(item.tiledAreaM2)} m²` : ''}`
+  if ((item.kind === 'tilePieces' || item.kind === 'tileBoxes') && item.tiledAreaM2)
+    return `${amount} · na ${formatMetric(item.tiledAreaM2)} m²`
+  if (item.kind === 'tileAdhesiveBags')
+    return `${amount} po ${formatLiters(item.packageWeightKg)} kg (${formatLiters(item.quantity * item.packageWeightKg)} kg razem)`
   if (item.kind === 'paintCans')
     return `${amount} po ${formatLiters(item.packageSizeLiters)} l (${formatLiters(item.quantity * item.packageSizeLiters)} l razem)`
   if (item.kind === 'groutPacks')
@@ -155,6 +167,8 @@ function itemLabel(item: ShoppingItem): string {
     return 'Płytki · podłoga'
   if ((item.kind === 'tilePieces' || item.kind === 'tileBoxes') && item.tileSurface === 'walls')
     return 'Płytki · ściany'
+  if (item.kind === 'tileAdhesiveBags')
+    return item.tileSurface === 'floor' ? 'Klej do płytek · podłoga' : 'Klej do płytek · ściany'
   if (item.kind === 'paintCans' && item.paintVariant === 'main') return 'Farba · kolor główny'
   if (item.kind === 'paintCans' && item.paintVariant === 'accent') return 'Farba · kolor akcentowy'
   return shoppingKinds[item.kind].label
@@ -216,7 +230,7 @@ function saveDimensions() {
 function clearDimensions(room: ShoppingRoom) {
   if (
     window.confirm(
-      `Usunąć zapisane wymiary pomieszczenia „${room.name}”? Zakupy i stawki pozostaną, ale koszt robocizny nie będzie liczony do czasu ponownego wpisania wymiarów.`,
+      `Usunąć zapisane wymiary pomieszczenia „${room.name}”? Zakupy i stawki pozostaną. Robocizna dla płytek z zapisanym metrażem nadal będzie liczona, ale pozostałe prace wymagają wymiarów pokoju.`,
     )
   ) {
     list.setRoomDimensions(room.id, null)
@@ -278,10 +292,10 @@ function togglePurchased(itemId: string, event: Event) {
         <p class="eyebrow">PLAN ZAKUPÓW</p>
         <h1>Mój remont<span>.</span></h1>
         <p>
-          W jednym miejscu zbierz materiały policzone w kalkulatorach Dom. Panele, płytki, fugę,
-          listwy, farbę i tapetę zapiszesz z wyniku i rozdzielisz według pomieszczeń. Ceny dodasz
-          tylko wtedy, gdy je znasz. Dla każdego pokoju możesz też oszacować robociznę z własnych
-          stawek.
+          W jednym miejscu zbierz materiały policzone w kalkulatorach Dom. Panele, płytki, klej,
+          fugę, listwy, farbę i tapetę zapiszesz z wyniku i rozdzielisz według pomieszczeń. Ceny
+          dodasz tylko wtedy, gdy je znasz. Dla każdego pokoju możesz też oszacować robociznę z
+          własnych stawek.
         </p>
       </div>
       <div class="hero-graphic" aria-hidden="true">
@@ -624,6 +638,7 @@ function togglePurchased(itemId: string, event: Event) {
             v-if="group.room"
             :room="group.room"
             :metrics="group.metrics"
+            :tiling="group.tiling"
             :labor="group.labor"
             :material-total="group.knownTotal"
             :item-count="group.items.length"
@@ -660,8 +675,8 @@ function togglePurchased(itemId: string, event: Event) {
           jest to pełny koszt remontu.
         </p>
         <p>
-          Robocizna obejmuje tylko wpisane stawki dla pokoi z wymiarami. Nie uwzględniamy
-          transportu, pozostałych prac ani zakupów spoza listy.
+          Robocizna obejmuje tylko wpisane stawki: dla płytek z zapisanym metrażem lub dla innych
+          prac w pokojach z wymiarami. Nie uwzględniamy transportu ani zakupów spoza listy.
         </p>
       </aside>
     </div>

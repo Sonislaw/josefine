@@ -67,6 +67,14 @@ export const domTools = [
     accent: 'blue',
   },
   {
+    id: 'klej-do-plytek',
+    title: 'Klej do płytek',
+    description: 'Szacuje zużycie kleju oraz liczbę worków osobno na podłogę i ściany.',
+    category: 'Remont',
+    symbol: 'kg',
+    accent: 'sage',
+  },
+  {
     id: 'liczba-paczek-paneli',
     title: 'Liczba paczek paneli',
     description: 'Oblicza liczbę paczek z powierzchni i wydajności paczki.',
@@ -86,7 +94,10 @@ export const domTools = [
 ] as const
 
 export type DomToolId = (typeof domTools)[number]['id']
-export type DomBasicToolId = Exclude<DomToolId, 'liczba-rolek-tapety' | 'kalkulator-fugi'>
+export type DomBasicToolId = Exclude<
+  DomToolId,
+  'liczba-rolek-tapety' | 'kalkulator-fugi' | 'klej-do-plytek'
+>
 
 export const domModule = {
   name: 'Dom',

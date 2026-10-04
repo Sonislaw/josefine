@@ -19,6 +19,9 @@ const DomWallpaperCalculator = defineAsyncComponent(
 const DomGroutCalculator = defineAsyncComponent(
   () => import('../components/DomGroutCalculator.vue'),
 )
+const DomTileAdhesiveCalculator = defineAsyncComponent(
+  () => import('../components/DomTileAdhesiveCalculator.vue'),
+)
 const tool = domTools.find((item) => item.id === props.toolId)!
 const content = domSeoContent[props.toolId]
 const relatedTools = domTools
@@ -70,10 +73,9 @@ useDomSeo(props.toolId, {
     </header>
     <DomPaintCalculator v-if="toolId === 'ilosc-farby'" /><DomWallpaperCalculator
       v-else-if="toolId === 'liczba-rolek-tapety'"
-    /><DomGroutCalculator v-else-if="toolId === 'kalkulator-fugi'" /><DomCalculator
-      v-else
-      :tool-id="toolId"
-    />
+    /><DomGroutCalculator v-else-if="toolId === 'kalkulator-fugi'" /><DomTileAdhesiveCalculator
+      v-else-if="toolId === 'klej-do-plytek'"
+    /><DomCalculator v-else :tool-id="toolId" />
     <section class="explanation">
       <div class="explanation-lead">
         <p class="section-kicker">PRAKTYCZNE WYJAŚNIENIE</p>

@@ -38,7 +38,7 @@ const faq = [
   {
     question: 'Czy kalkulatory nadają się do planowania remontu?',
     answer:
-      'Tak, pomagają oszacować ilość farby, rolek tapety, płytek, fugi i paczek paneli. W kalkulatorze płytek możesz też zaplanować osobno podłogę i ściany prostokątnego pokoju. Przy zakupie sprawdź zalecenia producenta, zapas na docinki oraz rzeczywiste wymiary pomieszczenia.',
+      'Tak, pomagają oszacować ilość farby, rolek tapety, płytek, kleju, fugi i paczek paneli. W planie płytek możesz policzyć osobno podłogę i ściany prostokątnego pokoju, a metraż przenieść do kalkulatora kleju. Przy zakupie sprawdź zalecenia producenta, zapas na docinki oraz rzeczywiste wymiary pomieszczenia.',
   },
   {
     question: 'Co obejmują kalkulatory kosztu prądu i wody?',
@@ -115,7 +115,7 @@ useDomSeo('home', {
       </div>
       <div>
         <span class="topic-number">03</span><strong>Remont</strong
-        ><small>Farba, tapeta, płytki, fuga i panele</small>
+        ><small>Farba, tapeta, płytki, klej i panele</small>
       </div>
     </section>
 
@@ -127,9 +127,9 @@ useDomSeo('home', {
         <p class="section-kicker">OD OBLICZEŃ DO ZAKUPÓW</p>
         <h2>Mój remont, jeden plan.</h2>
         <p>
-          Zapisuj materiały według pomieszczeń, dodaj wymiary pokoju i własne stawki robocizny.
-          Zobacz ujęte koszty materiałów, prac i całego remontu. Plan zostaje w tej przeglądarce —
-          bez konta i synchronizacji.
+          Zapisuj materiały według pomieszczeń, dodaj wymiary pokoju i własne stawki robocizny —
+          także osobno za płytki na podłodze i ścianach. Zobacz ujęte koszty materiałów i prac. Plan
+          zostaje w tej przeglądarce, bez konta i synchronizacji.
         </p>
       </div>
       <RouterLink :to="domPath('/moj-remont')"
