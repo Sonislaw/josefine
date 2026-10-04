@@ -1,14 +1,25 @@
 <script setup lang="ts">
 import { computed, ref, useId } from 'vue'
 import { parseDomNumber } from '../lib/calculations'
-import { shoppingKinds, useDomShoppingList, type ShoppingItem } from '../stores/shoppingList'
+import { calculateRoomMetrics } from '../lib/room-metrics'
+import {
+  shoppingKinds,
+  useDomShoppingList,
+  type ShoppingItem,
+  type TileCoveragePatch,
+} from '../stores/shoppingList'
 
 const props = defineProps<{ item: ShoppingItem }>()
 const emit = defineEmits<{ close: [] }>()
 const list = useDomShoppingList()
 const quantityId = useId()
 const priceId = useId()
+const surfaceId = useId()
+const areaId = useId()
 const quantity = ref(String(props.item.quantity))
+const isTile = props.item.kind === 'tilePieces' || props.item.kind === 'tileBoxes'
+const tileSurface = ref<'floor' | 'walls' | ''>(isTile ? (props.item.tileSurface ?? '') : '')
+const tiledArea = ref(isTile && props.item.tiledAreaM2 ? String(props.item.tiledAreaM2) : '')
 // Existing entries store a total, so derive the displayed unit price only for this edit form.
 const initialUnitPriceCents =
   props.item.cost === null ? null : Math.round((props.item.cost / props.item.quantity) * 100)
@@ -43,15 +54,83 @@ const totalTooLarge = computed(
     typeof unitPriceCents.value === 'number' &&
     totalCents.value === null,
 )
-const unchanged = computed(
+const purchaseUnchanged = computed(
   () =>
     parsedQuantity.value === props.item.quantity && unitPriceCents.value === initialUnitPriceCents,
 )
+const parsedTiledArea = computed(() => {
+  if (!tiledArea.value.trim()) return null
+  const value = parseDomNumber(tiledArea.value)
+  return value !== null && value > 0 && value <= 4_000_000 ? value : undefined
+})
+const coverageChanged = computed(
+  () =>
+    isTile &&
+    (tileSurface.value !== (props.item.tileSurface ?? '') ||
+      parsedTiledArea.value !== (props.item.tiledAreaM2 ?? null)),
+)
+const roomMetrics = computed(() => {
+  const room = list.rooms.find((entry) => entry.id === props.item.roomId)
+  return room?.dimensions ? calculateRoomMetrics(room.dimensions) : null
+})
+const roomSurfaceLimit = computed(() =>
+  tileSurface.value === 'floor'
+    ? roomMetrics.value?.floor
+    : tileSurface.value === 'walls'
+      ? roomMetrics.value?.walls
+      : null,
+)
+const coverageError = computed(() => {
+  if (!isTile) return null
+  if (parsedTiledArea.value === undefined)
+    return 'Podaj metraż większy od 0 i nie większy niż 4 000 000 m² albo zostaw pole puste.'
+  if (parsedTiledArea.value !== null && !tileSurface.value)
+    return 'Wybierz podłogę albo ściany dla zapisanego metrażu.'
+  if (
+    coverageChanged.value &&
+    parsedTiledArea.value !== null &&
+    roomSurfaceLimit.value !== null &&
+    roomSurfaceLimit.value !== undefined &&
+    parsedTiledArea.value > roomSurfaceLimit.value + 0.000001
+  )
+    return `Metraż jednej pozycji nie może przekraczać całej powierzchni ${tileSurface.value === 'floor' ? 'podłogi' : 'ścian'} tego pokoju (${formatArea(roomSurfaceLimit.value)} m²).`
+  return null
+})
+const coverageWarning = computed(() => {
+  if (
+    !isTile ||
+    parsedTiledArea.value === null ||
+    parsedTiledArea.value === undefined ||
+    roomSurfaceLimit.value === null ||
+    roomSurfaceLimit.value === undefined
+  )
+    return null
+  const otherArea = list.items.reduce((sum, entry) => {
+    if (
+      entry.id === props.item.id ||
+      entry.roomId !== props.item.roomId ||
+      (entry.kind !== 'tilePieces' && entry.kind !== 'tileBoxes') ||
+      entry.tileSurface !== tileSurface.value
+    )
+      return sum
+    return sum + (entry.tiledAreaM2 ?? 0)
+  }, 0)
+  return otherArea + parsedTiledArea.value > roomSurfaceLimit.value + 0.000001
+    ? `Łączny metraż zapisanych płytek (${formatArea(otherArea + parsedTiledArea.value)} m²) przekracza powierzchnię ${tileSurface.value === 'floor' ? 'podłogi' : 'ścian'} pokoju. Sprawdź, czy nie ma dwóch zapisów tej samej pracy.`
+    : null
+})
+const unchanged = computed(() => purchaseUnchanged.value && !coverageChanged.value)
 const previewCost = computed(() =>
-  unchanged.value ? props.item.cost : totalCents.value === null ? null : totalCents.value / 100,
+  purchaseUnchanged.value
+    ? props.item.cost
+    : totalCents.value === null
+      ? null
+      : totalCents.value / 100,
 )
 const formatMoney = (value: number) =>
   new Intl.NumberFormat('pl-PL', { style: 'currency', currency: 'PLN' }).format(value)
+const formatArea = (value: number) =>
+  new Intl.NumberFormat('pl-PL', { maximumFractionDigits: 3 }).format(value)
 const previewLabel = computed(() => {
   if (parsedQuantity.value === null || unitPriceCents.value === undefined || totalTooLarge.value)
     return 'Uzupełnij poprawne dane'
@@ -61,13 +140,26 @@ const previewLabel = computed(() => {
 function save() {
   attempted.value = true
   saveError.value = ''
-  if (parsedQuantity.value === null || unitPriceCents.value === undefined || totalTooLarge.value)
+  if (
+    parsedQuantity.value === null ||
+    unitPriceCents.value === undefined ||
+    totalTooLarge.value ||
+    coverageError.value
+  )
     return
   if (unchanged.value) {
     emit('close')
     return
   }
-  if (!list.updateItemPurchase(props.item.id, parsedQuantity.value, unitPriceCents.value)) {
+  const coverage: TileCoveragePatch | undefined = isTile
+    ? {
+        tileSurface: tileSurface.value || null,
+        tiledAreaM2: parsedTiledArea.value ?? null,
+      }
+    : undefined
+  if (
+    !list.updateItemPurchase(props.item.id, parsedQuantity.value, unitPriceCents.value, coverage)
+  ) {
     saveError.value = 'Nie udało się zaktualizować pozycji. Odśwież listę i spróbuj ponownie.'
     return
   }
@@ -102,6 +194,34 @@ function save() {
         />
       </label>
     </div>
+    <div v-if="isTile" class="coverage-fields">
+      <label :for="surfaceId">
+        Gdzie układasz płytki?
+        <select :id="surfaceId" v-model="tileSurface" :aria-invalid="attempted && !!coverageError">
+          <option value="">Nie określono</option>
+          <option value="floor">Podłoga</option>
+          <option value="walls">Ściany</option>
+        </select>
+      </label>
+      <label :for="areaId">
+        Powierzchnia układania (m²)
+        <input
+          :id="areaId"
+          v-model="tiledArea"
+          type="text"
+          inputmode="decimal"
+          autocomplete="off"
+          placeholder="np. 12,5"
+          :aria-invalid="attempted && !!coverageError"
+        />
+      </label>
+    </div>
+    <p v-if="isTile" class="edit-note">
+      Wpisz rzeczywisty metraż pod płytki, bez zapasu na docinki. To podstawa robocizny, niezależna
+      od liczby kupionych sztuk lub kartonów. Pusty metraż nie będzie liczony w robociźnie.
+    </p>
+    <p v-if="attempted && coverageError" class="edit-error" role="alert">{{ coverageError }}</p>
+    <p v-if="coverageWarning" class="edit-warning">{{ coverageWarning }}</p>
     <p class="edit-preview">
       Nowy koszt pozycji:
       <strong>{{ previewLabel }}</strong>
@@ -140,7 +260,16 @@ function save() {
   grid-template-columns: minmax(100px, 0.7fr) minmax(180px, 1.3fr);
   gap: 0.7rem;
 }
-.edit-fields label {
+.coverage-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.7rem;
+  margin-top: 0.85rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid #d6e5d1;
+}
+.edit-fields label,
+.coverage-fields label {
   display: grid;
   align-content: start;
   gap: 0.35rem;
@@ -148,7 +277,9 @@ function save() {
   font-size: 0.73rem;
   font-weight: 800;
 }
-.edit-fields input {
+.edit-fields input,
+.coverage-fields input,
+.coverage-fields select {
   width: 100%;
   min-width: 0;
   min-height: 42px;
@@ -160,11 +291,15 @@ function save() {
   font: inherit;
   font-size: 0.82rem;
 }
-.edit-fields input:focus-visible {
+.edit-fields input:focus-visible,
+.coverage-fields input:focus-visible,
+.coverage-fields select:focus-visible {
   outline: 2px solid #5e9670;
   outline-offset: 2px;
 }
-.edit-fields input[aria-invalid='true'] {
+.edit-fields input[aria-invalid='true'],
+.coverage-fields input[aria-invalid='true'],
+.coverage-fields select[aria-invalid='true'] {
   border-color: #c97561;
 }
 .edit-preview {
@@ -179,6 +314,12 @@ function save() {
   margin-top: 0.45rem;
   color: #a34f3c;
   font-size: 0.72rem;
+}
+.edit-warning {
+  margin-top: 0.5rem;
+  color: #926133;
+  font-size: 0.73rem;
+  line-height: 1.5;
 }
 .edit-actions {
   display: flex;
@@ -223,7 +364,8 @@ function save() {
     flex-basis: 100%;
     margin-left: 0;
   }
-  .edit-fields {
+  .edit-fields,
+  .coverage-fields {
     grid-template-columns: 1fr;
   }
 }

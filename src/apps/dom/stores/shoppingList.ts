@@ -53,6 +53,10 @@ export type ShoppingDraft =
     }
   | { kind: 'groutPacks'; quantity: number; cost: number | null; packageWeightKg: number }
 export type ShoppingItem = ShoppingDraft & { id: string; roomId: string | null; purchased: boolean }
+export type TileCoveragePatch = {
+  tileSurface: 'floor' | 'walls' | null
+  tiledAreaM2: number | null
+}
 type StoredShoppingItem = ShoppingDraft & {
   id: string
   roomId: string | null
@@ -355,13 +359,17 @@ export const useDomShoppingList = defineStore('dom-shopping-list', () => {
     itemId: string,
     quantity: number,
     unitPriceCents: number | null,
+    coverage?: TileCoveragePatch,
   ): boolean {
     hydrate()
-    const item = items.value.find((entry) => entry.id === itemId)
+    const index = items.value.findIndex((entry) => entry.id === itemId)
+    const item = items.value[index]
     if (
       !item ||
       !Number.isSafeInteger(quantity) ||
       quantity <= 0 ||
+      (coverage !== undefined && item.kind !== 'tilePieces' && item.kind !== 'tileBoxes') ||
+      (coverage !== undefined && coverage.tiledAreaM2 !== null && coverage.tileSurface === null) ||
       (unitPriceCents !== null &&
         (!Number.isSafeInteger(unitPriceCents) ||
           unitPriceCents < 0 ||
@@ -369,11 +377,26 @@ export const useDomShoppingList = defineStore('dom-shopping-list', () => {
     )
       return false
 
-    // The stored cost is the total for this line; the edit form works with a unit price.
-    const cost = unitPriceCents === null ? null : (unitPriceCents * quantity) / 100
-    if (!isDraft({ ...item, quantity, cost })) return false
-    item.quantity = quantity
-    item.cost = cost
+    // A coverage-only edit must not recalculate an old total from a rounded unit price.
+    const unchangedPurchase =
+      quantity === item.quantity &&
+      (item.cost === null
+        ? unitPriceCents === null
+        : unitPriceCents === Math.round((item.cost / item.quantity) * 100))
+    const cost = unchangedPurchase
+      ? item.cost
+      : unitPriceCents === null
+        ? null
+        : (unitPriceCents * quantity) / 100
+    const next: Record<string, unknown> = { ...item, quantity, cost }
+    if (coverage !== undefined) {
+      if (coverage.tileSurface === null) delete next.tileSurface
+      else next.tileSurface = coverage.tileSurface
+      if (coverage.tiledAreaM2 === null) delete next.tiledAreaM2
+      else next.tiledAreaM2 = coverage.tiledAreaM2
+    }
+    if (!isDraft(next)) return false
+    items.value[index] = next as ShoppingItem
     persist()
     return true
   }

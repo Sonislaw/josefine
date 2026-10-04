@@ -174,12 +174,6 @@ function saveRates() {
       {{ missingPrices }} {{ missingPrices === 1 ? 'zakup nie ma ceny' : 'zakupów nie ma ceny' }}.
       Nie uwzględniono ich w sumie — wynik jest niepełny.
     </p>
-    <p v-if="tiling.missingAreaCount" class="budget-warning">
-      {{ tiling.missingAreaCount }}
-      {{ tiling.missingAreaCount === 1 ? 'pozycja płytek nie ma' : 'pozycji płytek nie ma' }}
-      zapisanego metrażu. Nie uwzględniamy ich w robociźnie; przelicz płytki w planie pokoju i dodaj
-      wynik ponownie.
-    </p>
     <p class="budget-footnote">
       Liczymy tylko wpisane ceny i stawki. Robocizna glazurnicza korzysta z metrażu zapisanych
       płytek; ten metraż odejmujemy od pozostałej podłogi i ścian, aby nie liczyć pracy dwa razy.

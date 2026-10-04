@@ -33,8 +33,10 @@ import {
   type RoomLaborSummary,
   type RoomTilingAreas,
 } from '../lib/room-budget'
+import { calculateTilingBudget, type TilingBudgetSummary } from '../lib/tiling-budget'
 import DomRoomBudget from '../components/DomRoomBudget.vue'
 import DomShoppingItemEditor from '../components/DomShoppingItemEditor.vue'
+import DomTilingBudget from '../components/DomTilingBudget.vue'
 
 useDomSeo('shopping-list', {
   '@context': 'https://schema.org',
@@ -75,6 +77,7 @@ interface RoomGroup {
   missingPrices: number
   metrics: RoomMetrics | null
   tiling: RoomTilingAreas
+  tilingBudget: TilingBudgetSummary | null
   links: ReturnType<typeof createRoomToolLinks>
   labor: RoomLaborSummary
 }
@@ -82,6 +85,7 @@ interface RoomGroup {
 function makeGroup(room: ShoppingRoom | null, name: string, groupItems: ShoppingItem[]): RoomGroup {
   const metrics = room?.dimensions ? calculateRoomMetrics(room.dimensions) : null
   const tiling = calculateRoomTilingAreas(groupItems)
+  const labor = calculateRoomLabor(metrics, room?.laborRates, tiling)
   return {
     id: room?.id ?? null,
     room,
@@ -96,8 +100,9 @@ function makeGroup(room: ShoppingRoom | null, name: string, groupItems: Shopping
     missingPrices: groupItems.filter((item) => item.cost === null).length,
     metrics,
     tiling,
+    tilingBudget: room ? calculateTilingBudget(groupItems, labor, tiling, metrics) : null,
     links: room?.dimensions ? createRoomToolLinks(room.dimensions, room.id) : [],
-    labor: calculateRoomLabor(metrics, room?.laborRates, tiling),
+    labor,
   }
 }
 
@@ -608,7 +613,7 @@ function togglePurchased(itemId: string, event: Event) {
                 ><button
                   type="button"
                   class="edit-item"
-                  :aria-label="`Zmień ilość i cenę: ${itemLabel(item)}`"
+                  :aria-label="`Edytuj zakup${item.kind === 'tilePieces' || item.kind === 'tileBoxes' ? ' i metraż' : ''}: ${itemLabel(item)}`"
                   :aria-expanded="editingItemId === item.id"
                   @click="editingItemId = editingItemId === item.id ? null : item.id"
                 >
@@ -634,6 +639,11 @@ function togglePurchased(itemId: string, event: Event) {
           <p v-if="group.missingPrices && !group.room" class="group-note">
             Pozycji bez ceny: {{ group.missingPrices }}. Suma tej grupy jest niepełna.
           </p>
+          <DomTilingBudget
+            v-if="group.room && group.tilingBudget"
+            :room-id="group.room.id"
+            :summary="group.tilingBudget"
+          />
           <DomRoomBudget
             v-if="group.room"
             :room="group.room"
@@ -648,7 +658,7 @@ function togglePurchased(itemId: string, event: Event) {
         </section>
         <p v-if="items.length" class="snapshot-note">
           Pozycje są zapisanymi wynikami. Ilość i cenę możesz skorygować tutaj bez zmiany obliczenia
-          w kalkulatorze.
+          w kalkulatorze. Przy płytkach możesz też uzupełnić metraż do wyliczenia robocizny.
         </p>
       </div>
 
