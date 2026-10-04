@@ -40,10 +40,8 @@ import {
   type RoomTilingAreas,
 } from '../lib/room-budget'
 import { calculateFloorBudget, type FloorBudgetSummary } from '../lib/floor-budget'
-import { calculateRoomCoverage, type RoomCoverageAudit } from '../lib/room-coverage'
 import { calculateTilingBudget, type TilingBudgetSummary } from '../lib/tiling-budget'
 import DomFloorBudget from '../components/DomFloorBudget.vue'
-import DomRoomCoverageAudit from '../components/DomRoomCoverageAudit.vue'
 import DomRoomBudget from '../components/DomRoomBudget.vue'
 import DomShoppingItemEditor from '../components/DomShoppingItemEditor.vue'
 import DomTilingBudget from '../components/DomTilingBudget.vue'
@@ -90,7 +88,6 @@ interface RoomGroup {
   panels: RoomPanelAreas
   painting: RoomPaintingAreas
   skirting: RoomSkirtingLengths
-  coverage: RoomCoverageAudit
   floorBudget: FloorBudgetSummary | null
   tilingBudget: TilingBudgetSummary | null
   links: ReturnType<typeof createRoomToolLinks>
@@ -121,7 +118,6 @@ function makeGroup(room: ShoppingRoom | null, name: string, groupItems: Shopping
     panels,
     painting,
     skirting,
-    coverage: calculateRoomCoverage(metrics, panels, tiling, painting, skirting),
     floorBudget: room
       ? calculateFloorBudget(groupItems, labor, tiling, panels, skirting, metrics)
       : null,
@@ -670,11 +666,6 @@ function togglePurchased(itemId: string, event: Event) {
           <p v-if="group.missingPrices && !group.room" class="group-note">
             Pozycji bez ceny: {{ group.missingPrices }}. Suma tej grupy jest niepełna.
           </p>
-          <DomRoomCoverageAudit
-            v-if="group.room && (group.metrics || group.items.length)"
-            :room-id="group.room.id"
-            :audit="group.coverage"
-          />
           <DomFloorBudget
             v-if="group.room && group.floorBudget"
             :room-id="group.room.id"
@@ -724,7 +715,6 @@ function togglePurchased(itemId: string, event: Event) {
             ><strong>{{ laborLineCount ? formatMoney(laborTotal) : 'Nie wyliczono' }}</strong>
           </div>
         </div>
-        <p>Pozycji: {{ items.length }} · Utworzone pomieszczenia: {{ rooms.length }}.</p>
         <p>Kupione: {{ purchasedCount }} z {{ items.length }} · Do kupienia: {{ pendingCount }}.</p>
         <p v-if="unknownPriceCount">
           Liczba pozycji bez ceny: {{ unknownPriceCount }}. Nie uwzględniono ich w sumie, więc nie

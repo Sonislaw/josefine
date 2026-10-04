@@ -22,7 +22,6 @@ function laborLine(id: 'tilingFloor' | 'tilingWalls') {
       <div>
         <p class="eyebrow">PŁYTKI / KLEJ / FUGA / MONTAŻ</p>
         <h3 :id="`tiling-budget-${roomId}`">Prace glazurnicze w jednym miejscu</h3>
-        <p>To część budżetu pokoju poniżej, a nie dodatkowa pozycja do doliczenia.</p>
       </div>
     </header>
 
@@ -31,10 +30,11 @@ function laborLine(id: 'tilingFloor' | 'tilingWalls') {
         <div class="material-heading">
           <h4>{{ line.label }}</h4>
           <RouterLink
+            v-if="!line.itemCount"
             :to="{ path: domPath(line.path), query: { roomId } }"
-            :aria-label="`${line.itemCount ? 'Otwórz kalkulator' : 'Dodaj'}: ${line.label}`"
+            :aria-label="`Dodaj: ${line.label}`"
           >
-            {{ line.itemCount ? 'Otwórz' : 'Dodaj' }}
+            Dodaj
             <ArrowUpRight :size="14" aria-hidden="true" />
           </RouterLink>
         </div>
@@ -172,12 +172,6 @@ function laborLine(id: 'tilingFloor' | 'tilingWalls') {
   font-family: var(--font-heading);
   font-size: 1.35rem;
   letter-spacing: -0.04em;
-}
-.tiling-header p:last-child {
-  margin-top: 0.3rem;
-  color: #687c6b;
-  font-size: 0.74rem;
-  line-height: 1.55;
 }
 .material-grid {
   display: grid;

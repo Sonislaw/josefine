@@ -26,8 +26,7 @@ function laborLine(id: 'flooring' | 'skirting') {
       <span class="floor-icon"><PanelsTopLeft :size="23" aria-hidden="true" /></span>
       <div>
         <p class="eyebrow">PANELE / PODKŁAD / LISTWY / MONTAŻ</p>
-        <h3 :id="`floor-budget-${roomId}`">Podłoga w jednym miejscu</h3>
-        <p>To rozbicie kosztów już ujętych w budżecie pokoju — niczego nie doliczamy ponownie.</p>
+        <h3 :id="`floor-budget-${roomId}`">Panele, podkład i listwy</h3>
       </div>
     </header>
 
@@ -105,7 +104,7 @@ function laborLine(id: 'flooring' | 'skirting') {
     </div>
 
     <div class="floor-total">
-      <span>Suma ujętych kosztów podłogi</span>
+      <span>Suma tej części</span>
       <strong>{{
         summary.hasKnownCost ? formatMoney(summary.knownTotal) : 'Brak cen i stawek'
       }}</strong>
@@ -214,12 +213,6 @@ function laborLine(id: 'flooring' | 'skirting') {
   font-family: var(--font-heading);
   font-size: 1.35rem;
   letter-spacing: -0.04em;
-}
-.floor-header p:last-child {
-  margin-top: 0.3rem;
-  color: #687c6b;
-  font-size: 0.74rem;
-  line-height: 1.55;
 }
 .material-grid {
   display: grid;

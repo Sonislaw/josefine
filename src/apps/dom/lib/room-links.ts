@@ -35,19 +35,33 @@ export function createFloorRoomToolLink(
   }
 }
 
+/** Keep the room overview's tile calculator link prefilled with the saved dimensions. */
+export function createFloorTileRoomToolLink(
+  dimensions: RoomDimensions | null | undefined,
+  roomId?: string,
+) {
+  const metrics = dimensions ? calculateRoomMetrics(dimensions) : null
+  return {
+    path: domPath('/liczba-plytek'),
+    query: {
+      ...(metrics ? { area: toQueryNumber(metrics.floor) } : {}),
+      ...(dimensions && dimensions.length >= 0.01 && dimensions.width >= 0.01
+        ? {
+            showLayout: '1',
+            roomLength: String(dimensions.length),
+            roomWidth: String(dimensions.width),
+          }
+        : {}),
+      ...(roomId ? { roomId } : {}),
+    },
+  }
+}
+
 /** Room identity stays local; calculators only receive dimensions and an optional local room ID. */
 export function createRoomToolLinks(dimensions: RoomDimensions, roomId?: string) {
   const metrics = calculateRoomMetrics(dimensions)
   if (!metrics) return []
   const context = roomId ? { roomId } : {}
-  const tilePreviewQuery =
-    dimensions.length >= 0.01 && dimensions.width >= 0.01
-      ? {
-          showLayout: '1',
-          roomLength: String(dimensions.length),
-          roomWidth: String(dimensions.width),
-        }
-      : {}
   return [
     {
       title: 'Panele na podłogę',
@@ -66,14 +80,7 @@ export function createRoomToolLinks(dimensions: RoomDimensions, roomId?: string)
     {
       title: 'Płytki na podłogę',
       detail: `${format(metrics.floor)} m² podłogi`,
-      to: {
-        path: domPath('/liczba-plytek'),
-        query: {
-          area: toQueryNumber(metrics.floor),
-          ...tilePreviewQuery,
-          ...context,
-        },
-      },
+      to: createFloorTileRoomToolLink(dimensions, roomId),
     },
     {
       title: 'Farba na ściany',
