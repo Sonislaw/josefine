@@ -296,8 +296,11 @@ function reset() {
           :get-url="buildShareUrl"
           :disabled="!views.length || validResults.length !== views.length || !canShareInputs"
         />
-        <RouterLink :to="domPath('/liczba-plytek')">
-          <ArrowLeft :size="16" aria-hidden="true" /> Wróć do płytek
+        <RouterLink :to="domPath('/plytki-na-podloge')">
+          <ArrowLeft :size="16" aria-hidden="true" /> Płytki na podłogę
+        </RouterLink>
+        <RouterLink :to="domPath('/plytki-na-sciane')">
+          <ArrowLeft :size="16" aria-hidden="true" /> Płytki na ścianę
         </RouterLink>
       </div>
       <p class="caveat">

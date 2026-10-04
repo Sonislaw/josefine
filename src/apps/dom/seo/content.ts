@@ -177,10 +177,10 @@ export const domSeoContent: Record<DomToolId, ToolContent> = {
       },
     ],
   },
-  'liczba-plytek': {
+  'plytki-na-podloge': {
     intro:
-      'Kalkulator płytek szacuje liczbę sztuk potrzebnych na jedną powierzchnię albo, w opcjonalnym planie pokoju, osobno na podłogę i ściany. Możesz policzyć wszystkie ściany do pełnej wysokości lub wybrać tylko niektóre i określić wysokość ułożenia płytek. Drzwi i okna wpiszesz jako jedną powierzchnię albo dodasz osobno, aby odjąć tylko ich część pod płytkami. Podstawowe obliczenie i podgląd układu podłogi pozostają dostępne.',
-    how: 'Powierzchnię pojedynczej płytki w cm² przeliczamy na m². Metraż do ułożenia zwiększamy o zapas wybrany dla danej powierzchni, dzielimy przez powierzchnię płytki i zaokrąglamy w górę do pełnej sztuki. Liczbę sztuk dzielimy przez zawartość kartonu i ponownie zaokrąglamy w górę. W planie pokoju podłoga to długość razy szerokość. Dla ścian sumujemy długości wybranych boków i mnożymy przez wysokość ułożenia. W trybie szczegółowych otworów z każdego okna i drzwi odejmujemy tylko fragment na zaznaczonej ścianie, który przecina pas płytek mierzony od podłogi. Podłogę i ściany liczymy niezależnie, więc nie sumujemy sztuk różnych formatów.',
+      'Kalkulator płytek podłogowych przelicza powierzchnię na potrzebną liczbę sztuk z wybranym zapasem. Możesz podać metraż ręcznie lub wstawić wymiary pokoju z Mojego remontu. Podgląd prostego układu pomaga zobaczyć docinki, a plan zakupu przelicza wynik na pełne kartony.',
+    how: 'Długość i szerokość płytki przeliczamy z centymetrów na metry. Powierzchnię podłogi powiększamy o zapas na docinki, dzielimy przez powierzchnię płytki i zaokrąglamy do pełnej sztuki. Przy zakupie w kartonach dzielimy wynik przez liczbę płytek w kartonie i ponownie zaokrąglamy w górę. Koszt dotyczy wyłącznie podanej ceny kartonów.',
     faqs: [
       {
         question: 'Ile płytek 60 × 60 cm na 12 m²?',
@@ -212,30 +212,42 @@ export const domSeoContent: Record<DomToolId, ToolContent> = {
         answer:
           'Wpisz cenę jednego kartonu. Kalkulator pomnoży ją przez liczbę pełnych kartonów. Nie dolicza kleju, fug, dostawy ani montażu.',
       },
+    ],
+  },
+  'plytki-na-sciane': {
+    intro:
+      'Kalkulator płytek ściennych pozwala wybrać wszystkie ściany albo tylko wskazane boki pokoju. Możesz ustawić wysokość okładziny oraz odjąć drzwi i okna jako łączną powierzchnię lub osobne otwory. Dzięki temu zakup liczysz od powierzchni faktycznie przeznaczonej pod płytki.',
+    how: 'Sumujemy długości wybranych ścian i mnożymy je przez wysokość układania płytek. Od tak obliczonej powierzchni odejmujemy otwory w strefie okładziny. Następnie dodajemy wybrany zapas, dzielimy metraż przez powierzchnię jednej płytki i zaokrąglamy wynik w górę. Kartony liczymy z łącznej liczby sztuk, nie osobno dla każdej ściany.',
+    faqs: [
       {
-        question: 'Jak policzyć płytki na podłogę i ściany jednego pokoju?',
+        question: 'Jak policzyć płytki na jedną ścianę?',
         answer:
-          'Otwórz panel „Zaplanuj płytki w całym pomieszczeniu”. Wpisz długość, szerokość i wysokość pokoju, zaznacz powierzchnie do wykończenia, a następnie podaj format i zawartość kartonu osobno dla podłogi i ścian. Kalkulator pokaże osobne zakupy dla każdej grupy.',
+          'Wybierz „Wybrany fragment”, zaznacz jedną ścianę i podaj wysokość płytek. Ściany A i B odpowiadają długości pokoju, a C i D jego szerokości. Wynik uwzględni tylko zaznaczoną ścianę.',
       },
       {
-        question: 'Czy drzwi i okna odejmują się też od podłogi?',
+        question: 'Czy trzeba układać płytki do sufitu?',
         answer:
-          'Nie. Otwory odejmujemy wyłącznie od powierzchni ścian objętych płytkami. Powierzchnia podłogi to długość pokoju pomnożona przez jego szerokość. Przy płytkach do części wysokości możesz dodać drzwi i okna osobno, a kalkulator policzy tylko fragment otworu w pasie płytek.',
+          'Nie. W trybie wybranego fragmentu wpisz wysokość okładziny mierzoną od podłogi. Kalkulator policzy tylko część ściany do tej wysokości.',
       },
       {
-        question: 'Jak obliczyć płytki na jedną ścianę lub do połowy wysokości łazienki?',
+        question: 'Jak odjąć drzwi i okna od powierzchni płytek?',
         answer:
-          'W planie pokoju wybierz „Wybrany fragment”, zaznacz jedną albo kilka ścian i wpisz wysokość ułożenia. Ściany A i B mają długość pokoju, a C i D jego szerokość. Kalkulator policzy metraż tylko zaznaczonych ścian do wskazanej wysokości. Otwory podaj dla tego samego obszaru.',
+          'Możesz podać łączny metraż otworów w obszarze płytek albo dodać każde drzwi i okno osobno. Przy osobnych otworach podaj ścianę, wymiary i wysokość dolnej krawędzi — odliczymy tylko część przecinającą okładzinę.',
       },
       {
-        question: 'Ile powierzchni okna odjąć, gdy płytki są tylko do części wysokości?',
+        question: 'Czy otwory na niezaznaczonych ścianach zmieniają wynik?',
         answer:
-          'Wybierz „Dodam otwory osobno”. Dla okna podaj szerokość, wysokość, dolną krawędź od podłogi i ścianę. Kalkulator odejmie wyłącznie część okna znajdującą się poniżej wysokości płytek. Okno ponad płytkami albo na niezaznaczonej ścianie nie zmieni wyniku.',
+          'Nie. Otwór na ścianie bez płytek nie pomniejsza metrażu wybranych ścian. W trybie ręcznej sumy wpisuj tylko otwory należące do zaznaczonej strefy.',
       },
       {
-        question: 'Czy zobaczę powierzchnię każdej ściany osobno?',
+        question: 'Czy kartony zaokrąglają się dla każdej ściany osobno?',
         answer:
-          'Tak. Plan pokazuje metraż ścian A–D przed odjęciem otworów. Gdy dodasz drzwi i okna osobno, zobaczysz również odliczenie i powierzchnię netto każdej zaznaczonej ściany. Przy jednej ręcznie podanej sumie otworów nie da się rzetelnie przypisać odliczenia do konkretnej ściany, dlatego podajemy tylko łączny metraż netto. Kartony liczymy z sumy, a nie przez osobne zaokrąglanie każdej ściany.',
+          'Nie. Liczymy łączną liczbę płytek z zapasem dla wybranych ścian, a dopiero potem zaokrąglamy zakup do pełnych kartonów. To pozwala uniknąć sztucznego zawyżenia wyniku.',
+      },
+      {
+        question: 'Czy koszt obejmuje klej, fugę i układanie?',
+        answer:
+          'Nie. Podana cena dotyczy wyłącznie kartonów płytek. Klej i fugę możesz policzyć w osobnych kalkulatorach, a stawkę za montaż zapisać w budżecie pokoju.',
       },
     ],
   },

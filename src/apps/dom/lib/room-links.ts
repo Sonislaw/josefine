@@ -42,7 +42,7 @@ export function createFloorTileRoomToolLink(
 ) {
   const metrics = dimensions ? calculateRoomMetrics(dimensions) : null
   return {
-    path: domPath('/liczba-plytek'),
+    path: domPath('/plytki-na-podloge'),
     query: {
       ...(metrics ? { area: toQueryNumber(metrics.floor) } : {}),
       ...(dimensions && dimensions.length >= 0.01 && dimensions.width >= 0.01
@@ -50,6 +50,26 @@ export function createFloorTileRoomToolLink(
             showLayout: '1',
             roomLength: String(dimensions.length),
             roomWidth: String(dimensions.width),
+          }
+        : {}),
+      ...(roomId ? { roomId } : {}),
+    },
+  }
+}
+
+/** Wall tiles receive room dimensions; doors, windows and selected walls stay editable. */
+export function createWallTileRoomToolLink(
+  dimensions: RoomDimensions | null | undefined,
+  roomId?: string,
+) {
+  return {
+    path: domPath('/plytki-na-sciane'),
+    query: {
+      ...(dimensions
+        ? {
+            roomLength: String(dimensions.length),
+            roomWidth: String(dimensions.width),
+            roomHeight: String(dimensions.height),
           }
         : {}),
       ...(roomId ? { roomId } : {}),
@@ -81,6 +101,11 @@ export function createRoomToolLinks(dimensions: RoomDimensions, roomId?: string)
       title: 'Płytki na podłogę',
       detail: `${format(metrics.floor)} m² podłogi`,
       to: createFloorTileRoomToolLink(dimensions, roomId),
+    },
+    {
+      title: 'Płytki na ścianę',
+      detail: `${format(metrics.walls)} m² ścian przed odjęciem otworów`,
+      to: createWallTileRoomToolLink(dimensions, roomId),
     },
     {
       title: 'Farba na ściany',

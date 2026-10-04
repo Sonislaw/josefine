@@ -3,12 +3,12 @@ import { defineAsyncComponent } from 'vue'
 import { ArrowLeft, ArrowUpRight } from '@lucide/vue'
 import { RouterLink } from 'vue-router'
 import FaqSection from '@/shared/components/FaqSection.vue'
-import DomCalculator from '../components/DomCalculator.vue'
 import { domTools, type DomToolId } from '../manifest'
 import { domSeoContent } from '../seo/content'
 import { domPath, domSiteName, domSiteUrl, useDomSeo } from '../seo/useDomSeo'
 
 const props = defineProps<{ toolId: DomToolId }>()
+const DomCalculator = defineAsyncComponent(() => import('../components/DomCalculator.vue'))
 // The richer paint mode is only fetched for the paint page, not every Dom calculator.
 const DomPaintCalculator = defineAsyncComponent(
   () => import('../components/DomPaintCalculator.vue'),
@@ -22,6 +22,7 @@ const DomGroutCalculator = defineAsyncComponent(
 const DomTileAdhesiveCalculator = defineAsyncComponent(
   () => import('../components/DomTileAdhesiveCalculator.vue'),
 )
+const DomWallTilePlan = defineAsyncComponent(() => import('../components/DomWallTilePlan.vue'))
 const tool = domTools.find((item) => item.id === props.toolId)!
 const content = domSeoContent[props.toolId]
 const relatedTools = domTools
@@ -75,7 +76,10 @@ useDomSeo(props.toolId, {
       v-else-if="toolId === 'liczba-rolek-tapety'"
     /><DomGroutCalculator v-else-if="toolId === 'kalkulator-fugi'" /><DomTileAdhesiveCalculator
       v-else-if="toolId === 'klej-do-plytek'"
-    /><DomCalculator v-else :tool-id="toolId" />
+    /><DomWallTilePlan v-else-if="toolId === 'plytki-na-sciane'" /><DomCalculator
+      v-else
+      :tool-id="toolId"
+    />
     <section class="explanation">
       <div class="explanation-lead">
         <p class="section-kicker">PRAKTYCZNE WYJAŚNIENIE</p>

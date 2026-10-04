@@ -6,7 +6,13 @@ import { calculateTilePurchase } from '../lib/tiles'
 import AddToDomShoppingList from './AddToDomShoppingList.vue'
 import type { ShoppingDraft } from '../stores/shoppingList'
 
-const props = defineProps<{ tilesNeeded: number | null; preferredRoomId?: string }>()
+const props = defineProps<{
+  tilesNeeded: number | null
+  area: number | null
+  tileLength: number | null
+  tileWidth: number | null
+  preferredRoomId?: string
+}>()
 const includeBoxes = defineModel<boolean>('includeBoxes', { required: true })
 const tilesPerBox = defineModel<string>('tilesPerBox', { required: true })
 const boxPrice = defineModel<string>('boxPrice', { required: true })
@@ -42,6 +48,21 @@ const purchase = computed(() => {
 })
 
 const shoppingItems = computed<ShoppingDraft[]>(() => {
+  // The purchase carries its floor scope so room labor is based on saved work, not carton count.
+  const details = {
+    tileSurface: 'floor' as const,
+    ...(props.area !== null && props.area > 0 && props.area <= 4_000_000
+      ? { tiledAreaM2: props.area }
+      : {}),
+    ...(props.tileLength !== null &&
+    props.tileWidth !== null &&
+    props.tileLength > 0 &&
+    props.tileWidth > 0 &&
+    props.tileLength <= 300 &&
+    props.tileWidth <= 300
+      ? { tileLengthCm: props.tileLength, tileWidthCm: props.tileWidth }
+      : {}),
+  }
   if (includeBoxes.value) {
     return purchase.value
       ? [
@@ -49,12 +70,14 @@ const shoppingItems = computed<ShoppingDraft[]>(() => {
             kind: 'tileBoxes',
             quantity: purchase.value.boxCount,
             cost: purchase.value.estimatedCost,
+            piecesPerBox: parseDomNumber(tilesPerBox.value)!,
+            ...details,
           },
         ]
       : []
   }
   return props.tilesNeeded !== null && props.tilesNeeded > 0
-    ? [{ kind: 'tilePieces', quantity: props.tilesNeeded, cost: null }]
+    ? [{ kind: 'tilePieces', quantity: props.tilesNeeded, cost: null, ...details }]
     : []
 })
 

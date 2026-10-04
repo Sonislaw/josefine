@@ -5,8 +5,12 @@ import { createJiti } from 'jiti'
 
 const sourceRoot = fileURLToPath(new URL('../../../', import.meta.url))
 const jiti = createJiti(import.meta.url, { alias: { '@': sourceRoot } })
-const { createFloorRoomToolLink, createFloorTileRoomToolLink, createRoomToolLinks } =
-  jiti('./room-links.ts')
+const {
+  createFloorRoomToolLink,
+  createFloorTileRoomToolLink,
+  createWallTileRoomToolLink,
+  createRoomToolLinks,
+} = jiti('./room-links.ts')
 const dimensions = { length: 5, width: 4, height: 2.5 }
 
 test('floor budget opens panel and underlay calculator with room floor area', () => {
@@ -37,7 +41,7 @@ test('room overview prefills the floor tile calculator with saved dimensions', (
   const tiles = createFloorTileRoomToolLink(dimensions, 'room-1')
   const links = createRoomToolLinks(dimensions, 'room-1')
   assert.deepEqual(links[2].to, tiles)
-  assert.equal(tiles.path.endsWith('/liczba-plytek'), true)
+  assert.equal(tiles.path.endsWith('/plytki-na-podloge'), true)
   assert.deepEqual(tiles.query, {
     area: '20',
     showLayout: '1',
@@ -46,4 +50,17 @@ test('room overview prefills the floor tile calculator with saved dimensions', (
     roomId: 'room-1',
   })
   assert.deepEqual(createFloorTileRoomToolLink(null, 'room-1').query, { roomId: 'room-1' })
+})
+
+test('room overview exposes a separate wall tile calculator with room dimensions', () => {
+  const walls = createWallTileRoomToolLink(dimensions, 'room-1')
+  const links = createRoomToolLinks(dimensions, 'room-1')
+  assert.deepEqual(links[3].to, walls)
+  assert.equal(walls.path.endsWith('/plytki-na-sciane'), true)
+  assert.deepEqual(walls.query, {
+    roomLength: '5',
+    roomWidth: '4',
+    roomHeight: '2.5',
+    roomId: 'room-1',
+  })
 })

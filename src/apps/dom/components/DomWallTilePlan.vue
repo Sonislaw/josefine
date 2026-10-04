@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref, toRef, watch } from 'vue'
+import { computed, reactive, ref, toRef } from 'vue'
 import { ArrowUpRight, House, Layers3, Plus, RotateCcw, Trash2 } from '@lucide/vue'
-import { RouterLink, useRoute } from 'vue-router'
+import { RouterLink } from 'vue-router'
 import ShareResultButton from '@/shared/components/ShareResultButton.vue'
 import {
   booleanShareField,
@@ -27,6 +27,7 @@ import {
 import { domPath } from '../seo/useDomSeo'
 import { useDomShoppingList, type ShoppingDraft } from '../stores/shoppingList'
 import AddToDomShoppingList from './AddToDomShoppingList.vue'
+import DomRoomPicker from './DomRoomPicker.vue'
 
 type SurfaceKey = 'tileLength' | 'tileWidth' | 'waste' | 'tilesPerBox' | 'boxPrice'
 type SurfaceForm = Record<SurfaceKey, string>
@@ -53,20 +54,8 @@ interface FieldDefinition<T extends string> {
   positive?: boolean
 }
 
-const props = defineProps<{
-  baseTileLength: string
-  baseTileWidth: string
-  baseWaste: string
-  baseRoomLength: string
-  baseRoomWidth: string
-  preferredRoomId?: string
-}>()
-const route = useRoute()
 const shoppingList = useDomShoppingList()
-const enabled = ref(false)
-const started = ref(false)
-const includeFloor = ref(true)
-const includeWalls = ref(true)
+const selectedRoomId = ref('')
 const wallMode = ref<'full' | 'selected'>('full')
 const wallTileHeight = ref('1,2')
 const openingMode = ref<'total' | 'detailed'>('total')
@@ -100,13 +89,6 @@ function removeOpening(id: number) {
   openingForms.value = openingForms.value.filter((opening) => opening.id !== id)
 }
 const roomDefaults = { length: '5', width: '4', height: '2,5', openings: '0' }
-const floorDefaults: SurfaceForm = {
-  tileLength: '60',
-  tileWidth: '60',
-  waste: '10',
-  tilesPerBox: '4',
-  boxPrice: '',
-}
 const wallDefaults: SurfaceForm = {
   tileLength: '30',
   tileWidth: '60',
@@ -115,10 +97,9 @@ const wallDefaults: SurfaceForm = {
   boxPrice: '',
 }
 const room = reactive<Record<RoomKey, string>>({ ...roomDefaults })
-const floor = reactive<SurfaceForm>({ ...floorDefaults })
 const walls = reactive<SurfaceForm>({ ...wallDefaults })
 const savedRoom = computed(() =>
-  shoppingList.rooms.find((entry) => entry.id === props.preferredRoomId && entry.dimensions),
+  shoppingList.rooms.find((entry) => entry.id === selectedRoomId.value && entry.dimensions),
 )
 
 const roomFields: FieldDefinition<RoomKey>[] = [
@@ -202,12 +183,12 @@ function openingFieldError(opening: OpeningForm, field: OpeningField): string | 
 }
 const selectedWallSides = computed(() => tileRoomWallSides.filter((side) => selectedWalls[side]))
 const selectedWallsError = computed(() =>
-  includeWalls.value && wallMode.value === 'selected' && selectedWallSides.value.length === 0
+  wallMode.value === 'selected' && selectedWallSides.value.length === 0
     ? 'Wybierz co najmniej jedną ścianę do ułożenia płytek.'
     : null,
 )
 const wallTileHeightError = computed(() => {
-  if (!includeWalls.value || wallMode.value === 'full') return null
+  if (wallMode.value === 'full') return null
   if (!validNumber(wallTileHeight.value, wallTileHeightField))
     return 'Podaj wysokość płytek większą od 0 i nie większą niż 1000 m.'
   const height = parseDomNumber(room.height)
@@ -221,7 +202,7 @@ const wallCoverage = computed<TileWallCoverage | undefined>(() =>
     : undefined,
 )
 const tiledWallArea = computed(() => {
-  if (!includeWalls.value || selectedWallsError.value || wallTileHeightError.value) return null
+  if (selectedWallsError.value || wallTileHeightError.value) return null
   const length = parseDomNumber(room.length)
   const width = parseDomNumber(room.width)
   const height = parseDomNumber(room.height)
@@ -229,7 +210,7 @@ const tiledWallArea = computed(() => {
   return calculateTiledWallArea({ length, width, height }, wallCoverage.value)
 })
 const detailedOpenings = computed<TileWallOpening[] | null>(() => {
-  if (!includeWalls.value || openingMode.value !== 'detailed') return null
+  if (openingMode.value !== 'detailed') return null
   if (
     openingForms.value.some((opening) =>
       (['width', 'height', 'bottom'] as const).some((field) => openingFieldError(opening, field)),
@@ -269,7 +250,7 @@ const detailedWallBreakdown = computed(() => {
   )
 })
 const openingError = computed(() => {
-  if (!includeWalls.value || tiledWallArea.value === null) return null
+  if (tiledWallArea.value === null) return null
   const overfilledWall = detailedWallBreakdown.value?.find(
     (wall) => wall.openingArea !== null && wall.openingArea > wall.grossArea + 1e-9,
   )
@@ -299,50 +280,40 @@ function parseSurface(form: SurfaceForm): TileSurfaceInput | null {
 }
 
 const plan = computed(() => {
-  if (!enabled.value || (!includeFloor.value && !includeWalls.value)) return null
-  if (roomError(roomFields[0]!) || roomError(roomFields[1]!)) return null
+  if (roomFields.slice(0, 3).some((field) => roomError(field))) return null
   if (
-    includeWalls.value &&
-    (roomError(roomFields[2]!) ||
-      (openingMode.value === 'total' && roomError(roomFields[3]!)) ||
-      (openingMode.value === 'detailed' && detailedOpeningPreview.value === null) ||
-      selectedWallsError.value ||
-      wallTileHeightError.value ||
-      openingError.value)
+    (openingMode.value === 'total' && roomError(roomFields[3]!)) ||
+    (openingMode.value === 'detailed' && detailedOpeningPreview.value === null) ||
+    selectedWallsError.value ||
+    wallTileHeightError.value ||
+    openingError.value
   )
     return null
-  const floorInput = includeFloor.value ? parseSurface(floor) : null
-  const wallInput = includeWalls.value ? parseSurface(walls) : null
-  if ((includeFloor.value && !floorInput) || (includeWalls.value && !wallInput)) return null
+  const wallInput = parseSurface(walls)
+  if (!wallInput) return null
   return calculateTileRoomPlan({
     room: {
       length: parseDomNumber(room.length)!,
       width: parseDomNumber(room.width)!,
-      height: includeWalls.value ? parseDomNumber(room.height)! : 2.5,
+      height: parseDomNumber(room.height)!,
     },
-    openings:
-      includeWalls.value && openingMode.value === 'total' ? parseDomNumber(room.openings)! : 0,
+    openings: openingMode.value === 'total' ? parseDomNumber(room.openings)! : 0,
     detailedOpenings:
-      includeWalls.value && openingMode.value === 'detailed'
-        ? (detailedOpenings.value ?? undefined)
-        : undefined,
-    floor: floorInput,
+      openingMode.value === 'detailed' ? (detailedOpenings.value ?? undefined) : undefined,
+    floor: null,
     walls: wallInput,
-    wallCoverage: includeWalls.value ? wallCoverage.value : undefined,
+    wallCoverage: wallCoverage.value,
   })
 })
 
-function purchaseItems(
-  surface: 'floor' | 'walls',
-  result: TileSurfaceResult | null | undefined,
-): ShoppingDraft[] {
+function purchaseItems(result: TileSurfaceResult | null | undefined): ShoppingDraft[] {
   if (!result) return []
   return [
     {
       kind: 'tileBoxes',
       quantity: result.boxCount,
       cost: result.estimatedCost,
-      tileSurface: surface,
+      tileSurface: 'walls',
       tileLengthCm: result.tileLength,
       tileWidthCm: result.tileWidth,
       piecesPerBox: result.tilesPerBox,
@@ -350,44 +321,7 @@ function purchaseItems(
     },
   ]
 }
-const floorShoppingItems = computed(() => purchaseItems('floor', plan.value?.floor))
-const wallShoppingItems = computed(() => purchaseItems('walls', plan.value?.walls))
-const views = computed(() => [
-  ...(includeFloor.value
-    ? [
-        {
-          id: 'floor' as const,
-          title: 'Podłoga',
-          label: 'PŁYTKI PODŁOGOWE',
-          form: floor,
-          result: plan.value?.floor,
-          shoppingItems: floorShoppingItems.value,
-        },
-      ]
-    : []),
-  ...(includeWalls.value
-    ? [
-        {
-          id: 'walls' as const,
-          title: 'Ściany',
-          label: 'PŁYTKI ŚCIENNE',
-          form: walls,
-          result: plan.value?.walls,
-          shoppingItems: wallShoppingItems.value,
-        },
-      ]
-    : []),
-])
-
-const planFlag: ShareField = {
-  key: 'tileRoom',
-  read: () => (enabled.value ? '1' : '0'),
-  restore: (raw) => {
-    if (raw !== '1' && raw !== '0') return
-    enabled.value = raw === '1'
-    if (enabled.value) started.value = true
-  },
-}
+const wallShoppingItems = computed(() => purchaseItems(plan.value?.walls))
 function optionalField(
   key: string,
   model: { value: string },
@@ -439,7 +373,7 @@ function parseSharedOpenings(raw: string): Omit<OpeningForm, 'id'>[] | null {
 const detailedOpeningsShareField: ShareField = {
   key: 'roomOpeningItems',
   read: () => {
-    if (!includeWalls.value || openingMode.value !== 'detailed') return '[]'
+    if (openingMode.value !== 'detailed') return '[]'
     if (detailedOpenings.value === null) return null
     const rows: SerializedOpening[] = openingForms.value.map((opening) => [
       opening.kind,
@@ -457,9 +391,6 @@ const detailedOpeningsShareField: ShareField = {
   },
 }
 const { buildShareUrl, canShareInputs } = useShareableCalculator([
-  planFlag,
-  booleanShareField('roomFloor', includeFloor),
-  booleanShareField('roomWalls', includeWalls),
   choiceShareField('roomWallMode', wallMode, ['full', 'selected']),
   choiceShareField('roomOpeningMode', openingMode, ['total', 'detailed']),
   ...tileRoomWallSides.map((side) =>
@@ -467,56 +398,32 @@ const { buildShareUrl, canShareInputs } = useShareableCalculator([
   ),
   textShareField('roomLength', toRef(room, 'length'), (raw) => validNumber(raw, roomFields[0]!)),
   textShareField('roomWidth', toRef(room, 'width'), (raw) => validNumber(raw, roomFields[1]!)),
-  optionalField(
-    'roomHeight',
-    toRef(room, 'height'),
-    () => includeWalls.value,
-    '2,5',
-    roomFields[2]!,
-  ),
+  optionalField('roomHeight', toRef(room, 'height'), () => true, '2,5', roomFields[2]!),
   optionalField(
     'roomTileHeight',
     wallTileHeight,
-    () => includeWalls.value && wallMode.value === 'selected',
+    () => wallMode.value === 'selected',
     '1,2',
     wallTileHeightField,
   ),
   optionalField(
     'roomOpenings',
     toRef(room, 'openings'),
-    () => includeWalls.value && openingMode.value === 'total',
+    () => openingMode.value === 'total',
     '0',
     roomFields[3]!,
   ),
   detailedOpeningsShareField,
-  ...surfaceFields.flatMap((field) => [
-    optionalField(
-      `roomFloor${field.id}`,
-      toRef(floor, field.id),
-      () => includeFloor.value,
-      floorDefaults[field.id],
-      field,
-    ),
+  ...surfaceFields.map((field) =>
     optionalField(
       `roomWalls${field.id}`,
       toRef(walls, field.id),
-      () => includeWalls.value,
+      () => true,
       wallDefaults[field.id],
       field,
     ),
-  ]),
+  ),
 ])
-
-// A clean URL on the same route closes the optional panel; old input state remains editable.
-onMounted(() => {
-  if (route.query.tileRoom !== '1') enabled.value = false
-})
-watch(
-  () => route.fullPath,
-  () => {
-    if (route.query.tileRoom !== '1') enabled.value = false
-  },
-)
 
 function useSavedRoom() {
   const dimensions = savedRoom.value?.dimensions
@@ -525,29 +432,9 @@ function useSavedRoom() {
   room.width = String(dimensions.width)
   room.height = String(dimensions.height)
 }
-function startPlan() {
-  if (!started.value) {
-    useSavedRoom()
-    if (!savedRoom.value?.dimensions) {
-      const length = parseDomNumber(props.baseRoomLength)
-      const width = parseDomNumber(props.baseRoomWidth)
-      if (length !== null && length > 0) room.length = props.baseRoomLength
-      if (width !== null && width > 0) room.width = props.baseRoomWidth
-    }
-    if (validNumber(props.baseTileLength, surfaceFields[0]!))
-      floor.tileLength = props.baseTileLength
-    if (validNumber(props.baseTileWidth, surfaceFields[1]!)) floor.tileWidth = props.baseTileWidth
-    if (validNumber(props.baseWaste, surfaceFields[2]!)) floor.waste = props.baseWaste
-    started.value = true
-  }
-  enabled.value = true
-}
 function reset() {
   Object.assign(room, roomDefaults)
-  Object.assign(floor, floorDefaults)
   Object.assign(walls, wallDefaults)
-  includeFloor.value = true
-  includeWalls.value = true
   wallMode.value = 'full'
   wallTileHeight.value = '1,2'
   openingMode.value = 'total'
@@ -568,59 +455,41 @@ function wallChoiceLength(dimension: 'length' | 'width'): string {
 function wallSideLabel(side: TileRoomWallSide): string {
   return wallChoices.find((choice) => choice.id === side)?.label ?? 'Ściana'
 }
-function groutLink(surface: NonNullable<(typeof views.value)[number]['result']>) {
+function groutLink(surface: TileSurfaceResult) {
   return {
     path: domPath('/kalkulator-fugi'),
     query: {
       area: String(surface.area),
       tileLength: String(surface.tileLength),
       tileWidth: String(surface.tileWidth),
-      ...(props.preferredRoomId ? { roomId: props.preferredRoomId } : {}),
+      ...(selectedRoomId.value ? { roomId: selectedRoomId.value } : {}),
     },
   }
 }
 const adhesiveLink = computed(() => ({
   path: domPath('/klej-do-plytek'),
   query: {
-    useFloor: plan.value?.floor ? '1' : '0',
-    useWalls: plan.value?.walls ? '1' : '0',
-    ...(plan.value?.floor ? { floorArea: String(plan.value.floor.area) } : {}),
+    useFloor: '0',
+    useWalls: '1',
     ...(plan.value?.walls ? { wallsArea: String(plan.value.walls.area) } : {}),
-    ...(props.preferredRoomId ? { roomId: props.preferredRoomId } : {}),
+    ...(selectedRoomId.value ? { roomId: selectedRoomId.value } : {}),
   },
 }))
 </script>
 
 <template>
+  <DomRoomPicker v-model="selectedRoomId" focus="walls" @choose="useSavedRoom" />
   <section class="room-plan" aria-labelledby="tile-room-title">
     <div class="plan-header">
       <span class="header-icon"><House :size="22" aria-hidden="true" /></span>
       <div>
-        <p class="eyebrow">JEDEN POKÓJ, DWIE POWIERZCHNIE</p>
-        <h3 id="tile-room-title">Zaplanuj płytki w całym pomieszczeniu</h3>
-        <p>Podłoga i ściany mogą mieć inny format, zapas, kartony i cenę.</p>
+        <p class="eyebrow">KALKULATOR ŚCIAN</p>
+        <h3 id="tile-room-title">Zaplanuj płytki na ścianach</h3>
+        <p>Wybierz ściany, wysokość okładziny i sposób odliczenia drzwi oraz okien.</p>
       </div>
-      <button
-        v-if="!enabled"
-        type="button"
-        class="toggle-button"
-        :aria-expanded="false"
-        @click="startPlan"
-      >
-        <Plus :size="17" aria-hidden="true" /> Policz cały pokój
-      </button>
-      <button
-        v-else
-        type="button"
-        class="toggle-button"
-        :aria-expanded="true"
-        @click="enabled = false"
-      >
-        Ukryj plan
-      </button>
     </div>
 
-    <div v-if="enabled" class="plan-body">
+    <div class="plan-body">
       <div class="room-fields">
         <div class="section-heading">
           <div>
@@ -639,11 +508,7 @@ const adhesiveLink = computed(() => ({
         </div>
         <div class="field-grid">
           <div
-            v-for="field in roomFields.filter(
-              (item) =>
-                item.id !== 'openings' &&
-                (item.id === 'length' || item.id === 'width' || includeWalls),
-            )"
+            v-for="field in roomFields.filter((item) => item.id !== 'openings')"
             :key="field.id"
             class="field"
           >
@@ -666,23 +531,7 @@ const adhesiveLink = computed(() => ({
         </div>
       </div>
 
-      <div class="surface-switches" role="group" aria-label="Powierzchnie do ułożenia">
-        <label
-          ><input v-model="includeFloor" type="checkbox" /><span
-            ><strong>Podłoga</strong><small>Długość × szerokość</small></span
-          ></label
-        >
-        <label
-          ><input v-model="includeWalls" type="checkbox" /><span
-            ><strong>Ściany</strong><small>Obwód × wysokość − otwory</small></span
-          ></label
-        >
-      </div>
-      <p v-if="!includeFloor && !includeWalls" class="geometry-error" role="alert">
-        Wybierz co najmniej jedną powierzchnię.
-      </p>
-
-      <div v-if="includeWalls" class="wall-coverage">
+      <div class="wall-coverage">
         <div class="section-heading">
           <div>
             <p class="eyebrow">ZAKRES ŚCIAN</p>
@@ -914,49 +763,42 @@ const adhesiveLink = computed(() => ({
       </div>
 
       <div class="surface-grid">
-        <div
-          v-for="view in views"
-          :key="view.id"
-          class="surface-card"
-          :class="`surface-card--${view.id}`"
-        >
+        <div class="surface-card surface-card--walls">
           <div class="surface-heading">
             <span class="surface-icon"><Layers3 :size="19" aria-hidden="true" /></span>
             <div>
-              <p class="eyebrow">{{ view.label }}</p>
-              <h4>{{ view.title }}</h4>
+              <p class="eyebrow">PŁYTKI ŚCIENNE</p>
+              <h4>Format i zakup</h4>
             </div>
           </div>
           <p class="surface-intro">
-            Podaj produkt przeznaczony dla tej powierzchni. Wielkości opakowań nie mieszamy między
-            podłogą a ścianami.
+            Podaj format płytek, zapas na docinki oraz dane kartonu. Zakup policzymy z łącznego
+            metrażu wybranych ścian.
           </p>
           <div class="field-grid">
             <div v-for="field in surfaceFields" :key="field.id" class="field">
-              <label :for="`tile-room-${view.id}-${field.id}`"
+              <label :for="`tile-room-walls-${field.id}`"
                 >{{ field.label }} <small v-if="field.optional">opcjonalnie</small></label
               >
               <div class="input-wrap">
                 <input
-                  :id="`tile-room-${view.id}-${field.id}`"
-                  v-model="view.form[field.id]"
+                  :id="`tile-room-walls-${field.id}`"
+                  v-model="walls[field.id]"
                   type="text"
                   :inputmode="field.integer ? 'numeric' : 'decimal'"
                   autocomplete="off"
-                  :aria-invalid="!!surfaceError(view.form, field)"
+                  :aria-invalid="!!surfaceError(walls, field)"
                   :aria-describedby="
-                    surfaceError(view.form, field)
-                      ? `tile-room-help-${view.id}-${field.id}`
-                      : undefined
+                    surfaceError(walls, field) ? `tile-room-help-walls-${field.id}` : undefined
                   "
                 /><span>{{ field.unit }}</span>
               </div>
               <p
-                v-if="surfaceError(view.form, field)"
-                :id="`tile-room-help-${view.id}-${field.id}`"
+                v-if="surfaceError(walls, field)"
+                :id="`tile-room-help-walls-${field.id}`"
                 class="field-error"
               >
-                {{ surfaceError(view.form, field) }}
+                {{ surfaceError(walls, field) }}
               </p>
             </div>
           </div>
@@ -967,7 +809,7 @@ const adhesiveLink = computed(() => ({
         <div class="section-heading">
           <div>
             <p class="eyebrow">02 / WYNIK</p>
-            <h4>Osobne zakupy dla każdej powierzchni</h4>
+            <h4>Wynik dla ścian</h4>
           </div>
         </div>
         <template v-if="plan">
@@ -1024,61 +866,55 @@ const adhesiveLink = computed(() => ({
             </p>
           </div>
           <div class="result-grid">
-            <article
-              v-for="view in views"
-              :key="view.id"
-              class="result-card"
-              :class="`result-card--${view.id}`"
-            >
-              <p class="eyebrow">{{ view.label }}</p>
-              <h5>{{ view.title }}</h5>
+            <article class="result-card result-card--walls">
+              <p class="eyebrow">PŁYTKI ŚCIENNE</p>
+              <h5>Ściany</h5>
               <strong class="result-count"
-                >{{ formatCount(view.result!.boxCount) }} <small>kart.</small></strong
+                >{{ formatCount(plan.walls!.boxCount) }} <small>kart.</small></strong
               >
               <dl>
                 <div>
                   <dt>Powierzchnia</dt>
-                  <dd>{{ formatArea(view.result!.area) }} m²</dd>
+                  <dd>{{ formatArea(plan.walls!.area) }} m²</dd>
                 </div>
                 <div>
-                  <dt>Płytki z zapasem {{ view.form.waste }}%</dt>
-                  <dd>{{ formatCount(view.result!.tileCount) }} szt.</dd>
+                  <dt>Płytki z zapasem {{ walls.waste }}%</dt>
+                  <dd>{{ formatCount(plan.walls!.tileCount) }} szt.</dd>
                 </div>
                 <div>
                   <dt>W zakupionych kartonach</dt>
-                  <dd>{{ formatCount(view.result!.purchasedTiles) }} szt.</dd>
+                  <dd>{{ formatCount(plan.walls!.purchasedTiles) }} szt.</dd>
                 </div>
                 <div>
                   <dt>Nadwyżka ponad zapas</dt>
-                  <dd>{{ formatCount(view.result!.spareTiles) }} szt.</dd>
+                  <dd>{{ formatCount(plan.walls!.spareTiles) }} szt.</dd>
                 </div>
                 <div>
                   <dt>Koszt</dt>
                   <dd>
                     {{
-                      view.result!.estimatedCost === null
+                      plan.walls!.estimatedCost === null
                         ? 'Cena niepodana'
-                        : formatMoney(view.result!.estimatedCost)
+                        : formatMoney(plan.walls!.estimatedCost)
                     }}
                   </dd>
                 </div>
               </dl>
-              <RouterLink :to="groutLink(view.result!)"
-                >Policz fugę dla {{ view.id === 'floor' ? 'podłogi' : 'ścian' }}
-                <ArrowUpRight :size="15" aria-hidden="true"
+              <RouterLink :to="groutLink(plan.walls!)"
+                >Policz fugę dla ścian <ArrowUpRight :size="15" aria-hidden="true"
               /></RouterLink>
               <AddToDomShoppingList
-                :items="view.shoppingItems"
-                :preferred-room-id="preferredRoomId"
-                :label="view.id === 'floor' ? 'Dodaj płytki podłogowe' : 'Dodaj płytki ścienne'"
+                :items="wallShoppingItems"
+                :preferred-room-id="selectedRoomId"
+                label="Dodaj płytki ścienne"
               />
             </article>
           </div>
           <RouterLink :to="adhesiveLink" class="adhesive-link">
-            Policz klej dla tych powierzchni <ArrowUpRight :size="16" aria-hidden="true" />
+            Policz klej do płytek ściennych <ArrowUpRight :size="16" aria-hidden="true" />
           </RouterLink>
           <div v-if="plan.missingPriceCount === 0" class="cost-summary">
-            Łączny koszt podanych kartonów <strong>{{ formatMoney(plan.knownCost) }}</strong>
+            Koszt podanych kartonów <strong>{{ formatMoney(plan.knownCost) }}</strong>
           </div>
           <p v-else-if="plan.knownCost > 0" class="cost-note">
             Suma znanych cen: {{ formatMoney(plan.knownCost) }}. Brakuje ceny dla
@@ -1087,7 +923,7 @@ const adhesiveLink = computed(() => ({
           <p v-else class="cost-note">Dodaj ceny kartonów, aby zobaczyć koszt zakupu.</p>
         </template>
         <p v-else class="empty-result">
-          Sprawdź wymiary pokoju, wybrane powierzchnie i dane kartonów, aby zobaczyć plan.
+          Sprawdź wymiary pokoju, wybrane ściany i dane kartonów, aby zobaczyć plan.
         </p>
         <ShareResultButton
           :get-url="buildShareUrl"
@@ -1095,10 +931,9 @@ const adhesiveLink = computed(() => ({
           class="share-action"
         />
         <p class="caveat">
-          To szacunek dla prostokątnego pokoju i jednego rodzaju płytki na każdej wybranej
-          powierzchni. Nie uwzględnia narożnych docinek, wnęk, skosów, wzoru układania ani fug.
-          Otwory odejmujemy tylko od obszaru układania na wybranych ścianach. Zapas płytek ustaw
-          osobno dla podłogi i ścian.
+          To szacunek dla prostokątnego pokoju i jednego rodzaju płytek na wybranych ścianach. Nie
+          uwzględnia narożnych docinek, wnęk, skosów, wzoru układania ani fug. Otwory odejmujemy
+          tylko od obszaru układania płytek.
         </p>
       </div>
     </div>
@@ -1156,7 +991,6 @@ h5 {
   font-size: 0.77rem;
   line-height: 1.5;
 }
-.toggle-button,
 .heading-actions button {
   display: inline-flex;
   align-items: center;
@@ -1173,7 +1007,6 @@ h5 {
   font-weight: 800;
   cursor: pointer;
 }
-.toggle-button:hover,
 .heading-actions button:hover {
   background: #ecf5e9;
 }
@@ -1529,44 +1362,10 @@ a:focus-visible {
   border-radius: 9px;
   background: #fff5ee;
 }
-.surface-switches {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.7rem;
-}
-.surface-switches label {
-  display: flex;
-  align-items: center;
-  gap: 0.65rem;
-  flex: 1 1 180px;
-  padding: 0.8rem 1rem;
-  border: 1px solid #dbe5d8;
-  border-radius: 12px;
-  background: #fff;
-  cursor: pointer;
-}
-.surface-switches input {
-  width: 18px;
-  height: 18px;
-  accent-color: #376c4e;
-}
-.surface-switches strong,
-.surface-switches small {
-  display: block;
-}
-.surface-switches strong {
-  color: #315a42;
-  font-size: 0.8rem;
-}
-.surface-switches small {
-  margin-top: 0.15rem;
-  color: #788979;
-  font-size: 0.68rem;
-}
 .surface-grid,
 .result-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr);
   gap: 0.8rem;
 }
 .surface-card--walls {
@@ -1810,10 +1609,6 @@ a:focus-visible {
   line-height: 1.6;
 }
 @media (max-width: 850px) {
-  .surface-grid,
-  .result-grid {
-    grid-template-columns: 1fr;
-  }
   .opening-input-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }

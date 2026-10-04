@@ -206,6 +206,12 @@ function itemLabel(item: ShoppingItem): string {
   return shoppingKinds[item.kind].label
 }
 
+function calculatorPathForItem(item: ShoppingItem): string {
+  if ((item.kind === 'tilePieces' || item.kind === 'tileBoxes') && item.tileSurface === 'walls')
+    return '/plytki-na-sciane'
+  return shoppingKinds[item.kind].path
+}
+
 function clearAll() {
   if (
     window.confirm(
@@ -609,7 +615,7 @@ function togglePurchased(itemId: string, event: Event) {
                 <strong>{{ itemLabel(item) }}</strong
                 ><span
                   >{{ itemAmount(item) }} ·
-                  <RouterLink :to="domPath(shoppingKinds[item.kind].path)"
+                  <RouterLink :to="domPath(calculatorPathForItem(item))"
                     >Otwórz kalkulator
                     <ArrowUpRight :size="13" aria-hidden="true" /></RouterLink></span
                 ><label v-if="rooms.length" class="assignment"
@@ -675,6 +681,7 @@ function togglePurchased(itemId: string, event: Event) {
           <DomTilingBudget
             v-if="group.room && group.tilingBudget"
             :room-id="group.room.id"
+            :dimensions="group.room.dimensions ?? null"
             :summary="group.tilingBudget"
           />
           <DomRoomBudget
@@ -738,8 +745,10 @@ function togglePurchased(itemId: string, event: Event) {
       <div class="start-links">
         <RouterLink :to="domPath('/liczba-paczek-paneli')"
           >Panele <ArrowUpRight :size="16" aria-hidden="true" /></RouterLink
-        ><RouterLink :to="domPath('/liczba-plytek')"
-          >Płytki <ArrowUpRight :size="16" aria-hidden="true" /></RouterLink
+        ><RouterLink :to="domPath('/plytki-na-podloge')"
+          >Płytki na podłogę <ArrowUpRight :size="16" aria-hidden="true" /></RouterLink
+        ><RouterLink :to="domPath('/plytki-na-sciane')"
+          >Płytki na ścianę <ArrowUpRight :size="16" aria-hidden="true" /></RouterLink
         ><RouterLink :to="domPath('/kalkulator-fugi')"
           >Fuga <ArrowUpRight :size="16" aria-hidden="true" /></RouterLink
         ><RouterLink :to="domPath('/obwod-prostokata')"

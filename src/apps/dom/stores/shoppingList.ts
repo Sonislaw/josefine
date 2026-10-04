@@ -10,8 +10,8 @@ export const domShoppingListStorageKey = 'josefine:dom:shopping-list:v2'
 export const shoppingKinds = {
   panels: { label: 'Panele podłogowe', unit: 'pacz.', path: '/liczba-paczek-paneli' },
   underlay: { label: 'Podkład pod panele', unit: 'opak.', path: '/liczba-paczek-paneli' },
-  tilePieces: { label: 'Płytki', unit: 'szt.', path: '/liczba-plytek' },
-  tileBoxes: { label: 'Płytki', unit: 'kart.', path: '/liczba-plytek' },
+  tilePieces: { label: 'Płytki', unit: 'szt.', path: '/plytki-na-podloge' },
+  tileBoxes: { label: 'Płytki', unit: 'kart.', path: '/plytki-na-podloge' },
   tileAdhesiveBags: { label: 'Klej do płytek', unit: 'work.', path: '/klej-do-plytek' },
   groutPacks: { label: 'Fuga', unit: 'opak.', path: '/kalkulator-fugi' },
   skirting: { label: 'Listwy przypodłogowe', unit: 'szt.', path: '/obwod-prostokata' },

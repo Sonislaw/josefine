@@ -7,6 +7,7 @@ import { domPath } from '../seo/useDomSeo'
 import { useDomShoppingList, type ShoppingRoom } from '../stores/shoppingList'
 
 const roomId = defineModel<string>({ required: true })
+withDefaults(defineProps<{ focus?: 'default' | 'walls' }>(), { focus: 'default' })
 const emit = defineEmits<{ choose: [room: ShoppingRoom | null] }>()
 const list = useDomShoppingList()
 const { rooms } = storeToRefs(list)
@@ -63,7 +64,10 @@ function choose(event: Event) {
         <option value="">Bez pomieszczenia</option>
         <option v-for="room in rooms" :key="room.id" :value="room.id">{{ room.name }}</option>
       </select>
-      <small v-if="metrics">
+      <small v-if="metrics && focus === 'walls'">
+        {{ format(metrics.walls) }} m² ścian przed odjęciem otworów
+      </small>
+      <small v-else-if="metrics">
         {{ format(metrics.floor) }} m² podłogi · {{ format(metrics.perimeter) }} m obwodu
       </small>
       <small v-else-if="selectedRoom">Brak wymiarów — zakupy nadal trafią do tego pokoju.</small>

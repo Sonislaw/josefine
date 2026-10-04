@@ -2,9 +2,15 @@
 import { ArrowUpRight, Layers3 } from '@lucide/vue'
 import { RouterLink } from 'vue-router'
 import type { TilingBudgetSummary } from '../lib/tiling-budget'
+import { createFloorTileRoomToolLink, createWallTileRoomToolLink } from '../lib/room-links'
+import type { RoomDimensions } from '../lib/room-metrics'
 import { domPath } from '../seo/useDomSeo'
 
-const props = defineProps<{ summary: TilingBudgetSummary; roomId: string }>()
+const props = defineProps<{
+  summary: TilingBudgetSummary
+  roomId: string
+  dimensions: RoomDimensions | null
+}>()
 const formatMoney = (value: number) =>
   new Intl.NumberFormat('pl-PL', { style: 'currency', currency: 'PLN' }).format(value)
 const formatArea = (value: number) =>
@@ -29,8 +35,22 @@ function laborLine(id: 'tilingFloor' | 'tilingWalls') {
       <article v-for="line in summary.materials" :key="line.id" class="material-card">
         <div class="material-heading">
           <h4>{{ line.label }}</h4>
+          <div v-if="line.id === 'tiles' && !line.itemCount" class="tile-choices">
+            <RouterLink
+              :to="createFloorTileRoomToolLink(dimensions, roomId)"
+              aria-label="Dodaj płytki na podłogę"
+            >
+              Podłoga <ArrowUpRight :size="14" aria-hidden="true" />
+            </RouterLink>
+            <RouterLink
+              :to="createWallTileRoomToolLink(dimensions, roomId)"
+              aria-label="Dodaj płytki na ścianę"
+            >
+              Ściana <ArrowUpRight :size="14" aria-hidden="true" />
+            </RouterLink>
+          </div>
           <RouterLink
-            v-if="!line.itemCount"
+            v-else-if="!line.itemCount"
             :to="{ path: domPath(line.path), query: { roomId } }"
             :aria-label="`Dodaj: ${line.label}`"
           >
@@ -206,6 +226,12 @@ function laborLine(id: 'tilingFloor' | 'tilingWalls') {
   font-size: 0.7rem;
   font-weight: 800;
   text-underline-offset: 2px;
+}
+.tile-choices {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 0.3rem 0.65rem;
 }
 .quantity {
   min-height: 1.1rem;

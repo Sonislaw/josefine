@@ -51,9 +51,17 @@ export const domTools = [
     accent: 'peach',
   },
   {
-    id: 'liczba-plytek',
-    title: 'Liczba płytek',
-    description: 'Oblicza płytki na jedną powierzchnię lub osobno na podłogę i ściany pokoju.',
+    id: 'plytki-na-podloge',
+    title: 'Płytki na podłogę',
+    description: 'Oblicza liczbę płytek i kartonów na podłogę oraz pokazuje orientacyjny układ.',
+    category: 'Remont',
+    symbol: '▦',
+    accent: 'sand',
+  },
+  {
+    id: 'plytki-na-sciane',
+    title: 'Płytki na ścianę',
+    description: 'Oblicza płytki na wybrane ściany z uwzględnieniem wysokości, drzwi i okien.',
     category: 'Remont',
     symbol: '▦',
     accent: 'sand',
@@ -96,7 +104,7 @@ export const domTools = [
 export type DomToolId = (typeof domTools)[number]['id']
 export type DomBasicToolId = Exclude<
   DomToolId,
-  'liczba-rolek-tapety' | 'kalkulator-fugi' | 'klej-do-plytek'
+  'liczba-rolek-tapety' | 'kalkulator-fugi' | 'klej-do-plytek' | 'plytki-na-sciane'
 >
 
 export const domModule = {

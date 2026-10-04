@@ -46,7 +46,6 @@ import type { ShoppingRoom } from '../stores/shoppingList'
 // Rozbudowane plany zakupów pobieramy tylko na stronach odpowiednich materiałów.
 const DomPanelPurchasePlan = defineAsyncComponent(() => import('./DomPanelPurchasePlan.vue'))
 const DomTilePurchasePlan = defineAsyncComponent(() => import('./DomTilePurchasePlan.vue'))
-const DomTileRoomPlan = defineAsyncComponent(() => import('./DomTileRoomPlan.vue'))
 const DomTileLayoutPreview = defineAsyncComponent(() => import('./DomTileLayoutPreview.vue'))
 const DomSkirtingPlan = defineAsyncComponent(() => import('./DomSkirtingPlan.vue'))
 const DomCompositeArea = defineAsyncComponent(() => import('./DomCompositeArea.vue'))
@@ -101,10 +100,10 @@ function useRoom(room: ShoppingRoom | null) {
   const metrics = calculateRoomMetrics(room.dimensions)
   if (!metrics) return
 
-  if (props.toolId === 'liczba-paczek-paneli' || props.toolId === 'liczba-plytek') {
+  if (props.toolId === 'liczba-paczek-paneli' || props.toolId === 'plytki-na-podloge') {
     form.area = String(Number(metrics.floor.toFixed(6)))
   }
-  if (props.toolId === 'liczba-plytek') {
+  if (props.toolId === 'plytki-na-podloge') {
     tileRoomLength.value = String(room.dimensions.length)
     tileRoomWidth.value = String(room.dimensions.width)
     tileOrientation.value = 'standard'
@@ -200,7 +199,7 @@ const tileRoomWidthShareField: ShareField = {
 watch(
   () => route.fullPath,
   () => {
-    if (props.toolId !== 'liczba-plytek') return
+    if (props.toolId !== 'plytki-na-podloge') return
     // A second URL on the same calculator must not inherit an earlier room preview.
     tileLayoutEnabled.value = false
     tileRoomLength.value = ''
@@ -270,7 +269,7 @@ const { buildShareUrl, canShareInputs } = useShareableCalculator([
         textShareField('underlayPackPrice', shareUnderlayPackPrice, validOptionalPrice),
       ]
     : []),
-  ...(props.toolId === 'liczba-plytek'
+  ...(props.toolId === 'plytki-na-podloge'
     ? [
         tileLayoutShareField,
         tileRoomLengthShareField,
@@ -385,17 +384,17 @@ const nextTools = computed(() => {
   if (Number(area) <= 0) return []
   const destinations = [
     { title: 'Panele', detail: 'Jeśli mierzysz podłogę', path: '/liczba-paczek-paneli' },
-    { title: 'Płytki', detail: 'Na podłogę lub ścianę', path: '/liczba-plytek' },
+    { title: 'Płytki na podłogę', detail: 'Jeśli mierzysz podłogę', path: '/plytki-na-podloge' },
     { title: 'Farba', detail: 'Jeśli mierzysz ścianę', path: '/ilosc-farby' },
   ]
-  return (compositeEnabled.value ? destinations.slice(0, 2) : destinations).map((item) => ({
+  return destinations.map((item) => ({
     ...item,
     to: { path: domPath(item.path), query: { area } },
   }))
 })
 
 const groutNextLink = computed(() => {
-  if (props.toolId !== 'liczba-plytek' || !results.value) return null
+  if (props.toolId !== 'plytki-na-podloge' || !results.value) return null
   const area = form.area ?? ''
   const tileLength = form.tileLength ?? ''
   const tileWidth = form.tileWidth ?? ''
@@ -460,7 +459,7 @@ function useMeterVolume(volume: number) {
   <DomRoomPicker
     v-if="
       toolId === 'liczba-paczek-paneli' ||
-      toolId === 'liczba-plytek' ||
+      toolId === 'plytki-na-podloge' ||
       toolId === 'obwod-prostokata'
     "
     v-model="selectedRoomId"
@@ -646,7 +645,7 @@ function useMeterVolume(volume: number) {
     :add-only-underlay="route.query.addMaterial === 'underlay'"
   />
   <DomTileLayoutPreview
-    v-if="toolId === 'liczba-plytek'"
+    v-if="toolId === 'plytki-na-podloge'"
     v-model:enabled="tileLayoutEnabled"
     v-model:room-length="tileRoomLength"
     v-model:room-width="tileRoomWidth"
@@ -657,11 +656,14 @@ function useMeterVolume(volume: number) {
     @apply-area="form.area = $event"
   />
   <DomTilePurchasePlan
-    v-if="toolId === 'liczba-plytek'"
+    v-if="toolId === 'plytki-na-podloge'"
     v-model:include-boxes="includeBoxes"
     v-model:tiles-per-box="tilesPerBox"
     v-model:box-price="boxPrice"
     :tiles-needed="results?.[0]?.value ?? null"
+    :area="parseDomNumber(form.area ?? '')"
+    :tile-length="parseDomNumber(form.tileLength ?? '')"
+    :tile-width="parseDomNumber(form.tileWidth ?? '')"
     :preferred-room-id="effectiveRoomId"
   />
   <section v-if="groutNextLink" class="grout-next" aria-labelledby="grout-next-title">
@@ -674,15 +676,6 @@ function useMeterVolume(volume: number) {
       Policz fugę <ArrowUpRight :size="17" aria-hidden="true" />
     </RouterLink>
   </section>
-  <DomTileRoomPlan
-    v-if="toolId === 'liczba-plytek'"
-    :base-tile-length="form.tileLength ?? ''"
-    :base-tile-width="form.tileWidth ?? ''"
-    :base-waste="form.waste ?? ''"
-    :base-room-length="tileRoomLength"
-    :base-room-width="tileRoomWidth"
-    :preferred-room-id="effectiveRoomId"
-  />
   <DomSkirtingPlan
     v-if="toolId === 'obwod-prostokata'"
     v-model:openings="openings"

@@ -1,4 +1,18 @@
-/** Opcjonalny plan zakupu; podstawowy kalkulator nadal podaje liczbę pojedynczych płytek. */
+/** Shared piece-count formula for floor and wall tools; callers validate their own inputs. */
+export function calculateTileCounts(
+  area: number,
+  tileLengthCm: number,
+  tileWidthCm: number,
+  wastePercent: number,
+) {
+  const tileArea = (tileLengthCm * tileWidthCm) / 10_000
+  return {
+    withoutReserve: Math.ceil(area / tileArea),
+    tileCount: Math.ceil((area * (1 + wastePercent / 100)) / tileArea),
+  }
+}
+
+/** Full-carton purchase, shared by the floor and wall calculators. */
 export function calculateTilePurchase(
   tilesNeeded: number,
   tilesPerBox: number,

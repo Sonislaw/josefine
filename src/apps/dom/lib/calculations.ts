@@ -1,5 +1,6 @@
 import type { DomBasicToolId } from '../manifest'
 import { calculatePanelMaterial } from './panels'
+import { calculateTileCounts } from './tiles'
 
 export interface InputField {
   id: string
@@ -118,7 +119,7 @@ export const domCalculators: Record<DomBasicToolId, CalculatorDefinition> = {
     example: '(40 m² × 2) ÷ 10 m²/l = 8 l',
     note: 'Rzeczywiste zużycie zależy od chłonności podłoża i sposobu nakładania farby.',
   },
-  'liczba-plytek': {
+  'plytki-na-podloge': {
     fields: [
       {
         id: 'area',
@@ -230,16 +231,16 @@ export function calculateDom(toolId: DomBasicToolId, values: Record<string, numb
         { label: 'Z zapasem 10%', value: liters * 1.1, unit: 'l' },
       ]
     }
-    case 'liczba-plytek': {
-      const tileArea = (tileLength * tileWidth) / 10_000
+    case 'plytki-na-podloge': {
+      const { withoutReserve, tileCount } = calculateTileCounts(area, tileLength, tileWidth, waste)
       return [
         {
           label: 'Płytki z zapasem',
-          value: Math.ceil((area * (1 + waste / 100)) / tileArea),
+          value: tileCount,
           unit: 'szt.',
           kind: 'integer',
         },
-        { label: 'Bez zapasu', value: Math.ceil(area / tileArea), unit: 'szt.', kind: 'integer' },
+        { label: 'Bez zapasu', value: withoutReserve, unit: 'szt.', kind: 'integer' },
       ]
     }
     case 'liczba-paczek-paneli': {

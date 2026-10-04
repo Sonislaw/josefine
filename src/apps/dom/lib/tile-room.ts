@@ -1,5 +1,5 @@
 import { calculateRoomMetrics, type RoomDimensions } from './room-metrics'
-import { calculateTilePurchase } from './tiles'
+import { calculateTileCounts, calculateTilePurchase } from './tiles'
 
 export interface TileSurfaceInput {
   tileLength: number // cm
@@ -210,9 +210,7 @@ function calculateSurface(area: number, input: TileSurfaceInput): TileSurfaceRes
   )
     return null
 
-  const tileArea = (tileLength * tileWidth) / 10_000
-  const withoutReserve = Math.ceil(area / tileArea)
-  const tileCount = Math.ceil((area * (1 + waste / 100)) / tileArea)
+  const { withoutReserve, tileCount } = calculateTileCounts(area, tileLength, tileWidth, waste)
   const purchase = calculateTilePurchase(tileCount, tilesPerBox, boxPrice)
   if (
     !Number.isSafeInteger(withoutReserve) ||

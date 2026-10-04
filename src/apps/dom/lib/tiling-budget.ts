@@ -56,7 +56,7 @@ export function calculateTilingBudget(
   const groutQuantity = groutItems.reduce((sum, item) => sum + item.quantity, 0)
 
   const materials: TilingMaterialLine[] = [
-    makeMaterialBudgetLine('tiles', 'Płytki', '/liczba-plytek', tileItems, tileQuantity),
+    makeMaterialBudgetLine('tiles', 'Płytki', '/plytki-na-podloge', tileItems, tileQuantity),
     makeMaterialBudgetLine(
       'adhesive',
       'Klej',

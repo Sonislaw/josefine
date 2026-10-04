@@ -333,12 +333,15 @@ function reset() {
       <AddToDomShoppingList :items="shoppingItems" label="Dodaj fugę do Mojego remontu" />
       <RouterLink
         :to="{
-          path: domPath('/liczba-plytek'),
+          path: domPath('/plytki-na-podloge'),
           query: { area: form.area, tileLength: form.tileLength, tileWidth: form.tileWidth },
         }"
         class="back-to-tiles"
       >
-        Wróć do liczby płytek <ArrowRight :size="16" aria-hidden="true" />
+        Płytki na podłogę <ArrowRight :size="16" aria-hidden="true" />
+      </RouterLink>
+      <RouterLink :to="domPath('/plytki-na-sciane')" class="back-to-tiles">
+        Płytki na ścianę <ArrowRight :size="16" aria-hidden="true" />
       </RouterLink>
     </div>
 
