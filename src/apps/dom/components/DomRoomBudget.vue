@@ -7,6 +7,7 @@ import {
   type RoomLaborKind,
   type RoomLaborRates,
   type RoomLaborSummary,
+  type RoomPanelAreas,
   type RoomTilingAreas,
 } from '../lib/room-budget'
 import type { RoomMetrics } from '../lib/room-metrics'
@@ -16,6 +17,7 @@ const props = defineProps<{
   room: ShoppingRoom
   metrics: RoomMetrics | null
   tiling: RoomTilingAreas
+  panels: RoomPanelAreas
   labor: RoomLaborSummary
   materialTotal: number
   itemCount: number
@@ -33,7 +35,11 @@ const draft = reactive<Record<RoomLaborKind, string>>({
   tilingWalls: '',
 })
 const hasLaborBasis = computed(
-  () => props.metrics !== null || props.tiling.floor > 0 || props.tiling.walls > 0,
+  () =>
+    props.metrics !== null ||
+    props.tiling.floor > 0 ||
+    props.tiling.walls > 0 ||
+    props.panels.area > 0,
 )
 
 watch(hasLaborBasis, (hasBasis) => {
@@ -92,25 +98,26 @@ function saveRates() {
     </div>
 
     <p v-if="!hasLaborBasis" class="budget-intro">
-      Do oszacowania robocizny zapisz wymiary pokoju lub dodaj płytki z policzonym metrażem.
+      Do oszacowania robocizny zapisz wymiary pokoju lub metraż układania paneli albo płytek.
       <button type="button" @click="emit('requestDimensions')">Dodaj wymiary</button>
       <span v-if="room.laborRates">Wpisane wcześniej stawki pozostają zapisane.</span>
     </p>
     <p v-else-if="!metrics" class="budget-intro">
-      Robociznę za płytki liczymy z metrażu zapisanego przy zakupie. Dla malowania, pozostałej
-      podłogi i listew dodaj wymiary pokoju.
+      Montaż paneli i płytek liczymy z metrażu zapisanego przy zakupie. Dla malowania i montażu
+      listew dodaj wymiary pokoju.
       <button type="button" @click="emit('requestDimensions')">Dodaj wymiary</button>
     </p>
     <p v-else-if="!room.laborRates && !editing" class="budget-intro">
-      Jeśli znasz stawki wykonawcy, dodaj je osobno dla malowania, pozostałej podłogi, listew i
+      Jeśli znasz stawki wykonawcy, dodaj je osobno dla malowania, układania paneli, listew i
       płytek.
     </p>
 
     <form v-if="editing" class="rates-form" @submit.prevent="saveRates">
       <p>
         Wpisz koszt pracy za jednostkę. Puste pola nie są uwzględniane; 0 zł oznacza pracę bez
-        kosztu. Metraż płytek pochodzi z zapisanych pozycji, a stawki za pozostałą podłogę i ściany
-        nie obejmują tych płytek.
+        kosztu. Montaż paneli i płytek liczymy od rzeczywistego metrażu zapisanego przy zakupach,
+        nie od liczby paczek ani całej powierzchni pokoju. Malowanie nie obejmuje zapisanej strefy
+        płytek ściennych.
       </p>
       <div class="rate-fields">
         <label v-for="task in roomLaborTasks" :key="task.id" :for="`rate-${room.id}-${task.id}`">
@@ -162,7 +169,7 @@ function saveRates() {
             ? 'Brak metrażu'
             : labor.lines.length
               ? formatMoney(labor.total)
-              : 'Brak stawek'
+              : 'Brak metrażu lub stawek'
         }}</strong>
       </div>
       <div class="budget-total">
@@ -175,9 +182,9 @@ function saveRates() {
       Nie uwzględniono ich w sumie — wynik jest niepełny.
     </p>
     <p class="budget-footnote">
-      Liczymy tylko wpisane ceny i stawki. Robocizna glazurnicza korzysta z metrażu zapisanych
-      płytek; ten metraż odejmujemy od pozostałej podłogi i ścian, aby nie liczyć pracy dwa razy.
-      Przy wielu zapisach tej samej powierzchni usuń duplikaty. Nie doliczamy transportu.
+      Liczymy tylko wpisane ceny i stawki. Robocizna za panele i płytki korzysta z ich zapisanych
+      metraży; powierzchnię płytek ściennych odejmujemy od powierzchni malowania. Przy wielu
+      zapisach tej samej powierzchni usuń duplikaty. Nie doliczamy transportu.
     </p>
   </section>
 </template>

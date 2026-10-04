@@ -29,8 +29,10 @@ import {
 import { createRoomToolLinks } from '../lib/room-links'
 import {
   calculateRoomLabor,
+  calculateRoomPanelAreas,
   calculateRoomTilingAreas,
   type RoomLaborSummary,
+  type RoomPanelAreas,
   type RoomTilingAreas,
 } from '../lib/room-budget'
 import { calculateFloorBudget, type FloorBudgetSummary } from '../lib/floor-budget'
@@ -79,6 +81,7 @@ interface RoomGroup {
   missingPrices: number
   metrics: RoomMetrics | null
   tiling: RoomTilingAreas
+  panels: RoomPanelAreas
   floorBudget: FloorBudgetSummary | null
   tilingBudget: TilingBudgetSummary | null
   links: ReturnType<typeof createRoomToolLinks>
@@ -88,7 +91,8 @@ interface RoomGroup {
 function makeGroup(room: ShoppingRoom | null, name: string, groupItems: ShoppingItem[]): RoomGroup {
   const metrics = room?.dimensions ? calculateRoomMetrics(room.dimensions) : null
   const tiling = calculateRoomTilingAreas(groupItems)
-  const labor = calculateRoomLabor(metrics, room?.laborRates, tiling)
+  const panels = calculateRoomPanelAreas(groupItems)
+  const labor = calculateRoomLabor(metrics, room?.laborRates, tiling, panels)
   return {
     id: room?.id ?? null,
     room,
@@ -103,7 +107,8 @@ function makeGroup(room: ShoppingRoom | null, name: string, groupItems: Shopping
     missingPrices: groupItems.filter((item) => item.cost === null).length,
     metrics,
     tiling,
-    floorBudget: room ? calculateFloorBudget(groupItems, labor, tiling, metrics) : null,
+    panels,
+    floorBudget: room ? calculateFloorBudget(groupItems, labor, tiling, panels, metrics) : null,
     tilingBudget: room ? calculateTilingBudget(groupItems, labor, tiling, metrics) : null,
     links: room?.dimensions ? createRoomToolLinks(room.dimensions, room.id) : [],
     labor,
@@ -158,6 +163,8 @@ const formatMetric = (value: number) =>
 
 function itemAmount(item: ShoppingItem): string {
   const amount = `${formatCount(item.quantity)} ${shoppingKinds[item.kind].unit}`
+  if (item.kind === 'panels' && item.panelAreaM2)
+    return `${amount} · na ${formatMetric(item.panelAreaM2)} m²`
   if (item.kind === 'tileBoxes' && item.tileLengthCm && item.tileWidthCm && item.piecesPerBox)
     return `${amount} po ${formatCount(item.piecesPerBox)} szt. · ${formatDimension(item.tileLengthCm)} × ${formatDimension(item.tileWidthCm)} cm${item.tiledAreaM2 ? ` · na ${formatMetric(item.tiledAreaM2)} m²` : ''}`
   if ((item.kind === 'tilePieces' || item.kind === 'tileBoxes') && item.tiledAreaM2)
@@ -617,7 +624,7 @@ function togglePurchased(itemId: string, event: Event) {
                 ><button
                   type="button"
                   class="edit-item"
-                  :aria-label="`Edytuj zakup${item.kind === 'tilePieces' || item.kind === 'tileBoxes' ? ' i metraż' : ''}: ${itemLabel(item)}`"
+                  :aria-label="`Edytuj zakup${item.kind === 'panels' || item.kind === 'tilePieces' || item.kind === 'tileBoxes' ? ' i metraż' : ''}: ${itemLabel(item)}`"
                   :aria-expanded="editingItemId === item.id"
                   @click="editingItemId = editingItemId === item.id ? null : item.id"
                 >
@@ -658,6 +665,7 @@ function togglePurchased(itemId: string, event: Event) {
             :room="group.room"
             :metrics="group.metrics"
             :tiling="group.tiling"
+            :panels="group.panels"
             :labor="group.labor"
             :material-total="group.knownTotal"
             :item-count="group.items.length"
@@ -667,7 +675,8 @@ function togglePurchased(itemId: string, event: Event) {
         </section>
         <p v-if="items.length" class="snapshot-note">
           Pozycje są zapisanymi wynikami. Ilość i cenę możesz skorygować tutaj bez zmiany obliczenia
-          w kalkulatorze. Przy płytkach możesz też uzupełnić metraż do wyliczenia robocizny.
+          w kalkulatorze. Przy panelach i płytkach możesz też uzupełnić rzeczywisty metraż do
+          wyliczenia robocizny.
         </p>
       </div>
 
@@ -694,8 +703,9 @@ function togglePurchased(itemId: string, event: Event) {
           jest to pełny koszt remontu.
         </p>
         <p>
-          Robocizna obejmuje tylko wpisane stawki: dla płytek z zapisanym metrażem lub dla innych
-          prac w pokojach z wymiarami. Nie uwzględniamy transportu ani zakupów spoza listy.
+          Robocizna obejmuje tylko wpisane stawki: dla paneli i płytek z zapisanym metrażem oraz dla
+          pozostałych prac w pokojach z wymiarami. Nie uwzględniamy transportu ani zakupów spoza
+          listy.
         </p>
       </aside>
     </div>

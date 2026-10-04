@@ -6,7 +6,7 @@ import {
   shoppingKinds,
   useDomShoppingList,
   type ShoppingItem,
-  type TileCoveragePatch,
+  type PurchaseCoveragePatch,
 } from '../stores/shoppingList'
 
 const props = defineProps<{ item: ShoppingItem }>()
@@ -16,10 +16,13 @@ const quantityId = useId()
 const priceId = useId()
 const surfaceId = useId()
 const areaId = useId()
+const panelAreaId = useId()
 const quantity = ref(String(props.item.quantity))
 const isTile = props.item.kind === 'tilePieces' || props.item.kind === 'tileBoxes'
+const isPanel = props.item.kind === 'panels'
 const tileSurface = ref<'floor' | 'walls' | ''>(isTile ? (props.item.tileSurface ?? '') : '')
 const tiledArea = ref(isTile && props.item.tiledAreaM2 ? String(props.item.tiledAreaM2) : '')
+const panelArea = ref(isPanel && props.item.panelAreaM2 ? String(props.item.panelAreaM2) : '')
 // Existing entries store a total, so derive the displayed unit price only for this edit form.
 const initialUnitPriceCents =
   props.item.cost === null ? null : Math.round((props.item.cost / props.item.quantity) * 100)
@@ -63,12 +66,21 @@ const parsedTiledArea = computed(() => {
   const value = parseDomNumber(tiledArea.value)
   return value !== null && value > 0 && value <= 4_000_000 ? value : undefined
 })
-const coverageChanged = computed(
+const parsedPanelArea = computed(() => {
+  if (!panelArea.value.trim()) return null
+  const value = parseDomNumber(panelArea.value)
+  return value !== null && value > 0 && value <= 4_000_000 ? value : undefined
+})
+const tileCoverageChanged = computed(
   () =>
     isTile &&
     (tileSurface.value !== (props.item.tileSurface ?? '') ||
       parsedTiledArea.value !== (props.item.tiledAreaM2 ?? null)),
 )
+const panelCoverageChanged = computed(
+  () => isPanel && parsedPanelArea.value !== (props.item.panelAreaM2 ?? null),
+)
+const coverageChanged = computed(() => tileCoverageChanged.value || panelCoverageChanged.value)
 const roomMetrics = computed(() => {
   const room = list.rooms.find((entry) => entry.id === props.item.roomId)
   return room?.dimensions ? calculateRoomMetrics(room.dimensions) : null
@@ -87,7 +99,7 @@ const coverageError = computed(() => {
   if (parsedTiledArea.value !== null && !tileSurface.value)
     return 'Wybierz podłogę albo ściany dla zapisanego metrażu.'
   if (
-    coverageChanged.value &&
+    tileCoverageChanged.value &&
     parsedTiledArea.value !== null &&
     roomSurfaceLimit.value !== null &&
     roomSurfaceLimit.value !== undefined &&
@@ -119,6 +131,44 @@ const coverageWarning = computed(() => {
     ? `Łączny metraż zapisanych płytek (${formatArea(otherArea + parsedTiledArea.value)} m²) przekracza powierzchnię ${tileSurface.value === 'floor' ? 'podłogi' : 'ścian'} pokoju. Sprawdź, czy nie ma dwóch zapisów tej samej pracy.`
     : null
 })
+const panelCoverageError = computed(() => {
+  if (!isPanel) return null
+  if (parsedPanelArea.value === undefined)
+    return 'Podaj metraż większy od 0 i nie większy niż 4 000 000 m² albo zostaw pole puste.'
+  if (
+    panelCoverageChanged.value &&
+    parsedPanelArea.value !== null &&
+    roomMetrics.value !== null &&
+    parsedPanelArea.value > roomMetrics.value.floor + 0.000001
+  )
+    return `Metraż jednej pozycji nie może przekraczać powierzchni podłogi pokoju (${formatArea(roomMetrics.value.floor)} m²).`
+  return null
+})
+const panelCoverageWarning = computed(() => {
+  if (!isPanel || parsedPanelArea.value == null || !roomMetrics.value) return null
+  const otherPanelArea = list.items.reduce(
+    (sum, entry) =>
+      sum +
+      (entry.id !== props.item.id && entry.roomId === props.item.roomId && entry.kind === 'panels'
+        ? (entry.panelAreaM2 ?? 0)
+        : 0),
+    0,
+  )
+  const tiledFloorArea = list.items.reduce(
+    (sum, entry) =>
+      sum +
+      (entry.roomId === props.item.roomId &&
+      (entry.kind === 'tilePieces' || entry.kind === 'tileBoxes') &&
+      entry.tileSurface === 'floor'
+        ? (entry.tiledAreaM2 ?? 0)
+        : 0),
+    0,
+  )
+  const combinedArea = otherPanelArea + parsedPanelArea.value + tiledFloorArea
+  return combinedArea > roomMetrics.value.floor + 0.000001
+    ? `Łączny metraż paneli i płytek podłogowych (${formatArea(combinedArea)} m²) przekracza powierzchnię podłogi pokoju. Sprawdź, czy prace nie zostały zapisane podwójnie.`
+    : null
+})
 const unchanged = computed(() => purchaseUnchanged.value && !coverageChanged.value)
 const previewCost = computed(() =>
   purchaseUnchanged.value
@@ -144,19 +194,23 @@ function save() {
     parsedQuantity.value === null ||
     unitPriceCents.value === undefined ||
     totalTooLarge.value ||
-    coverageError.value
+    coverageError.value ||
+    panelCoverageError.value
   )
     return
   if (unchanged.value) {
     emit('close')
     return
   }
-  const coverage: TileCoveragePatch | undefined = isTile
+  const coverage: PurchaseCoveragePatch | undefined = isTile
     ? {
+        kind: 'tiles',
         tileSurface: tileSurface.value || null,
         tiledAreaM2: parsedTiledArea.value ?? null,
       }
-    : undefined
+    : isPanel
+      ? { kind: 'panels', panelAreaM2: parsedPanelArea.value ?? null }
+      : undefined
   if (
     !list.updateItemPurchase(props.item.id, parsedQuantity.value, unitPriceCents.value, coverage)
   ) {
@@ -216,12 +270,34 @@ function save() {
         />
       </label>
     </div>
+    <div v-if="isPanel" class="coverage-fields panel-coverage">
+      <label :for="panelAreaId">
+        Powierzchnia układania paneli (m²)
+        <input
+          :id="panelAreaId"
+          v-model="panelArea"
+          type="text"
+          inputmode="decimal"
+          autocomplete="off"
+          placeholder="np. 12,5"
+          :aria-invalid="attempted && !!panelCoverageError"
+        />
+      </label>
+    </div>
+    <p v-if="isPanel" class="edit-note">
+      Podaj rzeczywistą powierzchnię pod panele, bez zapasu na docinki. Od tego metrażu liczymy
+      robociznę; puste pole oznacza brak wyliczenia montażu dla tej pozycji.
+    </p>
     <p v-if="isTile" class="edit-note">
       Wpisz rzeczywisty metraż pod płytki, bez zapasu na docinki. To podstawa robocizny, niezależna
       od liczby kupionych sztuk lub kartonów. Pusty metraż nie będzie liczony w robociźnie.
     </p>
     <p v-if="attempted && coverageError" class="edit-error" role="alert">{{ coverageError }}</p>
+    <p v-if="attempted && panelCoverageError" class="edit-error" role="alert">
+      {{ panelCoverageError }}
+    </p>
     <p v-if="coverageWarning" class="edit-warning">{{ coverageWarning }}</p>
+    <p v-if="panelCoverageWarning" class="edit-warning">{{ panelCoverageWarning }}</p>
     <p class="edit-preview">
       Nowy koszt pozycji:
       <strong>{{ previewLabel }}</strong>
@@ -267,6 +343,9 @@ function save() {
   margin-top: 0.85rem;
   padding-top: 0.85rem;
   border-top: 1px solid #d6e5d1;
+}
+.panel-coverage {
+  grid-template-columns: minmax(0, 1fr);
 }
 .edit-fields label,
 .coverage-fields label {

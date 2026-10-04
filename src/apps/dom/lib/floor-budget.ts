@@ -1,7 +1,12 @@
 import type { ShoppingItem } from '../stores/shoppingList'
 import type { MaterialBudgetLine } from './material-budget'
 import { makeMaterialBudgetLine, summarizeMaterialBudget } from './material-budget'
-import type { RoomLaborLine, RoomLaborSummary, RoomTilingAreas } from './room-budget'
+import type {
+  RoomLaborLine,
+  RoomLaborSummary,
+  RoomPanelAreas,
+  RoomTilingAreas,
+} from './room-budget'
 import type { RoomMetrics } from './room-metrics'
 
 export type FloorMaterialId = 'panels' | 'underlay' | 'skirting'
@@ -12,7 +17,8 @@ export interface FloorBudgetSummary {
   knownTotal: number
   hasKnownCost: boolean
   missingPriceCount: number
-  remainingFloorArea: number | null
+  plannedPanelArea: number
+  missingPanelAreaCount: number
   roomPerimeter: number | null
   hasPanels: boolean
   hasUnderlay: boolean
@@ -21,16 +27,18 @@ export interface FloorBudgetSummary {
   missingFloorRate: boolean
   missingSkirtingRate: boolean
   floorFullyTiled: boolean
+  exceedsUntiledArea: boolean
   unknownTileAreaCount: number
 }
 
 const formatCount = (value: number) => new Intl.NumberFormat('pl-PL').format(value)
 
-/** Floor work remains separate from tiling: only the untiled floor enters the flooring rate. */
+/** A flooring rate applies only to explicitly saved panel installation area. */
 export function calculateFloorBudget(
   items: readonly ShoppingItem[],
   labor: RoomLaborSummary,
   tiling: RoomTilingAreas,
+  panels: RoomPanelAreas,
   metrics: RoomMetrics | null,
 ): FloorBudgetSummary | null {
   const panelItems = items.filter((item) => item.kind === 'panels')
@@ -80,22 +88,20 @@ export function calculateFloorBudget(
     materials,
     laborLines,
     ...costs,
-    remainingFloorArea,
+    plannedPanelArea: panels.area,
+    missingPanelAreaCount: panels.missingAreaCount,
     roomPerimeter: metrics?.perimeter ?? null,
     hasPanels: panelItems.length > 0,
     hasUnderlay: underlayItems.length > 0,
     hasSkirting: skirtingItems.length > 0,
-    missingDimensions: metrics === null && (panelItems.length > 0 || skirtingItems.length > 0),
-    missingFloorRate:
-      panelItems.length > 0 &&
-      remainingFloorArea !== null &&
-      remainingFloorArea > 0 &&
-      !laborLines.some((line) => line.id === 'flooring'),
+    missingDimensions: metrics === null && skirtingItems.length > 0,
+    missingFloorRate: panels.area > 0 && !laborLines.some((line) => line.id === 'flooring'),
     missingSkirtingRate:
       skirtingItems.length > 0 &&
       metrics !== null &&
       !laborLines.some((line) => line.id === 'skirting'),
     floorFullyTiled: panelItems.length > 0 && remainingFloorArea === 0,
+    exceedsUntiledArea: remainingFloorArea !== null && panels.area > remainingFloorArea + 0.000001,
     unknownTileAreaCount: tiling.missingAreaCount,
   }
 }

@@ -22,11 +22,12 @@ export const shoppingKinds = {
 export type ShoppingKind = keyof typeof shoppingKinds
 type StandardKind = Exclude<
   ShoppingKind,
-  'paintCans' | 'groutPacks' | 'tilePieces' | 'tileBoxes' | 'tileAdhesiveBags'
+  'panels' | 'paintCans' | 'groutPacks' | 'tilePieces' | 'tileBoxes' | 'tileAdhesiveBags'
 >
 // New purchase details are optional on old entries, preserving existing v1/v2 saved lists.
 export type ShoppingDraft =
   | { kind: StandardKind; quantity: number; cost: number | null }
+  | { kind: 'panels'; quantity: number; cost: number | null; panelAreaM2?: number }
   | {
       kind: 'tilePieces' | 'tileBoxes'
       quantity: number
@@ -53,10 +54,9 @@ export type ShoppingDraft =
     }
   | { kind: 'groutPacks'; quantity: number; cost: number | null; packageWeightKg: number }
 export type ShoppingItem = ShoppingDraft & { id: string; roomId: string | null; purchased: boolean }
-export type TileCoveragePatch = {
-  tileSurface: 'floor' | 'walls' | null
-  tiledAreaM2: number | null
-}
+export type PurchaseCoveragePatch =
+  | { kind: 'tiles'; tileSurface: 'floor' | 'walls' | null; tiledAreaM2: number | null }
+  | { kind: 'panels'; panelAreaM2: number | null }
 type StoredShoppingItem = ShoppingDraft & {
   id: string
   roomId: string | null
@@ -81,6 +81,14 @@ function isDraft(value: unknown): value is ShoppingDraft {
     (item.cost === null ||
       (typeof item.cost === 'number' && Number.isFinite(item.cost) && item.cost >= 0))
   if (!basic) return false
+  if (item.kind === 'panels')
+    return (
+      item.panelAreaM2 === undefined ||
+      (typeof item.panelAreaM2 === 'number' &&
+        Number.isFinite(item.panelAreaM2) &&
+        item.panelAreaM2 > 0 &&
+        item.panelAreaM2 <= 4_000_000)
+    )
   if (item.kind === 'tilePieces' || item.kind === 'tileBoxes')
     return (
       (item.tileSurface === undefined ||
@@ -359,7 +367,7 @@ export const useDomShoppingList = defineStore('dom-shopping-list', () => {
     itemId: string,
     quantity: number,
     unitPriceCents: number | null,
-    coverage?: TileCoveragePatch,
+    coverage?: PurchaseCoveragePatch,
   ): boolean {
     hydrate()
     const index = items.value.findIndex((entry) => entry.id === itemId)
@@ -368,8 +376,11 @@ export const useDomShoppingList = defineStore('dom-shopping-list', () => {
       !item ||
       !Number.isSafeInteger(quantity) ||
       quantity <= 0 ||
-      (coverage !== undefined && item.kind !== 'tilePieces' && item.kind !== 'tileBoxes') ||
-      (coverage !== undefined && coverage.tiledAreaM2 !== null && coverage.tileSurface === null) ||
+      (coverage?.kind === 'tiles' && item.kind !== 'tilePieces' && item.kind !== 'tileBoxes') ||
+      (coverage?.kind === 'panels' && item.kind !== 'panels') ||
+      (coverage?.kind === 'tiles' &&
+        coverage.tiledAreaM2 !== null &&
+        coverage.tileSurface === null) ||
       (unitPriceCents !== null &&
         (!Number.isSafeInteger(unitPriceCents) ||
           unitPriceCents < 0 ||
@@ -389,11 +400,14 @@ export const useDomShoppingList = defineStore('dom-shopping-list', () => {
         ? null
         : (unitPriceCents * quantity) / 100
     const next: Record<string, unknown> = { ...item, quantity, cost }
-    if (coverage !== undefined) {
+    if (coverage?.kind === 'tiles') {
       if (coverage.tileSurface === null) delete next.tileSurface
       else next.tileSurface = coverage.tileSurface
       if (coverage.tiledAreaM2 === null) delete next.tiledAreaM2
       else next.tiledAreaM2 = coverage.tiledAreaM2
+    } else if (coverage?.kind === 'panels') {
+      if (coverage.panelAreaM2 === null) delete next.panelAreaM2
+      else next.panelAreaM2 = coverage.panelAreaM2
     }
     if (!isDraft(next)) return false
     items.value[index] = next as ShoppingItem

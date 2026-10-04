@@ -60,21 +60,19 @@ function laborLine(id: 'flooring' | 'skirting') {
       </div>
       <div v-if="summary.hasPanels" class="labor-row">
         <span
-          >Układanie pozostałej podłogi ·
+          >Układanie paneli ·
           {{
-            summary.remainingFloorArea === null
-              ? 'brak wymiarów'
-              : `${formatMeasure(summary.remainingFloorArea)} m²`
+            summary.plannedPanelArea > 0
+              ? `${formatMeasure(summary.plannedPanelArea)} m²`
+              : 'brak metrażu'
           }}</span
         >
         <strong>{{
           laborLine('flooring')
             ? formatMoney(laborLine('flooring')!.cost)
-            : summary.remainingFloorArea === null
-              ? 'Brak wymiarów'
-              : summary.floorFullyTiled
-                ? '0 m² do ułożenia'
-                : 'Brak stawki'
+            : summary.plannedPanelArea === 0
+              ? 'Brak metrażu'
+              : 'Brak stawki'
         }}</strong>
       </div>
       <div v-if="summary.hasSkirting" class="labor-row">
@@ -105,10 +103,12 @@ function laborLine(id: 'flooring' | 'skirting') {
     <div
       v-if="
         summary.missingPriceCount ||
+        summary.missingPanelAreaCount ||
         summary.missingDimensions ||
         summary.missingFloorRate ||
         summary.missingSkirtingRate ||
         summary.floorFullyTiled ||
+        summary.exceedsUntiledArea ||
         (summary.hasPanels && summary.unknownTileAreaCount)
       "
       class="floor-warnings"
@@ -118,16 +118,24 @@ function laborLine(id: 'flooring' | 'skirting') {
         {{ summary.missingPriceCount === 1 ? 'zakup nie ma ceny' : 'zakupów nie ma ceny' }} — suma
         jest niepełna.
       </p>
+      <p v-if="summary.missingPanelAreaCount">
+        {{ summary.missingPanelAreaCount }}
+        {{
+          summary.missingPanelAreaCount === 1 ? 'pozycja paneli nie ma' : 'pozycji paneli nie ma'
+        }}
+        metrażu układania. Uzupełnij go w edycji zakupu; bez niego montaż tej części podłogi nie
+        jest liczony.
+      </p>
       <p v-if="summary.missingDimensions">
-        Brakuje wymiarów pokoju do wyliczenia robocizny. Dodaj je wyżej.
+        Brakuje wymiarów pokoju do wyliczenia montażu listew. Dodaj je wyżej.
       </p>
       <p v-if="summary.missingFloorRate || summary.missingSkirtingRate">
         Brakuje stawki za
         {{
           summary.missingFloorRate && summary.missingSkirtingRate
-            ? 'układanie podłogi i montaż listew'
+            ? 'układanie paneli i montaż listew'
             : summary.missingFloorRate
-              ? 'układanie podłogi'
+              ? 'układanie paneli'
               : 'montaż listew'
         }}. Dodaj ją w budżecie pokoju poniżej.
       </p>
@@ -135,18 +143,22 @@ function laborLine(id: 'flooring' | 'skirting') {
         Zapisane płytki zajmują całą podłogę tego pokoju. Sprawdź zakres prac, jeśli planujesz tu
         również panele.
       </p>
+      <p v-if="summary.exceedsUntiledArea">
+        Zapisany metraż paneli przekracza wolną powierzchnię podłogi po odjęciu zapisanych płytek.
+        Sprawdź, czy ta sama strefa nie została zapisana dwukrotnie.
+      </p>
       <p v-if="summary.hasPanels && summary.unknownTileAreaCount">
         {{ summary.unknownTileAreaCount }}
         {{ summary.unknownTileAreaCount === 1 ? 'pozycja płytek nie ma' : 'pozycji płytek nie ma' }}
-        metrażu. Jeśli płytki są na podłodze, koszt układania pozostałej podłogi może być zawyżony.
+        metrażu. Jeśli płytki są na podłodze, sprawdź, czy zapisany metraż paneli nie obejmuje
+        również tej strefy.
       </p>
     </div>
     <p class="floor-note">
-      Podkład i listwy dodaj tylko wtedy, gdy są potrzebne. Montaż podłogi liczymy od całej
-      powierzchni pokoju poza zapisaną strefą płytek, nie od liczby kupionych paczek; montaż listew
-      — od pełnego obwodu, bez odejmowania drzwi. Jeśli wykańczasz tylko część powierzchni,
-      oszacowanie robocizny może być zawyżone. Uwzględniamy wszystkie zapisane zakupy pokoju,
-      niezależnie od filtra „Kupione”.
+      Podkład i listwy dodaj tylko wtedy, gdy są potrzebne. Montaż paneli liczymy od metrażu
+      zapisanego przy ich zakupach, bez zapasu na docinki. Nie wyliczamy go z liczby paczek ani z
+      całej pozostałej powierzchni pokoju. Montaż listew liczymy od pełnego obwodu, bez odejmowania
+      drzwi. Uwzględniamy wszystkie zapisane zakupy pokoju, niezależnie od filtra „Kupione”.
     </p>
   </section>
 </template>

@@ -60,7 +60,13 @@ const purchase = computed(() => {
 const shoppingItems = computed<ShoppingDraft[]>(() => {
   if (!purchase.value) return []
   const result: ShoppingDraft[] = [
-    { kind: 'panels', quantity: purchase.value.panels.packCount, cost: purchase.value.panelCost },
+    {
+      kind: 'panels',
+      quantity: purchase.value.panels.packCount,
+      cost: purchase.value.panelCost,
+      // Robocizna dotyczy powierzchni do ułożenia, a nie zakupu powiększonego o zapas.
+      panelAreaM2: props.area!,
+    },
   ]
   if (includeUnderlay.value && purchase.value.underlayCount !== null) {
     result.push({
@@ -224,9 +230,10 @@ const formatMoney = (value: number) =>
       :label="includeUnderlay ? 'Dodaj panele i podkład do Mojego remontu' : undefined"
     />
     <p class="plan-caveat">
-      To orientacyjny plan materiałów, bez listew, montażu i transportu. Podkład liczymy z
-      powierzchni podłogi bez zapasu na docinki paneli; sprawdź zalecenia producenta i zawartość
-      opakowań.
+      Po zapisaniu w Moim remoncie metraż układania paneli posłuży do wyliczenia robocizny według
+      stawki pokoju. Liczba paczek i zapas nie powiększają tego metrażu. To orientacyjny plan
+      materiałów, bez listew, montażu i transportu. Podkład liczymy z powierzchni podłogi bez zapasu
+      na docinki paneli; sprawdź zalecenia producenta i zawartość opakowań.
     </p>
     <RouterLink class="skirting-link" :to="domPath('/obwod-prostokata')">
       <span

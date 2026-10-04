@@ -3,7 +3,7 @@ import type { RoomMetrics } from './room-metrics'
 // Each rate belongs to a concrete measurement already available for a saved room.
 export const roomLaborTasks = [
   { id: 'painting', label: 'Malowanie pozostałych ścian', unit: 'm²' },
-  { id: 'flooring', label: 'Układanie pozostałej podłogi', unit: 'm²' },
+  { id: 'flooring', label: 'Układanie paneli', unit: 'm²' },
   { id: 'skirting', label: 'Montaż listew', unit: 'm' },
   { id: 'tilingFloor', label: 'Układanie płytek na podłodze', unit: 'm²' },
   { id: 'tilingWalls', label: 'Układanie płytek na ścianach', unit: 'm²' },
@@ -30,6 +30,32 @@ export interface RoomTilingAreas {
   floor: number
   walls: number
   missingAreaCount: number
+}
+
+export interface RoomPanelAreas {
+  area: number
+  missingAreaCount: number
+}
+
+interface PanelAreaItem {
+  kind: string
+  panelAreaM2?: number
+}
+
+/** Purchase quantities and waste never become labor coverage. */
+export function calculateRoomPanelAreas(items: readonly PanelAreaItem[]): RoomPanelAreas {
+  const result: RoomPanelAreas = { area: 0, missingAreaCount: 0 }
+  for (const item of items) {
+    if (item.kind !== 'panels') continue
+    if (
+      typeof item.panelAreaM2 === 'number' &&
+      Number.isFinite(item.panelAreaM2) &&
+      item.panelAreaM2 > 0
+    )
+      result.area += item.panelAreaM2
+    else result.missingAreaCount++
+  }
+  return result
 }
 
 interface TilingAreaItem {
@@ -85,11 +111,12 @@ export function calculateRoomLabor(
   metrics: RoomMetrics | null,
   rates: RoomLaborRates | undefined,
   tiling: RoomTilingAreas = { floor: 0, walls: 0, missingAreaCount: 0 },
+  panels: RoomPanelAreas = { area: 0, missingAreaCount: 0 },
 ): RoomLaborSummary {
   if (!rates) return { lines: [], total: 0 }
   const quantities: Record<RoomLaborKind, number | null> = {
     painting: metrics ? Math.max(0, metrics.walls - tiling.walls) : null,
-    flooring: metrics ? Math.max(0, metrics.floor - tiling.floor) : null,
+    flooring: panels.area > 0 ? panels.area : null,
     skirting: metrics?.perimeter ?? null,
     tilingFloor: tiling.floor > 0 ? tiling.floor : null,
     tilingWalls: tiling.walls > 0 ? tiling.walls : null,
