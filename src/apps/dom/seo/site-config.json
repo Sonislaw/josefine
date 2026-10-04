@@ -61,7 +61,7 @@
       "key": "liczba-plytek",
       "path": "/liczba-plytek",
       "title": "Kalkulator liczby płytek na podłogę i ścianę | Dom",
-      "description": "Oblicz płytki i kartony na podłogę lub wybrane ściany. Ustal wysokość układania, odejmij otwory i dobierz osobny format oraz cenę płytek.",
+      "description": "Oblicz płytki i kartony na podłogę lub wybrane ściany. Ustal wysokość układania i dodaj drzwi oraz okna, by odjąć tylko ich część pod płytkami.",
       "socialImage": "/og/dom.png",
       "socialImageAlt": "Dom — praktyczne kalkulatory"
     },

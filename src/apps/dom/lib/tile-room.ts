@@ -30,12 +30,30 @@ export interface TileWallCoverage {
   height: number // m, measured from the floor; never greater than room height
 }
 
+export type TileOpeningKind = 'door' | 'window'
+
+export interface TileWallOpening {
+  kind: TileOpeningKind
+  side: TileRoomWallSide
+  width: number // m, along the wall
+  height: number // m
+  bottom: number // m from floor to the opening's lower edge
+}
+
+export interface TileWallOpeningDeduction {
+  opening: TileWallOpening
+  tiledHeight: number
+  area: number
+  onSelectedWall: boolean
+}
+
 export interface TileRoomPlanInput {
   room: RoomDimensions
-  openings: number // m² of openings inside the selected tiled wall area only
+  openings: number // manual m²; ignored when detailedOpenings is provided
   floor: TileSurfaceInput | null
   walls: TileSurfaceInput | null
   wallCoverage?: TileWallCoverage // omitted means every wall up to full room height
+  detailedOpenings?: readonly TileWallOpening[]
 }
 
 export interface TileRoomPlanResult {
@@ -43,6 +61,7 @@ export interface TileRoomPlanResult {
   walls: TileSurfaceResult | null
   grossWalls: number
   openings: number
+  openingDetails: readonly TileWallOpeningDeduction[] | null
   netWalls: number
   knownCost: number
   missingPriceCount: number
@@ -73,6 +92,45 @@ export function calculateTiledWallArea(
     0,
   )
   return totalLength * height
+}
+
+/** Only the intersection with the tiled height on a selected wall is deducted. */
+export function calculateTiledWallOpenings(
+  room: RoomDimensions,
+  openings: readonly TileWallOpening[],
+  coverage?: TileWallCoverage,
+): { totalArea: number; details: TileWallOpeningDeduction[] } | null {
+  const wallArea = calculateTiledWallArea(room, coverage)
+  if (wallArea === null || !Array.isArray(openings) || openings.length > 12) return null
+
+  const selectedSides = coverage?.sides ?? tileRoomWallSides
+  const tiledHeight = coverage?.height ?? room.height
+  const details: TileWallOpeningDeduction[] = []
+  let totalArea = 0
+  for (const opening of openings) {
+    if (!opening || !tileRoomWallSides.includes(opening.side)) return null
+    const wallLength =
+      opening.side === 'lengthA' || opening.side === 'lengthB' ? room.length : room.width
+    if (
+      (opening.kind !== 'door' && opening.kind !== 'window') ||
+      ![opening.width, opening.height, opening.bottom].every(Number.isFinite) ||
+      opening.width <= 0 ||
+      opening.width > wallLength ||
+      opening.height <= 0 ||
+      opening.bottom < 0 ||
+      opening.bottom + opening.height > room.height + 1e-9
+    )
+      return null
+
+    const onSelectedWall = selectedSides.includes(opening.side)
+    const overlapHeight = onSelectedWall
+      ? Math.max(0, Math.min(tiledHeight, opening.bottom + opening.height) - opening.bottom)
+      : 0
+    const area = opening.width * overlapHeight
+    totalArea += area
+    details.push({ opening, tiledHeight: overlapHeight, area, onSelectedWall })
+  }
+  return Number.isFinite(totalArea) ? { totalArea, details } : null
 }
 
 function calculateSurface(area: number, input: TileSurfaceInput): TileSurfaceResult | null {
@@ -120,16 +178,21 @@ function calculateSurface(area: number, input: TileSurfaceInput): TileSurfaceRes
 export function calculateTileRoomPlan(input: TileRoomPlanInput): TileRoomPlanResult | null {
   const metrics = calculateRoomMetrics(input.room)
   const tiledWallArea = input.walls ? calculateTiledWallArea(input.room, input.wallCoverage) : null
+  const detailed =
+    input.walls && input.detailedOpenings !== undefined
+      ? calculateTiledWallOpenings(input.room, input.detailedOpenings, input.wallCoverage)
+      : null
+  const openings = input.walls ? (detailed?.totalArea ?? input.openings) : 0
   if (
     !metrics ||
     (!input.floor && !input.walls) ||
-    !Number.isFinite(input.openings) ||
-    input.openings < 0 ||
-    (input.walls && (tiledWallArea === null || input.openings >= tiledWallArea))
+    (input.walls && input.detailedOpenings !== undefined && !detailed) ||
+    !Number.isFinite(openings) ||
+    openings < 0 ||
+    (input.walls && (tiledWallArea === null || openings >= tiledWallArea))
   )
     return null
 
-  const openings = input.walls ? input.openings : 0
   const grossWalls = tiledWallArea ?? metrics.walls
   const netWalls = grossWalls - openings
   const floor = input.floor ? calculateSurface(metrics.floor, input.floor) : null
@@ -150,6 +213,7 @@ export function calculateTileRoomPlan(input: TileRoomPlanInput): TileRoomPlanRes
     walls,
     grossWalls,
     openings,
+    openingDetails: detailed?.details ?? null,
     netWalls,
     knownCost,
     missingPriceCount: prices.filter((price) => price === null).length,

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref, toRef, watch } from 'vue'
-import { ArrowUpRight, House, Layers3, Plus, RotateCcw } from '@lucide/vue'
+import { ArrowUpRight, House, Layers3, Plus, RotateCcw, Trash2 } from '@lucide/vue'
 import { RouterLink, useRoute } from 'vue-router'
 import ShareResultButton from '@/shared/components/ShareResultButton.vue'
 import {
@@ -14,10 +14,13 @@ import { parseDomNumber } from '../lib/calculations'
 import {
   calculateTileRoomPlan,
   calculateTiledWallArea,
+  calculateTiledWallOpenings,
   tileRoomWallSides,
+  type TileOpeningKind,
   type TileSurfaceInput,
   type TileSurfaceResult,
   type TileRoomWallSide,
+  type TileWallOpening,
   type TileWallCoverage,
 } from '../lib/tile-room'
 import { domPath } from '../seo/useDomSeo'
@@ -27,6 +30,16 @@ import AddToDomShoppingList from './AddToDomShoppingList.vue'
 type SurfaceKey = 'tileLength' | 'tileWidth' | 'waste' | 'tilesPerBox' | 'boxPrice'
 type SurfaceForm = Record<SurfaceKey, string>
 type RoomKey = 'length' | 'width' | 'height' | 'openings'
+type OpeningField = 'width' | 'height' | 'bottom'
+interface OpeningForm {
+  id: number
+  kind: TileOpeningKind
+  side: TileRoomWallSide
+  width: string
+  height: string
+  bottom: string
+}
+type SerializedOpening = [TileOpeningKind, TileRoomWallSide, string, string, string]
 
 interface FieldDefinition<T extends string> {
   id: T
@@ -55,6 +68,9 @@ const includeFloor = ref(true)
 const includeWalls = ref(true)
 const wallMode = ref<'full' | 'selected'>('full')
 const wallTileHeight = ref('1,2')
+const openingMode = ref<'total' | 'detailed'>('total')
+const openingForms = ref<OpeningForm[]>([])
+let nextOpeningId = 1
 const selectedWalls = reactive<Record<TileRoomWallSide, boolean>>({
   lengthA: true,
   lengthB: true,
@@ -67,6 +83,21 @@ const wallChoices = [
   { id: 'widthA', label: 'Ściana C', dimension: 'width' },
   { id: 'widthB', label: 'Ściana D', dimension: 'width' },
 ] as const
+const maxOpeningCount = 12
+function addOpening(kind: TileOpeningKind) {
+  if (openingForms.value.length >= maxOpeningCount) return
+  openingForms.value.push({
+    id: nextOpeningId++,
+    kind,
+    side: wallMode.value === 'selected' ? (selectedWallSides.value[0] ?? 'lengthA') : 'lengthA',
+    width: kind === 'door' ? '0,9' : '1',
+    height: kind === 'door' ? '2' : '1',
+    bottom: kind === 'door' ? '0' : '1',
+  })
+}
+function removeOpening(id: number) {
+  openingForms.value = openingForms.value.filter((opening) => opening.id !== id)
+}
 const roomDefaults = { length: '5', width: '4', height: '2,5', openings: '0' }
 const floorDefaults: SurfaceForm = {
   tileLength: '60',
@@ -103,6 +134,11 @@ const wallTileHeightField: FieldDefinition<'tileHeight'> = {
   max: 1000,
   positive: true,
 }
+const openingFields: Record<OpeningField, FieldDefinition<OpeningField>> = {
+  width: { id: 'width', label: 'Szerokość', unit: 'm', min: 0, max: 1000, positive: true },
+  height: { id: 'height', label: 'Wysokość', unit: 'm', min: 0, max: 1000, positive: true },
+  bottom: { id: 'bottom', label: 'Dolna krawędź od podłogi', unit: 'm', min: 0, max: 1000 },
+}
 const surfaceFields: FieldDefinition<SurfaceKey>[] = [
   { id: 'tileLength', label: 'Długość płytki', unit: 'cm', min: 0, max: 300, positive: true },
   { id: 'tileWidth', label: 'Szerokość płytki', unit: 'cm', min: 0, max: 300, positive: true },
@@ -138,6 +174,31 @@ function surfaceError(form: SurfaceForm, field: FieldDefinition<SurfaceKey>): st
   if (field.id === 'waste') return 'Wpisz zapas od 0% do 100%.'
   return 'Podaj wymiar większy od 0 i nie większy niż 300 cm.'
 }
+function openingFieldError(opening: OpeningForm, field: OpeningField): string | null {
+  const raw = opening[field]
+  if (!validNumber(raw, openingFields[field]))
+    return field === 'bottom'
+      ? 'Podaj odległość od podłogi od 0 do 1000 m.'
+      : 'Podaj wymiar większy od 0 i nie większy niż 1000 m.'
+
+  const value = parseDomNumber(raw)!
+  const roomHeight = parseDomNumber(room.height)
+  if (field === 'width') {
+    const wallLength = parseDomNumber(
+      room[opening.side === 'lengthA' || opening.side === 'lengthB' ? 'length' : 'width'],
+    )
+    if (wallLength !== null && wallLength > 0 && value > wallLength)
+      return 'Otwór nie może być szerszy od tej ściany.'
+  }
+  if (field === 'height' && roomHeight !== null && roomHeight > 0 && value > roomHeight)
+    return 'Otwór nie może być wyższy od pokoju.'
+  if (field === 'bottom' && roomHeight !== null && roomHeight > 0) {
+    const openingHeight = parseDomNumber(opening.height)
+    if (openingHeight !== null && value + openingHeight > roomHeight + 1e-9)
+      return 'Otwór wraz z położeniem przekracza wysokość pokoju.'
+  }
+  return null
+}
 const selectedWallSides = computed(() => tileRoomWallSides.filter((side) => selectedWalls[side]))
 const selectedWallsError = computed(() =>
   includeWalls.value && wallMode.value === 'selected' && selectedWallSides.value.length === 0
@@ -166,10 +227,41 @@ const tiledWallArea = computed(() => {
   if (length === null || width === null || height === null) return null
   return calculateTiledWallArea({ length, width, height }, wallCoverage.value)
 })
+const detailedOpenings = computed<TileWallOpening[] | null>(() => {
+  if (!includeWalls.value || openingMode.value !== 'detailed') return null
+  if (
+    openingForms.value.some((opening) =>
+      (['width', 'height', 'bottom'] as const).some((field) => openingFieldError(opening, field)),
+    )
+  )
+    return null
+  return openingForms.value.map((opening) => ({
+    kind: opening.kind,
+    side: opening.side,
+    width: parseDomNumber(opening.width)!,
+    height: parseDomNumber(opening.height)!,
+    bottom: parseDomNumber(opening.bottom)!,
+  }))
+})
+const detailedOpeningPreview = computed(() => {
+  if (detailedOpenings.value === null) return null
+  const length = parseDomNumber(room.length)
+  const width = parseDomNumber(room.width)
+  const height = parseDomNumber(room.height)
+  if (length === null || width === null || height === null) return null
+  return calculateTiledWallOpenings(
+    { length, width, height },
+    detailedOpenings.value,
+    wallCoverage.value,
+  )
+})
 const openingError = computed(() => {
   if (!includeWalls.value || tiledWallArea.value === null) return null
-  const openings = parseDomNumber(room.openings)
-  if (openings === null || openings < 0) return null
+  const openings =
+    openingMode.value === 'detailed'
+      ? detailedOpeningPreview.value?.totalArea
+      : parseDomNumber(room.openings)
+  if (openings === null || openings === undefined || openings < 0) return null
   return openings >= tiledWallArea.value
     ? 'Otwory muszą być mniejsze niż powierzchnia ścian w wybranej strefie płytek.'
     : null
@@ -192,7 +284,8 @@ const plan = computed(() => {
   if (
     includeWalls.value &&
     (roomError(roomFields[2]!) ||
-      roomError(roomFields[3]!) ||
+      (openingMode.value === 'total' && roomError(roomFields[3]!)) ||
+      (openingMode.value === 'detailed' && detailedOpeningPreview.value === null) ||
       selectedWallsError.value ||
       wallTileHeightError.value ||
       openingError.value)
@@ -207,7 +300,12 @@ const plan = computed(() => {
       width: parseDomNumber(room.width)!,
       height: includeWalls.value ? parseDomNumber(room.height)! : 2.5,
     },
-    openings: includeWalls.value ? parseDomNumber(room.openings)! : 0,
+    openings:
+      includeWalls.value && openingMode.value === 'total' ? parseDomNumber(room.openings)! : 0,
+    detailedOpenings:
+      includeWalls.value && openingMode.value === 'detailed'
+        ? (detailedOpenings.value ?? undefined)
+        : undefined,
     floor: floorInput,
     walls: wallInput,
     wallCoverage: includeWalls.value ? wallCoverage.value : undefined,
@@ -287,11 +385,62 @@ function optionalField(
     },
   }
 }
+function parseSharedOpenings(raw: string): Omit<OpeningForm, 'id'>[] | null {
+  if (raw.length > 2000) return null
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(raw)
+  } catch {
+    return null
+  }
+  if (!Array.isArray(parsed) || parsed.length > maxOpeningCount) return null
+  const items: Omit<OpeningForm, 'id'>[] = []
+  for (const row of parsed) {
+    if (!Array.isArray(row) || row.length !== 5) return null
+    const [kind, side, width, height, bottom]: unknown[] = row
+    if (
+      (kind !== 'door' && kind !== 'window') ||
+      typeof side !== 'string' ||
+      !tileRoomWallSides.includes(side as TileRoomWallSide) ||
+      typeof width !== 'string' ||
+      typeof height !== 'string' ||
+      typeof bottom !== 'string' ||
+      [width, height, bottom].some((value) => value.length > 40) ||
+      !validNumber(width, openingFields.width) ||
+      !validNumber(height, openingFields.height) ||
+      !validNumber(bottom, openingFields.bottom)
+    )
+      return null
+    items.push({ kind, side: side as TileRoomWallSide, width, height, bottom })
+  }
+  return items
+}
+const detailedOpeningsShareField: ShareField = {
+  key: 'roomOpeningItems',
+  read: () => {
+    if (!includeWalls.value || openingMode.value !== 'detailed') return '[]'
+    if (detailedOpenings.value === null) return null
+    const rows: SerializedOpening[] = openingForms.value.map((opening) => [
+      opening.kind,
+      opening.side,
+      opening.width,
+      opening.height,
+      opening.bottom,
+    ])
+    const encoded = JSON.stringify(rows)
+    return encoded.length <= 2000 ? encoded : null
+  },
+  restore: (raw) => {
+    const items = parseSharedOpenings(raw)
+    if (items) openingForms.value = items.map((item) => ({ ...item, id: nextOpeningId++ }))
+  },
+}
 const { buildShareUrl, canShareInputs } = useShareableCalculator([
   planFlag,
   booleanShareField('roomFloor', includeFloor),
   booleanShareField('roomWalls', includeWalls),
   choiceShareField('roomWallMode', wallMode, ['full', 'selected']),
+  choiceShareField('roomOpeningMode', openingMode, ['total', 'detailed']),
   ...tileRoomWallSides.map((side) =>
     booleanShareField(`roomWall${side}`, toRef(selectedWalls, side)),
   ),
@@ -314,10 +463,11 @@ const { buildShareUrl, canShareInputs } = useShareableCalculator([
   optionalField(
     'roomOpenings',
     toRef(room, 'openings'),
-    () => includeWalls.value,
+    () => includeWalls.value && openingMode.value === 'total',
     '0',
     roomFields[3]!,
   ),
+  detailedOpeningsShareField,
   ...surfaceFields.flatMap((field) => [
     optionalField(
       `roomFloor${field.id}`,
@@ -379,6 +529,8 @@ function reset() {
   includeWalls.value = true
   wallMode.value = 'full'
   wallTileHeight.value = '1,2'
+  openingMode.value = 'total'
+  openingForms.value = []
   for (const side of tileRoomWallSides) selectedWalls[side] = true
 }
 const formatArea = (value: number) =>
@@ -570,35 +722,160 @@ function groutLink(surface: NonNullable<(typeof views.value)[number]['result']>)
             </p>
           </fieldset>
         </div>
-        <div class="field openings-field">
-          <label for="tile-room-openings">Drzwi i okna w obszarze płytek</label>
-          <div class="input-wrap">
-            <input
-              id="tile-room-openings"
-              v-model="room.openings"
-              type="text"
-              inputmode="decimal"
-              autocomplete="off"
-              :aria-invalid="!!roomError(roomFields[3]!) || !!openingError"
-              :aria-describedby="
-                openingError
-                  ? 'tile-room-opening-error'
-                  : roomError(roomFields[3]!)
-                    ? 'tile-room-help-openings'
-                    : 'tile-room-opening-hint'
-              "
-            /><span>m²</span>
+        <div class="opening-section">
+          <fieldset class="opening-mode">
+            <legend>Drzwi i okna</legend>
+            <div class="wall-modes">
+              <label>
+                <input v-model="openingMode" type="radio" value="total" />
+                <span
+                  ><strong>Podam łączną powierzchnię</strong
+                  ><small>Szybki wariant w m²</small></span
+                >
+              </label>
+              <label>
+                <input v-model="openingMode" type="radio" value="detailed" />
+                <span
+                  ><strong>Dodam otwory osobno</strong
+                  ><small>Odliczymy tylko część pod płytkami</small></span
+                >
+              </label>
+            </div>
+          </fieldset>
+          <p class="field-hint">W wyniku uwzględniamy tylko wybrany sposób odejmowania otworów.</p>
+          <div v-if="openingMode === 'total'" class="field openings-field">
+            <label for="tile-room-openings">Otwory w obszarze płytek łącznie</label>
+            <div class="input-wrap">
+              <input
+                id="tile-room-openings"
+                v-model="room.openings"
+                type="text"
+                inputmode="decimal"
+                autocomplete="off"
+                :aria-invalid="!!roomError(roomFields[3]!) || !!openingError"
+                :aria-describedby="
+                  openingError
+                    ? 'tile-room-opening-error'
+                    : roomError(roomFields[3]!)
+                      ? 'tile-room-help-openings'
+                      : 'tile-room-opening-hint'
+                "
+              /><span>m²</span>
+            </div>
+            <p id="tile-room-opening-hint" class="field-hint">
+              Odejmij tylko powierzchnię otworów na zaznaczonych ścianach, poniżej wysokości płytek.
+              Jeśli ich nie ma, wpisz 0.
+            </p>
+            <p v-if="roomError(roomFields[3]!)" id="tile-room-help-openings" class="field-error">
+              {{ roomError(roomFields[3]!) }}
+            </p>
+            <p v-if="openingError" id="tile-room-opening-error" class="geometry-error" role="alert">
+              {{ openingError }}
+            </p>
           </div>
-          <p id="tile-room-opening-hint" class="field-hint">
-            Odejmij tylko powierzchnię otworów na zaznaczonych ścianach, poniżej wysokości płytek.
-            Jeśli ich nie ma, wpisz 0.
-          </p>
-          <p v-if="roomError(roomFields[3]!)" id="tile-room-help-openings" class="field-error">
-            {{ roomError(roomFields[3]!) }}
-          </p>
-          <p v-if="openingError" id="tile-room-opening-error" class="geometry-error" role="alert">
-            {{ openingError }}
-          </p>
+          <div v-else class="detailed-openings">
+            <p class="field-hint">
+              Dla każdego otworu wybierz ścianę i podaj wymiary. Dolna krawędź drzwi zwykle jest na
+              poziomie podłogi (0 m). Liczymy tylko część poniżej wysokości płytek.
+            </p>
+            <div class="opening-actions">
+              <button
+                type="button"
+                :disabled="openingForms.length >= maxOpeningCount"
+                @click="addOpening('door')"
+              >
+                <Plus :size="15" aria-hidden="true" /> Dodaj drzwi
+              </button>
+              <button
+                type="button"
+                :disabled="openingForms.length >= maxOpeningCount"
+                @click="addOpening('window')"
+              >
+                <Plus :size="15" aria-hidden="true" /> Dodaj okno
+              </button>
+            </div>
+            <p v-if="!openingForms.length" class="empty-openings">
+              Nie dodano otworów. Odliczenie wynosi 0 m².
+            </p>
+            <article
+              v-for="(opening, index) in openingForms"
+              :key="opening.id"
+              class="opening-card"
+            >
+              <div class="opening-card-heading">
+                <h5>{{ opening.kind === 'door' ? 'Drzwi' : 'Okno' }} {{ index + 1 }}</h5>
+                <button
+                  type="button"
+                  :aria-label="`Usuń ${opening.kind === 'door' ? 'drzwi' : 'okno'} ${index + 1}`"
+                  @click="removeOpening(opening.id)"
+                >
+                  <Trash2 :size="16" aria-hidden="true" /> Usuń
+                </button>
+              </div>
+              <div class="opening-input-grid">
+                <div class="field">
+                  <label :for="`tile-opening-${opening.id}-side`">Ściana</label>
+                  <select :id="`tile-opening-${opening.id}-side`" v-model="opening.side">
+                    <option v-for="choice in wallChoices" :key="choice.id" :value="choice.id">
+                      {{ choice.label }} · {{ wallChoiceLength(choice.dimension) }}
+                    </option>
+                  </select>
+                </div>
+                <div v-for="field in openingFields" :key="field.id" class="field">
+                  <label :for="`tile-opening-${opening.id}-${field.id}`">{{ field.label }}</label>
+                  <div class="input-wrap">
+                    <input
+                      :id="`tile-opening-${opening.id}-${field.id}`"
+                      v-model="opening[field.id]"
+                      type="text"
+                      inputmode="decimal"
+                      autocomplete="off"
+                      :aria-invalid="!!openingFieldError(opening, field.id)"
+                      :aria-describedby="
+                        openingFieldError(opening, field.id)
+                          ? `tile-opening-error-${opening.id}-${field.id}`
+                          : undefined
+                      "
+                    /><span>{{ field.unit }}</span>
+                  </div>
+                  <p
+                    v-if="openingFieldError(opening, field.id)"
+                    :id="`tile-opening-error-${opening.id}-${field.id}`"
+                    class="field-error"
+                  >
+                    {{ openingFieldError(opening, field.id) }}
+                  </p>
+                </div>
+              </div>
+              <p v-if="detailedOpeningPreview?.details[index]" class="opening-impact">
+                <template v-if="!detailedOpeningPreview.details[index]!.onSelectedWall">
+                  Ta ściana nie jest zaznaczona — otwór nie zmienia wyniku.
+                </template>
+                <template v-else-if="detailedOpeningPreview.details[index]!.area === 0">
+                  Otwór leży ponad strefą płytek — odliczenie 0 m².
+                </template>
+                <template v-else>
+                  Odliczamy {{ formatArea(detailedOpeningPreview.details[index]!.area) }} m² ({{
+                    formatArea(detailedOpeningPreview.details[index]!.tiledHeight)
+                  }}
+                  m wysokości w strefie płytek).
+                </template>
+              </p>
+            </article>
+            <p v-if="openingForms.length >= maxOpeningCount" class="field-hint">
+              Możesz dodać maksymalnie {{ maxOpeningCount }} otworów.
+            </p>
+            <p v-if="openingError" class="geometry-error" role="alert">{{ openingError }}</p>
+            <p v-else-if="detailedOpeningPreview" class="opening-total">
+              Razem odejmujemy
+              <strong>{{ formatArea(detailedOpeningPreview.totalArea) }} m²</strong> z wybranych
+              ścian.
+            </p>
+            <p class="field-hint">
+              Jeśli otwory nachodzą na siebie, popraw dane — kalkulator nie zna ich poziomego
+              położenia na ścianie.
+            </p>
+          </div>
         </div>
       </div>
 
@@ -970,6 +1247,116 @@ a:focus-visible {
   max-width: 32rem;
   margin-top: 1rem;
 }
+.opening-section {
+  margin-top: 1.2rem;
+  padding-top: 1.1rem;
+  border-top: 1px solid #e2dfd3;
+}
+.opening-mode {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.opening-mode legend {
+  color: #355b43;
+  font-family: var(--font-heading);
+  font-size: 1rem;
+  font-weight: 800;
+}
+.opening-mode .wall-modes {
+  margin-top: 0.6rem;
+}
+.detailed-openings {
+  display: grid;
+  gap: 0.8rem;
+  margin-top: 0.95rem;
+}
+.opening-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.opening-actions button,
+.opening-card-heading button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  min-height: 37px;
+  padding: 0.45rem 0.7rem;
+  border: 1px solid #bfd2bf;
+  border-radius: 9px;
+  background: #fff;
+  color: #315d42;
+  font: inherit;
+  font-size: 0.73rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+.opening-actions button:hover,
+.opening-card-heading button:hover {
+  background: #eef6e9;
+}
+.opening-actions button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.opening-card {
+  min-width: 0;
+  padding: 1rem;
+  border: 1px solid #dfd9cb;
+  border-radius: 12px;
+  background: #fffefa;
+}
+.opening-card-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.7rem;
+}
+.opening-card-heading h5 {
+  color: #315d42;
+  font-size: 0.98rem;
+}
+.opening-card-heading button {
+  min-height: 33px;
+  border-color: #eed8d0;
+  color: #9b5849;
+}
+.opening-input-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.7rem;
+  margin-top: 0.85rem;
+}
+.opening-input-grid select {
+  width: 100%;
+  min-height: 44px;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid #ccddcc;
+  border-radius: 9px;
+  background: #fff;
+  color: #244b37;
+  font: inherit;
+  font-size: 0.76rem;
+}
+.opening-impact,
+.opening-total,
+.empty-openings {
+  padding: 0.75rem 0.9rem;
+  border-radius: 9px;
+  background: #eef5e8;
+  color: #356149;
+  font-size: 0.73rem;
+  line-height: 1.5;
+}
+.opening-impact {
+  margin-top: 0.85rem;
+}
+.opening-total strong {
+  color: #26553d;
+}
 .section-heading {
   display: flex;
   align-items: center;
@@ -1252,6 +1639,9 @@ a:focus-visible {
   .result-grid {
     grid-template-columns: 1fr;
   }
+  .opening-input-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 @media (max-width: 600px) {
   .plan-header {
@@ -1270,7 +1660,8 @@ a:focus-visible {
     grid-template-columns: 1fr;
   }
   .wall-modes,
-  .wall-choice-grid {
+  .wall-choice-grid,
+  .opening-input-grid {
     grid-template-columns: 1fr;
   }
   .cost-summary {
