@@ -1,8 +1,6 @@
-import type { RoomMetrics } from './room-metrics'
-
 // Each rate belongs to a concrete measurement already available for a saved room.
 export const roomLaborTasks = [
-  { id: 'painting', label: 'Malowanie pozostałych ścian', unit: 'm²' },
+  { id: 'painting', label: 'Malowanie ścian i sufitu', unit: 'm²' },
   { id: 'flooring', label: 'Układanie paneli', unit: 'm²' },
   { id: 'skirting', label: 'Montaż listew', unit: 'm' },
   { id: 'tilingFloor', label: 'Układanie płytek na podłodze', unit: 'm²' },
@@ -35,6 +33,62 @@ export interface RoomTilingAreas {
 export interface RoomPanelAreas {
   area: number
   missingAreaCount: number
+}
+
+export interface RoomSkirtingLengths {
+  length: number
+  missingLengthCount: number
+}
+
+export interface RoomPaintingAreas {
+  walls: number
+  ceiling: number
+  missingAreaCount: number
+}
+
+interface SkirtingLengthItem {
+  kind: string
+  skirtingLengthM?: number
+}
+
+/** Purchased board length (with reserve) is not the length charged for installation. */
+export function calculateRoomSkirtingLengths(
+  items: readonly SkirtingLengthItem[],
+): RoomSkirtingLengths {
+  const result: RoomSkirtingLengths = { length: 0, missingLengthCount: 0 }
+  for (const item of items) {
+    if (item.kind !== 'skirting') continue
+    if (
+      typeof item.skirtingLengthM === 'number' &&
+      Number.isFinite(item.skirtingLengthM) &&
+      item.skirtingLengthM > 0
+    )
+      result.length += item.skirtingLengthM
+    else result.missingLengthCount++
+  }
+  return result
+}
+
+interface PaintingAreaItem {
+  kind: string
+  paintWallAreaM2?: number
+  paintCeilingAreaM2?: number
+}
+
+/** Each saved paint colour covers a separate surface; never infer area from can count. */
+export function calculateRoomPaintingAreas(items: readonly PaintingAreaItem[]): RoomPaintingAreas {
+  const result: RoomPaintingAreas = { walls: 0, ceiling: 0, missingAreaCount: 0 }
+  for (const item of items) {
+    if (item.kind !== 'paintCans') continue
+    const walls = item.paintWallAreaM2
+    const ceiling = item.paintCeilingAreaM2
+    const validWalls = typeof walls === 'number' && Number.isFinite(walls) && walls > 0
+    const validCeiling = typeof ceiling === 'number' && Number.isFinite(ceiling) && ceiling > 0
+    if (!validWalls && !validCeiling) result.missingAreaCount++
+    if (validWalls) result.walls += walls
+    if (validCeiling) result.ceiling += ceiling
+  }
+  return result
 }
 
 interface PanelAreaItem {
@@ -108,16 +162,17 @@ export function parseOptionalLaborRate(raw: string): number | null | undefined {
 
 /** Round each included task to grosze before adding it to the room budget. */
 export function calculateRoomLabor(
-  metrics: RoomMetrics | null,
   rates: RoomLaborRates | undefined,
   tiling: RoomTilingAreas = { floor: 0, walls: 0, missingAreaCount: 0 },
   panels: RoomPanelAreas = { area: 0, missingAreaCount: 0 },
+  skirting: RoomSkirtingLengths = { length: 0, missingLengthCount: 0 },
+  painting: RoomPaintingAreas = { walls: 0, ceiling: 0, missingAreaCount: 0 },
 ): RoomLaborSummary {
   if (!rates) return { lines: [], total: 0 }
   const quantities: Record<RoomLaborKind, number | null> = {
-    painting: metrics ? Math.max(0, metrics.walls - tiling.walls) : null,
+    painting: painting.walls + painting.ceiling > 0 ? painting.walls + painting.ceiling : null,
     flooring: panels.area > 0 ? panels.area : null,
-    skirting: metrics?.perimeter ?? null,
+    skirting: skirting.length > 0 ? skirting.length : null,
     tilingFloor: tiling.floor > 0 ? tiling.floor : null,
     tilingWalls: tiling.walls > 0 ? tiling.walls : null,
   }

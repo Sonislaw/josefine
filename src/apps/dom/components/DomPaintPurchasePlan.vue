@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { PaintBucket, PackageCheck } from '@lucide/vue'
 import { parseDomNumber } from '../lib/calculations'
 import {
@@ -15,7 +15,11 @@ const props = defineProps<{
   idPrefix: string
   preferredRoomId?: string
   paintVariant?: 'main' | 'accent'
+  wallArea?: number | null
+  ceilingArea?: number | null
+  areaToClassify?: number | null
 }>()
+const simpleSurface = ref<'walls' | 'ceiling'>('walls')
 const canSize = defineModel<string>('canSize', { required: true })
 const canPrice = defineModel<string>('canPrice', { required: true })
 
@@ -35,6 +39,20 @@ const purchase = computed(() => {
     canPrice.value.trim() === '' ? null : parseDomNumber(canPrice.value),
   )
 })
+const coveredWalls = computed(() =>
+  props.areaToClassify !== undefined
+    ? simpleSurface.value === 'walls'
+      ? props.areaToClassify
+      : null
+    : props.wallArea,
+)
+const coveredCeiling = computed(() =>
+  props.areaToClassify !== undefined
+    ? simpleSurface.value === 'ceiling'
+      ? props.areaToClassify
+      : null
+    : props.ceilingArea,
+)
 const shoppingItems = computed<ShoppingDraft[]>(() => {
   if (!purchase.value) return []
   return [
@@ -44,6 +62,13 @@ const shoppingItems = computed<ShoppingDraft[]>(() => {
       packageSizeLiters: parsePaintCanSize(canSize.value)!,
       cost: purchase.value.estimatedCost,
       ...(props.paintVariant ? { paintVariant: props.paintVariant } : {}),
+      // Jedna warstwa rzeczywistej powierzchni; warstwy i zapas wpływają na zakup, nie na m² pracy.
+      ...(coveredWalls.value && coveredWalls.value > 0
+        ? { paintWallAreaM2: coveredWalls.value }
+        : {}),
+      ...(coveredCeiling.value && coveredCeiling.value > 0
+        ? { paintCeilingAreaM2: coveredCeiling.value }
+        : {}),
     },
   ]
 })
@@ -81,6 +106,17 @@ const formatMoney = (value: number) =>
       Wynik kalkulatora już uwzględnia 10% zapasu. Wybierz pojemność puszki wybranej farby —
       policzymy liczbę całych opakowań i orientacyjną nadwyżkę.
     </p>
+    <label v-if="areaToClassify !== undefined" class="surface-choice" :for="fieldId('surface')">
+      Malowana powierzchnia
+      <select :id="fieldId('surface')" v-model="simpleSurface">
+        <option value="walls">Ściany</option>
+        <option value="ceiling">Sufit</option>
+      </select>
+      <small
+        >Jeśli liczysz jednocześnie ściany i sufit, użyj kalkulatora pokoju, który zapisze je
+        osobno.</small
+      >
+    </label>
 
     <div class="plan-grid">
       <div class="plan-fields">
@@ -175,7 +211,9 @@ const formatMoney = (value: number) =>
     />
     <p class="plan-note">
       Liczymy pełne puszki jednego rozmiaru, bez mieszania pojemności. Sprawdź rzeczywistą wydajność
-      i dostępne opakowania wybranej farby. Każdy kolor ma osobny plan zakupu.
+      i dostępne opakowania wybranej farby. Każdy kolor ma osobny plan zakupu. Zapisany metraż ścian
+      i sufitu posłuży w Moim remoncie do wyliczenia robocizny — bez mnożenia przez liczbę warstw i
+      bez zapasu.
     </p>
   </section>
 </template>
@@ -233,6 +271,30 @@ h3 {
   color: #697e6e;
   font-size: 0.84rem;
   line-height: 1.7;
+}
+.surface-choice {
+  display: grid;
+  gap: 0.45rem;
+  max-width: 30rem;
+  margin-top: 1rem;
+  color: #355b43;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+.surface-choice select {
+  min-height: 42px;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid #d4decf;
+  border-radius: 10px;
+  background: #fffefa;
+  color: #294e38;
+  font: inherit;
+}
+.surface-choice small {
+  color: #758575;
+  font-size: 0.7rem;
+  font-weight: 500;
+  line-height: 1.5;
 }
 .plan-grid {
   display: grid;

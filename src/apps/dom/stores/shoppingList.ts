@@ -22,12 +22,19 @@ export const shoppingKinds = {
 export type ShoppingKind = keyof typeof shoppingKinds
 type StandardKind = Exclude<
   ShoppingKind,
-  'panels' | 'paintCans' | 'groutPacks' | 'tilePieces' | 'tileBoxes' | 'tileAdhesiveBags'
+  | 'panels'
+  | 'skirting'
+  | 'paintCans'
+  | 'groutPacks'
+  | 'tilePieces'
+  | 'tileBoxes'
+  | 'tileAdhesiveBags'
 >
 // New purchase details are optional on old entries, preserving existing v1/v2 saved lists.
 export type ShoppingDraft =
   | { kind: StandardKind; quantity: number; cost: number | null }
   | { kind: 'panels'; quantity: number; cost: number | null; panelAreaM2?: number }
+  | { kind: 'skirting'; quantity: number; cost: number | null; skirtingLengthM?: number }
   | {
       kind: 'tilePieces' | 'tileBoxes'
       quantity: number
@@ -51,12 +58,16 @@ export type ShoppingDraft =
       cost: number | null
       packageSizeLiters: number
       paintVariant?: 'main' | 'accent'
+      paintWallAreaM2?: number
+      paintCeilingAreaM2?: number
     }
   | { kind: 'groutPacks'; quantity: number; cost: number | null; packageWeightKg: number }
 export type ShoppingItem = ShoppingDraft & { id: string; roomId: string | null; purchased: boolean }
 export type PurchaseCoveragePatch =
   | { kind: 'tiles'; tileSurface: 'floor' | 'walls' | null; tiledAreaM2: number | null }
   | { kind: 'panels'; panelAreaM2: number | null }
+  | { kind: 'skirting'; skirtingLengthM: number | null }
+  | { kind: 'paintCans'; paintWallAreaM2: number | null; paintCeilingAreaM2: number | null }
 type StoredShoppingItem = ShoppingDraft & {
   id: string
   roomId: string | null
@@ -89,6 +100,7 @@ function isDraft(value: unknown): value is ShoppingDraft {
         item.panelAreaM2 > 0 &&
         item.panelAreaM2 <= 4_000_000)
     )
+  if (item.kind === 'skirting') return isOptionalMeasure(item.skirtingLengthM)
   if (item.kind === 'tilePieces' || item.kind === 'tileBoxes')
     return (
       (item.tileSurface === undefined ||
@@ -139,9 +151,18 @@ function isDraft(value: unknown): value is ShoppingDraft {
       Number.isFinite(item.packageSizeLiters) &&
       item.packageSizeLiters > 0 &&
       Number.isFinite((item.quantity as number) * item.packageSizeLiters) &&
+      isOptionalMeasure(item.paintWallAreaM2) &&
+      isOptionalMeasure(item.paintCeilingAreaM2) &&
       (item.paintVariant === undefined ||
         item.paintVariant === 'main' ||
         item.paintVariant === 'accent'))
+  )
+}
+
+function isOptionalMeasure(value: unknown): boolean {
+  return (
+    value === undefined ||
+    (typeof value === 'number' && Number.isFinite(value) && value > 0 && value <= 4_000_000)
   )
 }
 
@@ -378,6 +399,8 @@ export const useDomShoppingList = defineStore('dom-shopping-list', () => {
       quantity <= 0 ||
       (coverage?.kind === 'tiles' && item.kind !== 'tilePieces' && item.kind !== 'tileBoxes') ||
       (coverage?.kind === 'panels' && item.kind !== 'panels') ||
+      (coverage?.kind === 'skirting' && item.kind !== 'skirting') ||
+      (coverage?.kind === 'paintCans' && item.kind !== 'paintCans') ||
       (coverage?.kind === 'tiles' &&
         coverage.tiledAreaM2 !== null &&
         coverage.tileSurface === null) ||
@@ -408,6 +431,14 @@ export const useDomShoppingList = defineStore('dom-shopping-list', () => {
     } else if (coverage?.kind === 'panels') {
       if (coverage.panelAreaM2 === null) delete next.panelAreaM2
       else next.panelAreaM2 = coverage.panelAreaM2
+    } else if (coverage?.kind === 'skirting') {
+      if (coverage.skirtingLengthM === null) delete next.skirtingLengthM
+      else next.skirtingLengthM = coverage.skirtingLengthM
+    } else if (coverage?.kind === 'paintCans') {
+      if (coverage.paintWallAreaM2 === null) delete next.paintWallAreaM2
+      else next.paintWallAreaM2 = coverage.paintWallAreaM2
+      if (coverage.paintCeilingAreaM2 === null) delete next.paintCeilingAreaM2
+      else next.paintCeilingAreaM2 = coverage.paintCeilingAreaM2
     }
     if (!isDraft(next)) return false
     items.value[index] = next as ShoppingItem

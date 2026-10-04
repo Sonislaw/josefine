@@ -5,6 +5,7 @@ import type {
   RoomLaborLine,
   RoomLaborSummary,
   RoomPanelAreas,
+  RoomSkirtingLengths,
   RoomTilingAreas,
 } from './room-budget'
 import type { RoomMetrics } from './room-metrics'
@@ -19,11 +20,11 @@ export interface FloorBudgetSummary {
   missingPriceCount: number
   plannedPanelArea: number
   missingPanelAreaCount: number
-  roomPerimeter: number | null
+  plannedSkirtingLength: number
+  missingSkirtingLengthCount: number
   hasPanels: boolean
   hasUnderlay: boolean
   hasSkirting: boolean
-  missingDimensions: boolean
   missingFloorRate: boolean
   missingSkirtingRate: boolean
   floorFullyTiled: boolean
@@ -39,6 +40,7 @@ export function calculateFloorBudget(
   labor: RoomLaborSummary,
   tiling: RoomTilingAreas,
   panels: RoomPanelAreas,
+  skirting: RoomSkirtingLengths,
   metrics: RoomMetrics | null,
 ): FloorBudgetSummary | null {
   const panelItems = items.filter((item) => item.kind === 'panels')
@@ -90,16 +92,13 @@ export function calculateFloorBudget(
     ...costs,
     plannedPanelArea: panels.area,
     missingPanelAreaCount: panels.missingAreaCount,
-    roomPerimeter: metrics?.perimeter ?? null,
+    plannedSkirtingLength: skirting.length,
+    missingSkirtingLengthCount: skirting.missingLengthCount,
     hasPanels: panelItems.length > 0,
     hasUnderlay: underlayItems.length > 0,
     hasSkirting: skirtingItems.length > 0,
-    missingDimensions: metrics === null && skirtingItems.length > 0,
     missingFloorRate: panels.area > 0 && !laborLines.some((line) => line.id === 'flooring'),
-    missingSkirtingRate:
-      skirtingItems.length > 0 &&
-      metrics !== null &&
-      !laborLines.some((line) => line.id === 'skirting'),
+    missingSkirtingRate: skirting.length > 0 && !laborLines.some((line) => line.id === 'skirting'),
     floorFullyTiled: panelItems.length > 0 && remainingFloorArea === 0,
     exceedsUntiledArea: remainingFloorArea !== null && panels.area > remainingFloorArea + 0.000001,
     unknownTileAreaCount: tiling.missingAreaCount,

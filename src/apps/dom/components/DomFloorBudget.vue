@@ -2,9 +2,14 @@
 import { ArrowUpRight, PanelsTopLeft } from '@lucide/vue'
 import { RouterLink } from 'vue-router'
 import type { FloorBudgetSummary } from '../lib/floor-budget'
-import { domPath } from '../seo/useDomSeo'
+import { createFloorRoomToolLink } from '../lib/room-links'
+import type { RoomDimensions } from '../lib/room-metrics'
 
-const props = defineProps<{ summary: FloorBudgetSummary; roomId: string }>()
+const props = defineProps<{
+  summary: FloorBudgetSummary
+  roomId: string
+  dimensions: RoomDimensions | null
+}>()
 const formatMoney = (value: number) =>
   new Intl.NumberFormat('pl-PL', { style: 'currency', currency: 'PLN' }).format(value)
 const formatMeasure = (value: number) =>
@@ -31,10 +36,11 @@ function laborLine(id: 'flooring' | 'skirting') {
         <div class="material-heading">
           <h4>{{ line.label }}</h4>
           <RouterLink
-            :to="{ path: domPath(line.path), query: { roomId } }"
-            :aria-label="`${line.itemCount ? 'Otwórz kalkulator' : 'Dodaj'}: ${line.label}`"
+            v-if="!line.itemCount"
+            :to="createFloorRoomToolLink(line.id, dimensions, roomId)"
+            :aria-label="`Dodaj: ${line.label}`"
           >
-            {{ line.itemCount ? 'Otwórz' : 'Dodaj' }}
+            Dodaj
             <ArrowUpRight :size="14" aria-hidden="true" />
           </RouterLink>
         </div>
@@ -52,6 +58,10 @@ function laborLine(id: 'flooring' | 'skirting') {
         </small>
       </article>
     </div>
+    <p v-if="!dimensions" class="floor-note">
+      Pokój nie ma zapisanych wymiarów. Kalkulatory otworzą się z domyślnymi wartościami — dodaj
+      wymiary pokoju wyżej, aby uzupełniały się automatycznie.
+    </p>
 
     <div v-if="summary.hasPanels || summary.hasSkirting" class="labor-block">
       <div class="labor-heading">
@@ -79,16 +89,16 @@ function laborLine(id: 'flooring' | 'skirting') {
         <span
           >Montaż listew ·
           {{
-            summary.roomPerimeter === null
-              ? 'brak wymiarów'
-              : `${formatMeasure(summary.roomPerimeter)} m obwodu`
+            summary.plannedSkirtingLength > 0
+              ? `${formatMeasure(summary.plannedSkirtingLength)} m`
+              : 'brak długości montażu'
           }}</span
         >
         <strong>{{
           laborLine('skirting')
             ? formatMoney(laborLine('skirting')!.cost)
-            : summary.roomPerimeter === null
-              ? 'Brak wymiarów'
+            : summary.plannedSkirtingLength === 0
+              ? 'Brak długości'
               : 'Brak stawki'
         }}</strong>
       </div>
@@ -104,7 +114,7 @@ function laborLine(id: 'flooring' | 'skirting') {
       v-if="
         summary.missingPriceCount ||
         summary.missingPanelAreaCount ||
-        summary.missingDimensions ||
+        summary.missingSkirtingLengthCount ||
         summary.missingFloorRate ||
         summary.missingSkirtingRate ||
         summary.floorFullyTiled ||
@@ -126,8 +136,14 @@ function laborLine(id: 'flooring' | 'skirting') {
         metrażu układania. Uzupełnij go w edycji zakupu; bez niego montaż tej części podłogi nie
         jest liczony.
       </p>
-      <p v-if="summary.missingDimensions">
-        Brakuje wymiarów pokoju do wyliczenia montażu listew. Dodaj je wyżej.
+      <p v-if="summary.missingSkirtingLengthCount">
+        {{ summary.missingSkirtingLengthCount }}
+        {{
+          summary.missingSkirtingLengthCount === 1
+            ? 'pozycja listew nie ma'
+            : 'pozycji listew nie ma'
+        }}
+        długości montażu. Uzupełnij ją w edycji zakupu, uwzględniając miejsca bez listew.
       </p>
       <p v-if="summary.missingFloorRate || summary.missingSkirtingRate">
         Brakuje stawki za
@@ -157,8 +173,9 @@ function laborLine(id: 'flooring' | 'skirting') {
     <p class="floor-note">
       Podkład i listwy dodaj tylko wtedy, gdy są potrzebne. Montaż paneli liczymy od metrażu
       zapisanego przy ich zakupach, bez zapasu na docinki. Nie wyliczamy go z liczby paczek ani z
-      całej pozostałej powierzchni pokoju. Montaż listew liczymy od pełnego obwodu, bez odejmowania
-      drzwi. Uwzględniamy wszystkie zapisane zakupy pokoju, niezależnie od filtra „Kupione”.
+      całej pozostałej powierzchni pokoju. Montaż listew liczymy od zapisanej długości po odjęciu
+      otworów, bez zapasu na docinki. Uwzględniamy wszystkie zapisane zakupy pokoju, niezależnie od
+      filtra „Kupione”.
     </p>
   </section>
 </template>

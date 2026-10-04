@@ -5,6 +5,36 @@ const format = (value: number) =>
   new Intl.NumberFormat('pl-PL', { maximumFractionDigits: 2 }).format(value)
 const toQueryNumber = (value: number) => String(Number(value.toFixed(6)))
 
+export type FloorRoomTool = 'panels' | 'underlay' | 'skirting'
+
+/** Keep room-prefilled links identical in the room overview and floor budget. */
+export function createFloorRoomToolLink(
+  tool: FloorRoomTool,
+  dimensions: RoomDimensions | null | undefined,
+  roomId?: string,
+) {
+  const metrics = dimensions ? calculateRoomMetrics(dimensions) : null
+  const context = roomId ? { roomId } : {}
+  if (tool === 'skirting')
+    return {
+      path: domPath('/obwod-prostokata'),
+      query: {
+        ...(metrics && dimensions
+          ? { length: String(dimensions.length), width: String(dimensions.width) }
+          : {}),
+        ...context,
+      },
+    }
+  return {
+    path: domPath('/liczba-paczek-paneli'),
+    query: {
+      ...(metrics ? { area: toQueryNumber(metrics.floor) } : {}),
+      ...(tool === 'underlay' ? { includeUnderlay: '1', addMaterial: 'underlay' } : {}),
+      ...context,
+    },
+  }
+}
+
 /** Room identity stays local; calculators only receive dimensions and an optional local room ID. */
 export function createRoomToolLinks(dimensions: RoomDimensions, roomId?: string) {
   const metrics = calculateRoomMetrics(dimensions)
@@ -23,16 +53,14 @@ export function createRoomToolLinks(dimensions: RoomDimensions, roomId?: string)
       title: 'Panele na podłogę',
       detail: `${format(metrics.floor)} m² podłogi`,
       to: {
-        path: domPath('/liczba-paczek-paneli'),
-        query: { area: toQueryNumber(metrics.floor), ...context },
+        ...createFloorRoomToolLink('panels', dimensions, roomId),
       },
     },
     {
       title: 'Listwy przypodłogowe',
       detail: `${format(metrics.perimeter)} m obwodu`,
       to: {
-        path: domPath('/obwod-prostokata'),
-        query: { length: String(dimensions.length), width: String(dimensions.width), ...context },
+        ...createFloorRoomToolLink('skirting', dimensions, roomId),
       },
     },
     {

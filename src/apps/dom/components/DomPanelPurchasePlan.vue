@@ -4,21 +4,27 @@ import { ArrowUpRight, Layers3, ShoppingBasket } from '@lucide/vue'
 import { RouterLink } from 'vue-router'
 import { parseDomNumber } from '../lib/calculations'
 import { calculatePanelPurchase } from '../lib/panels'
+import { createPanelShoppingDrafts } from '../lib/panel-shopping'
 import { domPath } from '../seo/useDomSeo'
 import AddToDomShoppingList from './AddToDomShoppingList.vue'
-import type { ShoppingDraft } from '../stores/shoppingList'
 
 const props = defineProps<{
   area: number | null
   packCoverage: number | null
   waste: number | null
   preferredRoomId?: string
+  addOnlyUnderlay?: boolean
 }>()
 
 const packPrice = defineModel<string>('packPrice', { required: true })
 const includeUnderlay = defineModel<boolean>('includeUnderlay', { required: true })
 const underlayCoverage = defineModel<string>('underlayCoverage', { required: true })
 const underlayPackPrice = defineModel<string>('underlayPackPrice', { required: true })
+const underlaySelected = computed(() => props.addOnlyUnderlay || includeUnderlay.value)
+
+function setIncludeUnderlay(event: Event) {
+  includeUnderlay.value = (event.target as HTMLInputElement).checked
+}
 
 function priceError(raw: string): string | null {
   return raw.trim() === '' || parseDomNumber(raw) !== null
@@ -27,7 +33,7 @@ function priceError(raw: string): string | null {
 }
 
 const coverageError = computed(() => {
-  if (!includeUnderlay.value) return null
+  if (!underlaySelected.value) return null
   const value = parseDomNumber(underlayCoverage.value)
   return value !== null && value > 0 ? null : 'Podaj powierzchnię większą od zera.'
 })
@@ -37,8 +43,8 @@ const purchase = computed(() => {
     props.area === null ||
     props.packCoverage === null ||
     props.waste === null ||
-    priceError(packPrice.value) ||
-    (includeUnderlay.value && (coverageError.value || priceError(underlayPackPrice.value)))
+    (!props.addOnlyUnderlay && priceError(packPrice.value)) ||
+    (underlaySelected.value && (coverageError.value || priceError(underlayPackPrice.value)))
   )
     return null
 
@@ -46,8 +52,11 @@ const purchase = computed(() => {
     area: props.area,
     packCoverage: props.packCoverage,
     waste: props.waste,
-    packPrice: packPrice.value.trim() === '' ? null : parseDomNumber(packPrice.value),
-    underlay: includeUnderlay.value
+    packPrice:
+      props.addOnlyUnderlay || packPrice.value.trim() === ''
+        ? null
+        : parseDomNumber(packPrice.value),
+    underlay: underlaySelected.value
       ? {
           coverage: parseDomNumber(underlayCoverage.value)!,
           packPrice:
@@ -57,26 +66,16 @@ const purchase = computed(() => {
   })
 })
 
-const shoppingItems = computed<ShoppingDraft[]>(() => {
-  if (!purchase.value) return []
-  const result: ShoppingDraft[] = [
-    {
-      kind: 'panels',
-      quantity: purchase.value.panels.packCount,
-      cost: purchase.value.panelCost,
-      // Robocizna dotyczy powierzchni do ułożenia, a nie zakupu powiększonego o zapas.
-      panelAreaM2: props.area!,
-    },
-  ]
-  if (includeUnderlay.value && purchase.value.underlayCount !== null) {
-    result.push({
-      kind: 'underlay',
-      quantity: purchase.value.underlayCount,
-      cost: purchase.value.underlayCost,
-    })
-  }
-  return result
-})
+const shoppingItems = computed(() =>
+  purchase.value && props.area !== null
+    ? createPanelShoppingDrafts(
+        purchase.value,
+        props.area,
+        underlaySelected.value,
+        props.addOnlyUnderlay === true,
+      )
+    : [],
+)
 
 const formatArea = (value: number) =>
   new Intl.NumberFormat('pl-PL', { maximumFractionDigits: 3 }).format(value)
@@ -93,14 +92,18 @@ const formatMoney = (value: number) =>
         <h3 id="panel-purchase-title">Od wyniku do planu zakupu</h3>
       </div>
     </div>
-    <p class="plan-intro">
+    <p v-if="addOnlyUnderlay" class="plan-intro">
+      Zapiszesz tylko podkład przypisany do tego pokoju. Istniejące panele nie zostaną dodane drugi
+      raz.
+    </p>
+    <p v-else class="plan-intro">
       Liczba paczek powyżej pozostaje podstawowym wynikiem. Jeśli znasz ceny i potrzebujesz osobnego
       podkładu, uzupełnij dane poniżej, aby oszacować zakupy.
     </p>
 
     <div class="plan-grid">
       <div class="plan-fields">
-        <div class="field-group">
+        <div v-if="!addOnlyUnderlay" class="field-group">
           <strong>Panele</strong>
           <p>Podaj cenę jednej paczki, nie cenę za metr kwadratowy.</p>
           <label for="panel-pack-price">Cena jednej paczki <small>opcjonalnie</small></label>
@@ -123,7 +126,13 @@ const formatMoney = (value: number) =>
 
         <div class="field-group underlay-group">
           <label class="underlay-toggle" for="panel-underlay">
-            <input id="panel-underlay" v-model="includeUnderlay" type="checkbox" />
+            <input
+              id="panel-underlay"
+              type="checkbox"
+              :checked="underlaySelected"
+              :disabled="addOnlyUnderlay"
+              @change="setIncludeUnderlay"
+            />
             <span
               ><strong>Potrzebuję osobnego podkładu</strong
               ><small
@@ -131,7 +140,7 @@ const formatMoney = (value: number) =>
               ></span
             >
           </label>
-          <div v-if="includeUnderlay" class="underlay-fields">
+          <div v-if="underlaySelected" class="underlay-fields">
             <div>
               <label for="underlay-coverage">Powierzchnia opakowania podkładu</label>
               <div class="input-wrap">
@@ -178,23 +187,26 @@ const formatMoney = (value: number) =>
         <div class="summary-heading"><Layers3 :size="18" aria-hidden="true" /> PLAN MATERIAŁÓW</div>
         <template v-if="purchase">
           <div class="quantity-card">
-            <span>Panele</span>
-            <strong>{{ purchase.panels.packCount }} <small>paczek</small></strong>
+            <span>{{ addOnlyUnderlay ? 'Podkład' : 'Panele' }}</span>
+            <strong v-if="addOnlyUnderlay"
+              >{{ purchase.underlayCount }} <small>opak.</small></strong
+            >
+            <strong v-else>{{ purchase.panels.packCount }} <small>paczek</small></strong>
           </div>
           <dl class="summary-rows">
-            <div>
+            <div v-if="!addOnlyUnderlay">
               <dt>Powierzchnia z zapasem</dt>
               <dd>{{ formatArea(purchase.panels.requiredArea) }} m²</dd>
             </div>
-            <div>
+            <div v-if="!addOnlyUnderlay">
               <dt>Kupujesz w paczkach</dt>
               <dd>{{ formatArea(purchase.panels.purchasedArea) }} m²</dd>
             </div>
-            <div>
+            <div v-if="!addOnlyUnderlay">
               <dt>Ponad potrzebę z zapasem</dt>
               <dd>{{ formatArea(purchase.panels.surplusArea) }} m²</dd>
             </div>
-            <div v-if="includeUnderlay">
+            <div v-if="underlaySelected">
               <dt>Podkład</dt>
               <dd>
                 {{ purchase.underlayCount }} opak. / {{ formatArea(purchase.underlayArea!) }} m²
@@ -202,20 +214,24 @@ const formatMoney = (value: number) =>
             </div>
           </dl>
           <div
-            v-if="purchase.panelCost !== null || purchase.underlayCost !== null"
+            v-if="
+              (!addOnlyUnderlay && purchase.panelCost !== null) || purchase.underlayCost !== null
+            "
             class="cost-breakdown"
           >
-            <div v-if="purchase.panelCost !== null">
+            <div v-if="!addOnlyUnderlay && purchase.panelCost !== null">
               <span>Panele</span><strong>{{ formatMoney(purchase.panelCost) }}</strong>
             </div>
             <div v-if="purchase.underlayCost !== null">
               <span>Podkład</span><strong>{{ formatMoney(purchase.underlayCost) }}</strong>
             </div>
-            <div v-if="purchase.totalCost !== null" class="total-cost">
+            <div v-if="!addOnlyUnderlay && purchase.totalCost !== null" class="total-cost">
               <span>Szacowany koszt razem</span
               ><strong>{{ formatMoney(purchase.totalCost) }}</strong>
             </div>
-            <p v-else>Podaj obie ceny, aby zobaczyć łączny koszt materiałów.</p>
+            <p v-else-if="!addOnlyUnderlay">
+              Podaj obie ceny, aby zobaczyć łączny koszt materiałów.
+            </p>
           </div>
           <p v-else class="cost-placeholder">Podaj ceny, aby zobaczyć szacowany koszt.</p>
         </template>
@@ -227,9 +243,19 @@ const formatMoney = (value: number) =>
     <AddToDomShoppingList
       :items="shoppingItems"
       :preferred-room-id="preferredRoomId"
-      :label="includeUnderlay ? 'Dodaj panele i podkład do Mojego remontu' : undefined"
+      :label="
+        addOnlyUnderlay
+          ? 'Dodaj tylko podkład do Mojego remontu'
+          : underlaySelected
+            ? 'Dodaj panele i podkład do Mojego remontu'
+            : undefined
+      "
     />
-    <p class="plan-caveat">
+    <p v-if="addOnlyUnderlay" class="plan-caveat">
+      Podkład liczymy z powierzchni podłogi, bez zapasu na docinki paneli. Ten zapis nie zmienia
+      wcześniejszych zakupów paneli ani ich robocizny.
+    </p>
+    <p v-else class="plan-caveat">
       Po zapisaniu w Moim remoncie metraż układania paneli posłuży do wyliczenia robocizny według
       stawki pokoju. Liczba paczek i zapas nie powiększają tego metrażu. To orientacyjny plan
       materiałów, bez listew, montażu i transportu. Podkład liczymy z powierzchni podłogi bez zapasu

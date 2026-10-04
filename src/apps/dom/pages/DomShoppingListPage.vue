@@ -30,14 +30,20 @@ import { createRoomToolLinks } from '../lib/room-links'
 import {
   calculateRoomLabor,
   calculateRoomPanelAreas,
+  calculateRoomPaintingAreas,
+  calculateRoomSkirtingLengths,
   calculateRoomTilingAreas,
   type RoomLaborSummary,
   type RoomPanelAreas,
+  type RoomPaintingAreas,
+  type RoomSkirtingLengths,
   type RoomTilingAreas,
 } from '../lib/room-budget'
 import { calculateFloorBudget, type FloorBudgetSummary } from '../lib/floor-budget'
+import { calculateRoomCoverage, type RoomCoverageAudit } from '../lib/room-coverage'
 import { calculateTilingBudget, type TilingBudgetSummary } from '../lib/tiling-budget'
 import DomFloorBudget from '../components/DomFloorBudget.vue'
+import DomRoomCoverageAudit from '../components/DomRoomCoverageAudit.vue'
 import DomRoomBudget from '../components/DomRoomBudget.vue'
 import DomShoppingItemEditor from '../components/DomShoppingItemEditor.vue'
 import DomTilingBudget from '../components/DomTilingBudget.vue'
@@ -82,6 +88,9 @@ interface RoomGroup {
   metrics: RoomMetrics | null
   tiling: RoomTilingAreas
   panels: RoomPanelAreas
+  painting: RoomPaintingAreas
+  skirting: RoomSkirtingLengths
+  coverage: RoomCoverageAudit
   floorBudget: FloorBudgetSummary | null
   tilingBudget: TilingBudgetSummary | null
   links: ReturnType<typeof createRoomToolLinks>
@@ -92,7 +101,9 @@ function makeGroup(room: ShoppingRoom | null, name: string, groupItems: Shopping
   const metrics = room?.dimensions ? calculateRoomMetrics(room.dimensions) : null
   const tiling = calculateRoomTilingAreas(groupItems)
   const panels = calculateRoomPanelAreas(groupItems)
-  const labor = calculateRoomLabor(metrics, room?.laborRates, tiling, panels)
+  const painting = calculateRoomPaintingAreas(groupItems)
+  const skirting = calculateRoomSkirtingLengths(groupItems)
+  const labor = calculateRoomLabor(room?.laborRates, tiling, panels, skirting, painting)
   return {
     id: room?.id ?? null,
     room,
@@ -108,7 +119,12 @@ function makeGroup(room: ShoppingRoom | null, name: string, groupItems: Shopping
     metrics,
     tiling,
     panels,
-    floorBudget: room ? calculateFloorBudget(groupItems, labor, tiling, panels, metrics) : null,
+    painting,
+    skirting,
+    coverage: calculateRoomCoverage(metrics, panels, tiling, painting, skirting),
+    floorBudget: room
+      ? calculateFloorBudget(groupItems, labor, tiling, panels, skirting, metrics)
+      : null,
     tilingBudget: room ? calculateTilingBudget(groupItems, labor, tiling, metrics) : null,
     links: room?.dimensions ? createRoomToolLinks(room.dimensions, room.id) : [],
     labor,
@@ -165,14 +181,18 @@ function itemAmount(item: ShoppingItem): string {
   const amount = `${formatCount(item.quantity)} ${shoppingKinds[item.kind].unit}`
   if (item.kind === 'panels' && item.panelAreaM2)
     return `${amount} · na ${formatMetric(item.panelAreaM2)} m²`
+  if (item.kind === 'skirting' && item.skirtingLengthM)
+    return `${amount} · montaż ${formatMetric(item.skirtingLengthM)} m`
   if (item.kind === 'tileBoxes' && item.tileLengthCm && item.tileWidthCm && item.piecesPerBox)
     return `${amount} po ${formatCount(item.piecesPerBox)} szt. · ${formatDimension(item.tileLengthCm)} × ${formatDimension(item.tileWidthCm)} cm${item.tiledAreaM2 ? ` · na ${formatMetric(item.tiledAreaM2)} m²` : ''}`
   if ((item.kind === 'tilePieces' || item.kind === 'tileBoxes') && item.tiledAreaM2)
     return `${amount} · na ${formatMetric(item.tiledAreaM2)} m²`
   if (item.kind === 'tileAdhesiveBags')
     return `${amount} po ${formatLiters(item.packageWeightKg)} kg (${formatLiters(item.quantity * item.packageWeightKg)} kg razem)`
-  if (item.kind === 'paintCans')
-    return `${amount} po ${formatLiters(item.packageSizeLiters)} l (${formatLiters(item.quantity * item.packageSizeLiters)} l razem)`
+  if (item.kind === 'paintCans') {
+    const coverage = (item.paintWallAreaM2 ?? 0) + (item.paintCeilingAreaM2 ?? 0)
+    return `${amount} po ${formatLiters(item.packageSizeLiters)} l (${formatLiters(item.quantity * item.packageSizeLiters)} l razem)${coverage > 0 ? ` · malowanie ${formatMetric(coverage)} m²` : ''}`
+  }
   if (item.kind === 'groutPacks')
     return `${amount} po ${formatLiters(item.packageWeightKg)} kg (${formatLiters(item.quantity * item.packageWeightKg)} kg razem)`
   return amount
@@ -624,7 +644,7 @@ function togglePurchased(itemId: string, event: Event) {
                 ><button
                   type="button"
                   class="edit-item"
-                  :aria-label="`Edytuj zakup${item.kind === 'panels' || item.kind === 'tilePieces' || item.kind === 'tileBoxes' ? ' i metraż' : ''}: ${itemLabel(item)}`"
+                  :aria-label="`Edytuj zakup${item.kind === 'panels' || item.kind === 'skirting' || item.kind === 'paintCans' || item.kind === 'tilePieces' || item.kind === 'tileBoxes' ? ' i zakres prac' : ''}: ${itemLabel(item)}`"
                   :aria-expanded="editingItemId === item.id"
                   @click="editingItemId = editingItemId === item.id ? null : item.id"
                 >
@@ -650,9 +670,15 @@ function togglePurchased(itemId: string, event: Event) {
           <p v-if="group.missingPrices && !group.room" class="group-note">
             Pozycji bez ceny: {{ group.missingPrices }}. Suma tej grupy jest niepełna.
           </p>
+          <DomRoomCoverageAudit
+            v-if="group.room && (group.metrics || group.items.length)"
+            :room-id="group.room.id"
+            :audit="group.coverage"
+          />
           <DomFloorBudget
             v-if="group.room && group.floorBudget"
             :room-id="group.room.id"
+            :dimensions="group.room.dimensions ?? null"
             :summary="group.floorBudget"
           />
           <DomTilingBudget
@@ -666,6 +692,8 @@ function togglePurchased(itemId: string, event: Event) {
             :metrics="group.metrics"
             :tiling="group.tiling"
             :panels="group.panels"
+            :painting="group.painting"
+            :skirting="group.skirting"
             :labor="group.labor"
             :material-total="group.knownTotal"
             :item-count="group.items.length"
@@ -675,8 +703,8 @@ function togglePurchased(itemId: string, event: Event) {
         </section>
         <p v-if="items.length" class="snapshot-note">
           Pozycje są zapisanymi wynikami. Ilość i cenę możesz skorygować tutaj bez zmiany obliczenia
-          w kalkulatorze. Przy panelach i płytkach możesz też uzupełnić rzeczywisty metraż do
-          wyliczenia robocizny.
+          w kalkulatorze. Przy panelach, płytkach, farbie i listwach możesz też uzupełnić
+          rzeczywisty zakres prac do wyliczenia robocizny.
         </p>
       </div>
 
@@ -703,8 +731,8 @@ function togglePurchased(itemId: string, event: Event) {
           jest to pełny koszt remontu.
         </p>
         <p>
-          Robocizna obejmuje tylko wpisane stawki: dla paneli i płytek z zapisanym metrażem oraz dla
-          pozostałych prac w pokojach z wymiarami. Nie uwzględniamy transportu ani zakupów spoza
+          Robocizna obejmuje tylko wpisane stawki i zapisany zakres prac: metraż paneli, płytek i
+          malowania oraz długość montażu listew. Nie uwzględniamy transportu ani zakupów spoza
           listy.
         </p>
       </aside>

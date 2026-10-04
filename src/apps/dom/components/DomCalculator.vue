@@ -643,6 +643,7 @@ function useMeterVolume(volume: number) {
     :pack-coverage="parseDomNumber(form.packCoverage ?? '')"
     :waste="parseDomNumber(form.waste ?? '')"
     :preferred-room-id="effectiveRoomId"
+    :add-only-underlay="route.query.addMaterial === 'underlay'"
   />
   <DomTileLayoutPreview
     v-if="toolId === 'liczba-plytek'"
@@ -696,6 +697,7 @@ function useMeterVolume(volume: number) {
     v-model:can-size="paintCanSize"
     v-model:can-price="paintCanPrice"
     :required-liters="results?.[1]?.value ?? null"
+    :area-to-classify="parseDomNumber(form.area ?? '')"
     id-prefix="paint-area"
     :preferred-room-id="effectiveRoomId"
   />

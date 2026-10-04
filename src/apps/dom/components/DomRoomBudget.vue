@@ -8,6 +8,8 @@ import {
   type RoomLaborRates,
   type RoomLaborSummary,
   type RoomPanelAreas,
+  type RoomPaintingAreas,
+  type RoomSkirtingLengths,
   type RoomTilingAreas,
 } from '../lib/room-budget'
 import type { RoomMetrics } from '../lib/room-metrics'
@@ -18,6 +20,8 @@ const props = defineProps<{
   metrics: RoomMetrics | null
   tiling: RoomTilingAreas
   panels: RoomPanelAreas
+  painting: RoomPaintingAreas
+  skirting: RoomSkirtingLengths
   labor: RoomLaborSummary
   materialTotal: number
   itemCount: number
@@ -39,7 +43,9 @@ const hasLaborBasis = computed(
     props.metrics !== null ||
     props.tiling.floor > 0 ||
     props.tiling.walls > 0 ||
-    props.panels.area > 0,
+    props.panels.area > 0 ||
+    props.painting.walls + props.painting.ceiling > 0 ||
+    props.skirting.length > 0,
 )
 
 watch(hasLaborBasis, (hasBasis) => {
@@ -98,13 +104,14 @@ function saveRates() {
     </div>
 
     <p v-if="!hasLaborBasis" class="budget-intro">
-      Do oszacowania robocizny zapisz wymiary pokoju lub metraż układania paneli albo płytek.
+      Do oszacowania robocizny zapisz rzeczywisty zakres prac przy zakupach. Wymiary pokoju pomogą
+      porównać te zakresy.
       <button type="button" @click="emit('requestDimensions')">Dodaj wymiary</button>
       <span v-if="room.laborRates">Wpisane wcześniej stawki pozostają zapisane.</span>
     </p>
     <p v-else-if="!metrics" class="budget-intro">
-      Montaż paneli i płytek liczymy z metrażu zapisanego przy zakupie. Dla malowania i montażu
-      listew dodaj wymiary pokoju.
+      Robociznę liczymy z metrażu lub długości zapisanych przy zakupach. Dodaj wymiary pokoju, aby
+      porównać zakresy prac i wykryć ewentualne nakładanie się powierzchni.
       <button type="button" @click="emit('requestDimensions')">Dodaj wymiary</button>
     </p>
     <p v-else-if="!room.laborRates && !editing" class="budget-intro">
@@ -115,9 +122,9 @@ function saveRates() {
     <form v-if="editing" class="rates-form" @submit.prevent="saveRates">
       <p>
         Wpisz koszt pracy za jednostkę. Puste pola nie są uwzględniane; 0 zł oznacza pracę bez
-        kosztu. Montaż paneli i płytek liczymy od rzeczywistego metrażu zapisanego przy zakupach,
-        nie od liczby paczek ani całej powierzchni pokoju. Malowanie nie obejmuje zapisanej strefy
-        płytek ściennych.
+        kosztu. Każdą pracę liczymy od zapisanego metrażu lub długości montażu, bez zapasu na
+        materiały i bez automatycznego dopisywania niezaplanowanej powierzchni. Sprawdź w kontroli
+        zakresu, czy malowanie nie obejmuje tej samej strefy co płytki ścienne.
       </p>
       <div class="rate-fields">
         <label v-for="task in roomLaborTasks" :key="task.id" :for="`rate-${room.id}-${task.id}`">
@@ -182,9 +189,10 @@ function saveRates() {
       Nie uwzględniono ich w sumie — wynik jest niepełny.
     </p>
     <p class="budget-footnote">
-      Liczymy tylko wpisane ceny i stawki. Robocizna za panele i płytki korzysta z ich zapisanych
-      metraży; powierzchnię płytek ściennych odejmujemy od powierzchni malowania. Przy wielu
-      zapisach tej samej powierzchni usuń duplikaty. Nie doliczamy transportu.
+      Liczymy tylko wpisane ceny, stawki i zakresy prac. Ściany i sufit malowane tym samym kolorem
+      liczymy raz na powierzchnię, niezależnie od liczby warstw. Nie odejmujemy płytek od malowania
+      automatycznie, bo zapisany metraż może już je pomijać. Przy wielu zapisach tej samej strefy
+      usuń duplikaty. Nie doliczamy transportu.
     </p>
   </section>
 </template>

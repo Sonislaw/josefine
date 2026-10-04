@@ -186,6 +186,14 @@ const accentResult = computed(() => {
     coverage: parseDomNumber(accentCoverage.value)!,
   })
 })
+const mainPaintWallArea = computed(() => {
+  if (!result.value) return null
+  if (!accentEnabled.value) return result.value.netWalls
+  // The main colour includes the ceiling but never the separately saved accent wall.
+  return accentResult.value
+    ? Math.max(0, accentResult.value.mainArea - result.value.ceilingArea)
+    : null
+})
 const accentGeometryError = computed(() => {
   const values = parsedValues.value
   const base = result.value
@@ -543,6 +551,8 @@ function reset() {
     id-prefix="paint-room"
     :preferred-room-id="preferredRoomId"
     :paint-variant="accentEnabled ? 'main' : undefined"
+    :wall-area="mainPaintWallArea"
+    :ceiling-area="result?.ceilingArea ?? null"
   />
   <DomPaintPurchasePlan
     v-if="accentEnabled"
@@ -552,6 +562,8 @@ function reset() {
     id-prefix="paint-room-accent"
     :preferred-room-id="preferredRoomId"
     paint-variant="accent"
+    :wall-area="accentResult?.accentArea ?? null"
+    :ceiling-area="null"
   />
 </template>
 

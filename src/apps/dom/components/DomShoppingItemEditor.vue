@@ -17,12 +17,26 @@ const priceId = useId()
 const surfaceId = useId()
 const areaId = useId()
 const panelAreaId = useId()
+const skirtingLengthId = useId()
+const paintWallAreaId = useId()
+const paintCeilingAreaId = useId()
 const quantity = ref(String(props.item.quantity))
 const isTile = props.item.kind === 'tilePieces' || props.item.kind === 'tileBoxes'
 const isPanel = props.item.kind === 'panels'
+const isSkirting = props.item.kind === 'skirting'
+const isPaint = props.item.kind === 'paintCans'
 const tileSurface = ref<'floor' | 'walls' | ''>(isTile ? (props.item.tileSurface ?? '') : '')
 const tiledArea = ref(isTile && props.item.tiledAreaM2 ? String(props.item.tiledAreaM2) : '')
 const panelArea = ref(isPanel && props.item.panelAreaM2 ? String(props.item.panelAreaM2) : '')
+const skirtingLength = ref(
+  isSkirting && props.item.skirtingLengthM ? String(props.item.skirtingLengthM) : '',
+)
+const paintWallArea = ref(
+  isPaint && props.item.paintWallAreaM2 ? String(props.item.paintWallAreaM2) : '',
+)
+const paintCeilingArea = ref(
+  isPaint && props.item.paintCeilingAreaM2 ? String(props.item.paintCeilingAreaM2) : '',
+)
 // Existing entries store a total, so derive the displayed unit price only for this edit form.
 const initialUnitPriceCents =
   props.item.cost === null ? null : Math.round((props.item.cost / props.item.quantity) * 100)
@@ -61,16 +75,16 @@ const purchaseUnchanged = computed(
   () =>
     parsedQuantity.value === props.item.quantity && unitPriceCents.value === initialUnitPriceCents,
 )
-const parsedTiledArea = computed(() => {
-  if (!tiledArea.value.trim()) return null
-  const value = parseDomNumber(tiledArea.value)
+function parseOptionalMeasure(raw: string): number | null | undefined {
+  if (!raw.trim()) return null
+  const value = parseDomNumber(raw)
   return value !== null && value > 0 && value <= 4_000_000 ? value : undefined
-})
-const parsedPanelArea = computed(() => {
-  if (!panelArea.value.trim()) return null
-  const value = parseDomNumber(panelArea.value)
-  return value !== null && value > 0 && value <= 4_000_000 ? value : undefined
-})
+}
+const parsedTiledArea = computed(() => parseOptionalMeasure(tiledArea.value))
+const parsedPanelArea = computed(() => parseOptionalMeasure(panelArea.value))
+const parsedSkirtingLength = computed(() => parseOptionalMeasure(skirtingLength.value))
+const parsedPaintWallArea = computed(() => parseOptionalMeasure(paintWallArea.value))
+const parsedPaintCeilingArea = computed(() => parseOptionalMeasure(paintCeilingArea.value))
 const tileCoverageChanged = computed(
   () =>
     isTile &&
@@ -80,7 +94,22 @@ const tileCoverageChanged = computed(
 const panelCoverageChanged = computed(
   () => isPanel && parsedPanelArea.value !== (props.item.panelAreaM2 ?? null),
 )
-const coverageChanged = computed(() => tileCoverageChanged.value || panelCoverageChanged.value)
+const skirtingCoverageChanged = computed(
+  () => isSkirting && parsedSkirtingLength.value !== (props.item.skirtingLengthM ?? null),
+)
+const paintCoverageChanged = computed(
+  () =>
+    isPaint &&
+    (parsedPaintWallArea.value !== (props.item.paintWallAreaM2 ?? null) ||
+      parsedPaintCeilingArea.value !== (props.item.paintCeilingAreaM2 ?? null)),
+)
+const coverageChanged = computed(
+  () =>
+    tileCoverageChanged.value ||
+    panelCoverageChanged.value ||
+    skirtingCoverageChanged.value ||
+    paintCoverageChanged.value,
+)
 const roomMetrics = computed(() => {
   const room = list.rooms.find((entry) => entry.id === props.item.roomId)
   return room?.dimensions ? calculateRoomMetrics(room.dimensions) : null
@@ -169,6 +198,85 @@ const panelCoverageWarning = computed(() => {
     ? `Łączny metraż paneli i płytek podłogowych (${formatArea(combinedArea)} m²) przekracza powierzchnię podłogi pokoju. Sprawdź, czy prace nie zostały zapisane podwójnie.`
     : null
 })
+const skirtingCoverageError = computed(() => {
+  if (!isSkirting) return null
+  if (parsedSkirtingLength.value === undefined)
+    return 'Podaj długość większą od 0 i nie większą niż 4 000 000 m albo zostaw pole puste.'
+  if (
+    skirtingCoverageChanged.value &&
+    parsedSkirtingLength.value !== null &&
+    roomMetrics.value !== null &&
+    parsedSkirtingLength.value > roomMetrics.value.perimeter + 0.000001
+  )
+    return `Długość jednej pozycji nie może przekraczać obwodu pokoju (${formatArea(roomMetrics.value.perimeter)} m).`
+  return null
+})
+const skirtingCoverageWarning = computed(() => {
+  if (!isSkirting || parsedSkirtingLength.value == null || !roomMetrics.value) return null
+  const otherLength = list.items.reduce(
+    (sum, entry) =>
+      sum +
+      (entry.id !== props.item.id && entry.roomId === props.item.roomId && entry.kind === 'skirting'
+        ? (entry.skirtingLengthM ?? 0)
+        : 0),
+    0,
+  )
+  return otherLength + parsedSkirtingLength.value > roomMetrics.value.perimeter + 0.000001
+    ? 'Suma zapisanych długości listew przekracza obwód pokoju. Sprawdź, czy ta sama ściana nie jest liczona dwa razy.'
+    : null
+})
+const paintCoverageError = computed(() => {
+  if (!isPaint) return null
+  if (parsedPaintWallArea.value === undefined || parsedPaintCeilingArea.value === undefined)
+    return 'Podaj dodatni metraż nie większy niż 4 000 000 m² albo zostaw pole puste.'
+  if (!paintCoverageChanged.value || !roomMetrics.value) return null
+  if (
+    parsedPaintWallArea.value !== null &&
+    parsedPaintWallArea.value > roomMetrics.value.walls + 0.000001
+  )
+    return `Metraż ścian w jednej pozycji przekracza powierzchnię ścian pokoju (${formatArea(roomMetrics.value.walls)} m²).`
+  if (
+    parsedPaintCeilingArea.value !== null &&
+    parsedPaintCeilingArea.value > roomMetrics.value.floor + 0.000001
+  )
+    return `Metraż sufitu w jednej pozycji przekracza powierzchnię sufitu pokoju (${formatArea(roomMetrics.value.floor)} m²).`
+  return null
+})
+const paintCoverageWarning = computed(() => {
+  if (!isPaint || !roomMetrics.value || paintCoverageError.value) return null
+  const otherPaint = list.items.reduce(
+    (sum, entry) => {
+      if (
+        entry.id !== props.item.id &&
+        entry.roomId === props.item.roomId &&
+        entry.kind === 'paintCans'
+      ) {
+        sum.walls += entry.paintWallAreaM2 ?? 0
+        sum.ceiling += entry.paintCeilingAreaM2 ?? 0
+      }
+      return sum
+    },
+    { walls: 0, ceiling: 0 },
+  )
+  const tiledWalls = list.items.reduce(
+    (sum, entry) =>
+      sum +
+      (entry.roomId === props.item.roomId &&
+      (entry.kind === 'tilePieces' || entry.kind === 'tileBoxes') &&
+      entry.tileSurface === 'walls'
+        ? (entry.tiledAreaM2 ?? 0)
+        : 0),
+    0,
+  )
+  if (
+    otherPaint.walls + (parsedPaintWallArea.value ?? 0) + tiledWalls >
+    roomMetrics.value.walls + 0.000001
+  )
+    return 'Suma malowanych ścian i płytek ściennych przekracza powierzchnię ścian pokoju. Sprawdź, czy zakresy się nie nakładają.'
+  if (otherPaint.ceiling + (parsedPaintCeilingArea.value ?? 0) > roomMetrics.value.floor + 0.000001)
+    return 'Suma zapisanych powierzchni malowania sufitu przekracza powierzchnię sufitu pokoju.'
+  return null
+})
 const unchanged = computed(() => purchaseUnchanged.value && !coverageChanged.value)
 const previewCost = computed(() =>
   purchaseUnchanged.value
@@ -187,6 +295,24 @@ const previewLabel = computed(() => {
   return previewCost.value === null ? 'Cena niepodana' : formatMoney(previewCost.value)
 })
 
+function makeCoveragePatch(): PurchaseCoveragePatch | undefined {
+  if (isTile)
+    return {
+      kind: 'tiles',
+      tileSurface: tileSurface.value || null,
+      tiledAreaM2: parsedTiledArea.value ?? null,
+    }
+  if (isPanel) return { kind: 'panels', panelAreaM2: parsedPanelArea.value ?? null }
+  if (isSkirting) return { kind: 'skirting', skirtingLengthM: parsedSkirtingLength.value ?? null }
+  if (isPaint)
+    return {
+      kind: 'paintCans',
+      paintWallAreaM2: parsedPaintWallArea.value ?? null,
+      paintCeilingAreaM2: parsedPaintCeilingArea.value ?? null,
+    }
+  return undefined
+}
+
 function save() {
   attempted.value = true
   saveError.value = ''
@@ -195,24 +321,22 @@ function save() {
     unitPriceCents.value === undefined ||
     totalTooLarge.value ||
     coverageError.value ||
-    panelCoverageError.value
+    panelCoverageError.value ||
+    skirtingCoverageError.value ||
+    paintCoverageError.value
   )
     return
   if (unchanged.value) {
     emit('close')
     return
   }
-  const coverage: PurchaseCoveragePatch | undefined = isTile
-    ? {
-        kind: 'tiles',
-        tileSurface: tileSurface.value || null,
-        tiledAreaM2: parsedTiledArea.value ?? null,
-      }
-    : isPanel
-      ? { kind: 'panels', panelAreaM2: parsedPanelArea.value ?? null }
-      : undefined
   if (
-    !list.updateItemPurchase(props.item.id, parsedQuantity.value, unitPriceCents.value, coverage)
+    !list.updateItemPurchase(
+      props.item.id,
+      parsedQuantity.value,
+      unitPriceCents.value,
+      makeCoveragePatch(),
+    )
   ) {
     saveError.value = 'Nie udało się zaktualizować pozycji. Odśwież listę i spróbuj ponownie.'
     return
@@ -284,9 +408,58 @@ function save() {
         />
       </label>
     </div>
+    <div v-if="isSkirting" class="coverage-fields panel-coverage">
+      <label :for="skirtingLengthId">
+        Długość montażu listew (m)
+        <input
+          :id="skirtingLengthId"
+          v-model="skirtingLength"
+          type="text"
+          inputmode="decimal"
+          autocomplete="off"
+          placeholder="np. 16,2"
+          :aria-invalid="attempted && !!skirtingCoverageError"
+        />
+      </label>
+    </div>
+    <div v-if="isPaint" class="coverage-fields">
+      <label :for="paintWallAreaId">
+        Ściany do malowania (m²)
+        <input
+          :id="paintWallAreaId"
+          v-model="paintWallArea"
+          type="text"
+          inputmode="decimal"
+          autocomplete="off"
+          placeholder="np. 28"
+          :aria-invalid="attempted && !!paintCoverageError"
+        />
+      </label>
+      <label :for="paintCeilingAreaId">
+        Sufit do malowania (m²)
+        <input
+          :id="paintCeilingAreaId"
+          v-model="paintCeilingArea"
+          type="text"
+          inputmode="decimal"
+          autocomplete="off"
+          placeholder="np. 20"
+          :aria-invalid="attempted && !!paintCoverageError"
+        />
+      </label>
+    </div>
     <p v-if="isPanel" class="edit-note">
       Podaj rzeczywistą powierzchnię pod panele, bez zapasu na docinki. Od tego metrażu liczymy
       robociznę; puste pole oznacza brak wyliczenia montażu dla tej pozycji.
+    </p>
+    <p v-if="isSkirting" class="edit-note">
+      Podaj długość faktycznego montażu po odjęciu drzwi i innych przerw, bez zapasu na docinki.
+      Puste pole wyłącza tę pozycję z kosztu robocizny.
+    </p>
+    <p v-if="isPaint" class="edit-note">
+      Podaj powierzchnie malowane tym kolorem dla jednej warstwy. Odejmij okna, drzwi i miejsca
+      przeznaczone na płytki; nie wpisuj tej samej strefy przy drugim kolorze. Puste pola nie są
+      liczone w robociźnie.
     </p>
     <p v-if="isTile" class="edit-note">
       Wpisz rzeczywisty metraż pod płytki, bez zapasu na docinki. To podstawa robocizny, niezależna
@@ -296,8 +469,16 @@ function save() {
     <p v-if="attempted && panelCoverageError" class="edit-error" role="alert">
       {{ panelCoverageError }}
     </p>
+    <p v-if="attempted && skirtingCoverageError" class="edit-error" role="alert">
+      {{ skirtingCoverageError }}
+    </p>
+    <p v-if="attempted && paintCoverageError" class="edit-error" role="alert">
+      {{ paintCoverageError }}
+    </p>
     <p v-if="coverageWarning" class="edit-warning">{{ coverageWarning }}</p>
     <p v-if="panelCoverageWarning" class="edit-warning">{{ panelCoverageWarning }}</p>
+    <p v-if="skirtingCoverageWarning" class="edit-warning">{{ skirtingCoverageWarning }}</p>
+    <p v-if="paintCoverageWarning" class="edit-warning">{{ paintCoverageWarning }}</p>
     <p class="edit-preview">
       Nowy koszt pozycji:
       <strong>{{ previewLabel }}</strong>

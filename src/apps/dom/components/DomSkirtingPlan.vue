@@ -54,7 +54,15 @@ const plan = computed(() => {
 
 const shoppingItems = computed<ShoppingDraft[]>(() =>
   plan.value
-    ? [{ kind: 'skirting', quantity: plan.value.boardCount, cost: plan.value.estimatedCost }]
+    ? [
+        {
+          kind: 'skirting',
+          quantity: plan.value.boardCount,
+          cost: plan.value.estimatedCost,
+          // Długość montażu nie zawiera otworów ani zapasu na docinki.
+          skirtingLengthM: plan.value.netLength,
+        },
+      ]
     : [],
 )
 
@@ -210,7 +218,8 @@ function boardUnit(count: number) {
     <p class="plan-note">
       To szacunek z łącznej długości, a nie plan cięcia listwy na odcinki każdej ściany. Narożniki,
       miejsca łączeń i nieprzydatne resztki mogą zwiększyć rzeczywistą liczbę potrzebnych sztuk.
-      Koszt nie obejmuje łączników, montażu ani transportu.
+      Koszt nie obejmuje łączników, montażu ani transportu. Po dodaniu do Mojego remontu robocizna
+      będzie liczona od długości po odjęciu otworów, bez zapasu.
     </p>
   </section>
 </template>
