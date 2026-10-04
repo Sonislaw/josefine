@@ -22,11 +22,20 @@ export interface TileSurfaceResult {
   tilesPerBox: number
 }
 
+export const tileRoomWallSides = ['lengthA', 'lengthB', 'widthA', 'widthB'] as const
+export type TileRoomWallSide = (typeof tileRoomWallSides)[number]
+
+export interface TileWallCoverage {
+  sides: readonly TileRoomWallSide[]
+  height: number // m, measured from the floor; never greater than room height
+}
+
 export interface TileRoomPlanInput {
   room: RoomDimensions
-  openings: number // m² of wall openings only
+  openings: number // m² of openings inside the selected tiled wall area only
   floor: TileSurfaceInput | null
   walls: TileSurfaceInput | null
+  wallCoverage?: TileWallCoverage // omitted means every wall up to full room height
 }
 
 export interface TileRoomPlanResult {
@@ -37,6 +46,33 @@ export interface TileRoomPlanResult {
   netWalls: number
   knownCost: number
   missingPriceCount: number
+}
+
+/** Two walls have the room length, the other two have its width. */
+export function calculateTiledWallArea(
+  room: RoomDimensions,
+  coverage?: TileWallCoverage,
+): number | null {
+  if (!calculateRoomMetrics(room)) return null
+  const sides = coverage?.sides ?? tileRoomWallSides
+  const height = coverage?.height ?? room.height
+  if (
+    !Number.isFinite(height) ||
+    height <= 0 ||
+    height > room.height ||
+    !Array.isArray(sides) ||
+    sides.length === 0 ||
+    sides.length > tileRoomWallSides.length ||
+    new Set(sides).size !== sides.length ||
+    !sides.every((side) => tileRoomWallSides.includes(side))
+  )
+    return null
+
+  const totalLength = sides.reduce(
+    (sum, side) => sum + (side === 'lengthA' || side === 'lengthB' ? room.length : room.width),
+    0,
+  )
+  return totalLength * height
 }
 
 function calculateSurface(area: number, input: TileSurfaceInput): TileSurfaceResult | null {
@@ -83,17 +119,19 @@ function calculateSurface(area: number, input: TileSurfaceInput): TileSurfaceRes
 /** Independent products are never mixed into a single tile or carton count. */
 export function calculateTileRoomPlan(input: TileRoomPlanInput): TileRoomPlanResult | null {
   const metrics = calculateRoomMetrics(input.room)
+  const tiledWallArea = input.walls ? calculateTiledWallArea(input.room, input.wallCoverage) : null
   if (
     !metrics ||
     (!input.floor && !input.walls) ||
     !Number.isFinite(input.openings) ||
     input.openings < 0 ||
-    (input.walls && input.openings >= metrics.walls)
+    (input.walls && (tiledWallArea === null || input.openings >= tiledWallArea))
   )
     return null
 
   const openings = input.walls ? input.openings : 0
-  const netWalls = metrics.walls - openings
+  const grossWalls = tiledWallArea ?? metrics.walls
+  const netWalls = grossWalls - openings
   const floor = input.floor ? calculateSurface(metrics.floor, input.floor) : null
   const walls = input.walls ? calculateSurface(netWalls, input.walls) : null
   if ((input.floor && !floor) || (input.walls && !walls)) return null
@@ -110,7 +148,7 @@ export function calculateTileRoomPlan(input: TileRoomPlanInput): TileRoomPlanRes
   return {
     floor,
     walls,
-    grossWalls: metrics.walls,
+    grossWalls,
     openings,
     netWalls,
     knownCost,

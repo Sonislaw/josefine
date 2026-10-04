@@ -5,6 +5,7 @@ import { RouterLink, useRoute } from 'vue-router'
 import ShareResultButton from '@/shared/components/ShareResultButton.vue'
 import {
   booleanShareField,
+  choiceShareField,
   textShareField,
   useShareableCalculator,
   type ShareField,
@@ -12,8 +13,12 @@ import {
 import { parseDomNumber } from '../lib/calculations'
 import {
   calculateTileRoomPlan,
+  calculateTiledWallArea,
+  tileRoomWallSides,
   type TileSurfaceInput,
   type TileSurfaceResult,
+  type TileRoomWallSide,
+  type TileWallCoverage,
 } from '../lib/tile-room'
 import { domPath } from '../seo/useDomSeo'
 import { useDomShoppingList, type ShoppingDraft } from '../stores/shoppingList'
@@ -48,6 +53,20 @@ const enabled = ref(false)
 const started = ref(false)
 const includeFloor = ref(true)
 const includeWalls = ref(true)
+const wallMode = ref<'full' | 'selected'>('full')
+const wallTileHeight = ref('1,2')
+const selectedWalls = reactive<Record<TileRoomWallSide, boolean>>({
+  lengthA: true,
+  lengthB: true,
+  widthA: true,
+  widthB: true,
+})
+const wallChoices = [
+  { id: 'lengthA', label: 'Ściana A', dimension: 'length' },
+  { id: 'lengthB', label: 'Ściana B', dimension: 'length' },
+  { id: 'widthA', label: 'Ściana C', dimension: 'width' },
+  { id: 'widthB', label: 'Ściana D', dimension: 'width' },
+] as const
 const roomDefaults = { length: '5', width: '4', height: '2,5', openings: '0' }
 const floorDefaults: SurfaceForm = {
   tileLength: '60',
@@ -76,6 +95,14 @@ const roomFields: FieldDefinition<RoomKey>[] = [
   { id: 'height', label: 'Wysokość pokoju', unit: 'm', min: 0, max: 1000, positive: true },
   { id: 'openings', label: 'Drzwi i okna łącznie', unit: 'm²', min: 0, max: 1_000_000 },
 ]
+const wallTileHeightField: FieldDefinition<'tileHeight'> = {
+  id: 'tileHeight',
+  label: 'Wysokość ułożenia płytek',
+  unit: 'm',
+  min: 0,
+  max: 1000,
+  positive: true,
+}
 const surfaceFields: FieldDefinition<SurfaceKey>[] = [
   { id: 'tileLength', label: 'Długość płytki', unit: 'cm', min: 0, max: 300, positive: true },
   { id: 'tileWidth', label: 'Szerokość płytki', unit: 'cm', min: 0, max: 300, positive: true },
@@ -101,7 +128,7 @@ function validNumber(raw: string, field: FieldDefinition<string>): boolean {
 function roomError(field: FieldDefinition<RoomKey>): string | null {
   if (validNumber(room[field.id], field)) return null
   return field.id === 'openings'
-    ? 'Podaj powierzchnię otworów od 0 m².'
+    ? 'Podaj powierzchnię otworów od 0 do 1 000 000 m².'
     : 'Podaj wymiar większy od 0 i nie większy niż 1000 m.'
 }
 function surfaceError(form: SurfaceForm, field: FieldDefinition<SurfaceKey>): string | null {
@@ -111,16 +138,40 @@ function surfaceError(form: SurfaceForm, field: FieldDefinition<SurfaceKey>): st
   if (field.id === 'waste') return 'Wpisz zapas od 0% do 100%.'
   return 'Podaj wymiar większy od 0 i nie większy niż 300 cm.'
 }
-const openingError = computed(() => {
-  if (!includeWalls.value) return null
+const selectedWallSides = computed(() => tileRoomWallSides.filter((side) => selectedWalls[side]))
+const selectedWallsError = computed(() =>
+  includeWalls.value && wallMode.value === 'selected' && selectedWallSides.value.length === 0
+    ? 'Wybierz co najmniej jedną ścianę do ułożenia płytek.'
+    : null,
+)
+const wallTileHeightError = computed(() => {
+  if (!includeWalls.value || wallMode.value === 'full') return null
+  if (!validNumber(wallTileHeight.value, wallTileHeightField))
+    return 'Podaj wysokość płytek większą od 0 i nie większą niż 1000 m.'
+  const height = parseDomNumber(room.height)
+  if (height !== null && height > 0 && parseDomNumber(wallTileHeight.value)! > height)
+    return 'Wysokość płytek nie może przekraczać wysokości pokoju.'
+  return null
+})
+const wallCoverage = computed<TileWallCoverage | undefined>(() =>
+  wallMode.value === 'selected'
+    ? { sides: selectedWallSides.value, height: parseDomNumber(wallTileHeight.value) ?? NaN }
+    : undefined,
+)
+const tiledWallArea = computed(() => {
+  if (!includeWalls.value || selectedWallsError.value || wallTileHeightError.value) return null
   const length = parseDomNumber(room.length)
   const width = parseDomNumber(room.width)
   const height = parseDomNumber(room.height)
+  if (length === null || width === null || height === null) return null
+  return calculateTiledWallArea({ length, width, height }, wallCoverage.value)
+})
+const openingError = computed(() => {
+  if (!includeWalls.value || tiledWallArea.value === null) return null
   const openings = parseDomNumber(room.openings)
-  if (length === null || width === null || height === null || openings === null) return null
-  if (length <= 0 || width <= 0 || height <= 0) return null
-  return openings >= 2 * (length + width) * height
-    ? 'Otwory nie mogą zajmować całej powierzchni ścian ani jej przekraczać.'
+  if (openings === null || openings < 0) return null
+  return openings >= tiledWallArea.value
+    ? 'Otwory muszą być mniejsze niż powierzchnia ścian w wybranej strefie płytek.'
     : null
 })
 
@@ -140,7 +191,11 @@ const plan = computed(() => {
   if (roomError(roomFields[0]!) || roomError(roomFields[1]!)) return null
   if (
     includeWalls.value &&
-    (roomError(roomFields[2]!) || roomError(roomFields[3]!) || openingError.value)
+    (roomError(roomFields[2]!) ||
+      roomError(roomFields[3]!) ||
+      selectedWallsError.value ||
+      wallTileHeightError.value ||
+      openingError.value)
   )
     return null
   const floorInput = includeFloor.value ? parseSurface(floor) : null
@@ -155,6 +210,7 @@ const plan = computed(() => {
     openings: includeWalls.value ? parseDomNumber(room.openings)! : 0,
     floor: floorInput,
     walls: wallInput,
+    wallCoverage: includeWalls.value ? wallCoverage.value : undefined,
   })
 })
 
@@ -235,6 +291,10 @@ const { buildShareUrl, canShareInputs } = useShareableCalculator([
   planFlag,
   booleanShareField('roomFloor', includeFloor),
   booleanShareField('roomWalls', includeWalls),
+  choiceShareField('roomWallMode', wallMode, ['full', 'selected']),
+  ...tileRoomWallSides.map((side) =>
+    booleanShareField(`roomWall${side}`, toRef(selectedWalls, side)),
+  ),
   textShareField('roomLength', toRef(room, 'length'), (raw) => validNumber(raw, roomFields[0]!)),
   textShareField('roomWidth', toRef(room, 'width'), (raw) => validNumber(raw, roomFields[1]!)),
   optionalField(
@@ -243,6 +303,13 @@ const { buildShareUrl, canShareInputs } = useShareableCalculator([
     () => includeWalls.value,
     '2,5',
     roomFields[2]!,
+  ),
+  optionalField(
+    'roomTileHeight',
+    wallTileHeight,
+    () => includeWalls.value && wallMode.value === 'selected',
+    '1,2',
+    wallTileHeightField,
   ),
   optionalField(
     'roomOpenings',
@@ -310,12 +377,21 @@ function reset() {
   Object.assign(walls, wallDefaults)
   includeFloor.value = true
   includeWalls.value = true
+  wallMode.value = 'full'
+  wallTileHeight.value = '1,2'
+  for (const side of tileRoomWallSides) selectedWalls[side] = true
 }
 const formatArea = (value: number) =>
   new Intl.NumberFormat('pl-PL', { maximumFractionDigits: 3 }).format(value)
 const formatCount = (value: number) => new Intl.NumberFormat('pl-PL').format(value)
 const formatMoney = (value: number) =>
   new Intl.NumberFormat('pl-PL', { style: 'currency', currency: 'PLN' }).format(value)
+function wallChoiceLength(dimension: 'length' | 'width'): string {
+  const value = parseDomNumber(room[dimension])
+  return value !== null && value > 0 && value <= 1000
+    ? `${formatArea(value)} m długości`
+    : 'Podaj poprawny wymiar pokoju'
+}
 function groutLink(surface: NonNullable<(typeof views.value)[number]['result']>) {
   return {
     path: domPath('/kalkulator-fugi'),
@@ -364,7 +440,7 @@ function groutLink(surface: NonNullable<(typeof views.value)[number]['result']>)
           <div>
             <p class="eyebrow">01 / POMIAR</p>
             <h4>Wymiary pomieszczenia</h4>
-            <p>Ściany liczymy do pełnej podanej wysokości; otwory odejmujemy tylko od ścian.</p>
+            <p>Podaj wymiary pokoju. Zakres układania na ścianach wybierzesz poniżej.</p>
           </div>
           <div class="heading-actions">
             <button v-if="savedRoom?.dimensions" type="button" @click="useSavedRoom">
@@ -378,7 +454,9 @@ function groutLink(surface: NonNullable<(typeof views.value)[number]['result']>)
         <div class="field-grid">
           <div
             v-for="field in roomFields.filter(
-              (item) => item.id === 'length' || item.id === 'width' || includeWalls,
+              (item) =>
+                item.id !== 'openings' &&
+                (item.id === 'length' || item.id === 'width' || includeWalls),
             )"
             :key="field.id"
             class="field"
@@ -391,7 +469,7 @@ function groutLink(surface: NonNullable<(typeof views.value)[number]['result']>)
                 type="text"
                 inputmode="decimal"
                 autocomplete="off"
-                :aria-invalid="!!roomError(field) || (field.id === 'openings' && !!openingError)"
+                :aria-invalid="!!roomError(field)"
                 :aria-describedby="roomError(field) ? `tile-room-help-${field.id}` : undefined"
               /><span>{{ field.unit }}</span>
             </div>
@@ -400,7 +478,6 @@ function groutLink(surface: NonNullable<(typeof views.value)[number]['result']>)
             </p>
           </div>
         </div>
-        <p v-if="openingError" class="geometry-error" role="alert">{{ openingError }}</p>
       </div>
 
       <div class="surface-switches" role="group" aria-label="Powierzchnie do ułożenia">
@@ -418,6 +495,112 @@ function groutLink(surface: NonNullable<(typeof views.value)[number]['result']>)
       <p v-if="!includeFloor && !includeWalls" class="geometry-error" role="alert">
         Wybierz co najmniej jedną powierzchnię.
       </p>
+
+      <div v-if="includeWalls" class="wall-coverage">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">ZAKRES ŚCIAN</p>
+            <h4>Gdzie układasz płytki?</h4>
+            <p>Domyślnie liczymy wszystkie ściany do pełnej wysokości pokoju.</p>
+          </div>
+        </div>
+        <div class="wall-modes" role="group" aria-label="Sposób liczenia ścian">
+          <label>
+            <input v-model="wallMode" type="radio" value="full" />
+            <span><strong>Całe ściany</strong><small>4 ściany, pełna wysokość</small></span>
+          </label>
+          <label>
+            <input v-model="wallMode" type="radio" value="selected" />
+            <span
+              ><strong>Wybrany fragment</strong
+              ><small>Wybierz ściany i wysokość płytek</small></span
+            >
+          </label>
+        </div>
+        <div v-if="wallMode === 'selected'" class="custom-walls">
+          <div class="field tile-height-field">
+            <label for="tile-room-tile-height">Wysokość ułożenia płytek</label>
+            <div class="input-wrap">
+              <input
+                id="tile-room-tile-height"
+                v-model="wallTileHeight"
+                type="text"
+                inputmode="decimal"
+                autocomplete="off"
+                :aria-invalid="!!wallTileHeightError"
+                :aria-describedby="wallTileHeightError ? 'tile-room-tile-height-error' : undefined"
+              /><span>m</span>
+            </div>
+            <p v-if="wallTileHeightError" id="tile-room-tile-height-error" class="field-error">
+              {{ wallTileHeightError }}
+            </p>
+            <p class="field-hint">
+              Mierz od podłogi. Ta sama wysokość dotyczy każdej zaznaczonej ściany.
+            </p>
+          </div>
+          <fieldset class="wall-selection">
+            <legend>Ściany do ułożenia</legend>
+            <p>Ściany A i B mają długość pokoju; C i D — jego szerokość.</p>
+            <div class="wall-diagram" aria-hidden="true">
+              <span class="wall-diagram-top" :class="{ 'is-selected': selectedWalls.lengthA }"
+                >A</span
+              >
+              <span class="wall-diagram-left" :class="{ 'is-selected': selectedWalls.widthA }"
+                >C</span
+              >
+              <span class="wall-diagram-room">POKÓJ</span>
+              <span class="wall-diagram-right" :class="{ 'is-selected': selectedWalls.widthB }"
+                >D</span
+              >
+              <span class="wall-diagram-bottom" :class="{ 'is-selected': selectedWalls.lengthB }"
+                >B</span
+              >
+            </div>
+            <div class="wall-choice-grid">
+              <label v-for="choice in wallChoices" :key="choice.id">
+                <input v-model="selectedWalls[choice.id]" type="checkbox" />
+                <span>
+                  <strong>{{ choice.label }}</strong>
+                  <small>{{ wallChoiceLength(choice.dimension) }}</small>
+                </span>
+              </label>
+            </div>
+            <p v-if="selectedWallsError" class="geometry-error" role="alert">
+              {{ selectedWallsError }}
+            </p>
+          </fieldset>
+        </div>
+        <div class="field openings-field">
+          <label for="tile-room-openings">Drzwi i okna w obszarze płytek</label>
+          <div class="input-wrap">
+            <input
+              id="tile-room-openings"
+              v-model="room.openings"
+              type="text"
+              inputmode="decimal"
+              autocomplete="off"
+              :aria-invalid="!!roomError(roomFields[3]!) || !!openingError"
+              :aria-describedby="
+                openingError
+                  ? 'tile-room-opening-error'
+                  : roomError(roomFields[3]!)
+                    ? 'tile-room-help-openings'
+                    : 'tile-room-opening-hint'
+              "
+            /><span>m²</span>
+          </div>
+          <p id="tile-room-opening-hint" class="field-hint">
+            Odejmij tylko powierzchnię otworów na zaznaczonych ścianach, poniżej wysokości płytek.
+            Jeśli ich nie ma, wpisz 0.
+          </p>
+          <p v-if="roomError(roomFields[3]!)" id="tile-room-help-openings" class="field-error">
+            {{ roomError(roomFields[3]!) }}
+          </p>
+          <p v-if="openingError" id="tile-room-opening-error" class="geometry-error" role="alert">
+            {{ openingError }}
+          </p>
+        </div>
+      </div>
 
       <div class="surface-grid">
         <div
@@ -478,7 +661,11 @@ function groutLink(surface: NonNullable<(typeof views.value)[number]['result']>)
         </div>
         <template v-if="plan">
           <div v-if="plan.walls" class="area-summary">
-            Ściany: {{ formatArea(plan.grossWalls) }} m² przed odjęciem otworów −
+            Ściany ({{
+              wallMode === 'full'
+                ? '4 ściany, pełna wysokość'
+                : `${selectedWallSides.length} z 4, do ${formatArea(parseDomNumber(wallTileHeight)!)} m`
+            }}): {{ formatArea(plan.grossWalls) }} m² przed odjęciem otworów −
             {{ formatArea(plan.openings) }} m² =
             <strong>{{ formatArea(plan.netWalls) }} m²</strong> do ułożenia.
           </div>
@@ -553,7 +740,8 @@ function groutLink(surface: NonNullable<(typeof views.value)[number]['result']>)
         <p class="caveat">
           To szacunek dla prostokątnego pokoju i jednego rodzaju płytki na każdej wybranej
           powierzchni. Nie uwzględnia narożnych docinek, wnęk, skosów, wzoru układania ani fug.
-          Zapas płytek ustaw osobno dla podłogi i ścian.
+          Otwory odejmujemy tylko od obszaru układania na wybranych ścianach. Zapas płytek ustaw
+          osobno dla podłogi i ścian.
         </p>
       </div>
     </div>
@@ -644,12 +832,143 @@ a:focus-visible {
   padding: 1.35rem 1.7rem 1.7rem;
 }
 .room-fields,
+.wall-coverage,
 .surface-card {
   min-width: 0;
   padding: 1.35rem;
   border: 1px solid #dce8db;
   border-radius: 16px;
   background: #f8faf4;
+}
+.wall-coverage {
+  border-color: #e6ddce;
+  background: #fbf7ee;
+}
+.wall-modes,
+.wall-choice-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.6rem;
+  margin-top: 0.95rem;
+}
+.wall-modes label,
+.wall-choice-grid label {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  min-width: 0;
+  padding: 0.75rem 0.85rem;
+  border: 1px solid #dedfd3;
+  border-radius: 11px;
+  background: #fff;
+  cursor: pointer;
+}
+.wall-modes label:has(input:checked),
+.wall-choice-grid label:has(input:checked) {
+  border-color: #80a985;
+  background: #f0f6e9;
+}
+.wall-modes input,
+.wall-choice-grid input {
+  flex: 0 0 auto;
+  width: 17px;
+  height: 17px;
+  accent-color: #376c4e;
+}
+.wall-modes strong,
+.wall-modes small,
+.wall-choice-grid strong,
+.wall-choice-grid small {
+  display: block;
+}
+.wall-modes strong,
+.wall-choice-grid strong {
+  color: #355b43;
+  font-size: 0.76rem;
+}
+.wall-modes small,
+.wall-choice-grid small {
+  margin-top: 0.2rem;
+  color: #718274;
+  font-size: 0.68rem;
+}
+.custom-walls {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1rem;
+  padding: 1rem;
+  border: 1px dashed #cfdbcb;
+  border-radius: 12px;
+  background: #fffefa;
+}
+.tile-height-field {
+  max-width: 20rem;
+}
+.wall-selection {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.wall-selection legend {
+  color: #355b43;
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+.wall-selection > p,
+.field-hint {
+  margin-top: 0.35rem;
+  color: #718274;
+  font-size: 0.71rem;
+  line-height: 1.5;
+}
+.wall-diagram {
+  display: grid;
+  grid-template-columns: 34px minmax(90px, 180px) 34px;
+  grid-template-rows: 25px 75px 25px;
+  justify-content: center;
+  margin: 0.75rem 0 0.2rem;
+  color: #687b6b;
+  font-size: 0.67rem;
+  font-weight: 800;
+}
+.wall-diagram span {
+  display: grid;
+  place-items: center;
+}
+.wall-diagram-top {
+  grid-area: 1 / 2;
+  border-bottom: 3px solid #cbd8c9;
+}
+.wall-diagram-bottom {
+  grid-area: 3 / 2;
+  border-top: 3px solid #cbd8c9;
+}
+.wall-diagram-left {
+  grid-area: 2 / 1;
+  border-right: 3px solid #cbd8c9;
+}
+.wall-diagram-right {
+  grid-area: 2 / 3;
+  border-left: 3px solid #cbd8c9;
+}
+.wall-diagram .is-selected {
+  border-color: #376c4e;
+  color: #285b3d;
+}
+.wall-diagram-room {
+  grid-area: 2 / 2;
+  background: #f2f5ec;
+  color: #93a396;
+  font-size: 0.61rem;
+  letter-spacing: 0.1em;
+}
+.wall-selection .geometry-error {
+  color: #a6503d;
+}
+.openings-field {
+  max-width: 32rem;
+  margin-top: 1rem;
 }
 .section-heading {
   display: flex;
@@ -942,11 +1261,16 @@ a:focus-visible {
     padding: 1rem;
   }
   .room-fields,
+  .wall-coverage,
   .surface-card,
   .results {
     padding: 1.1rem;
   }
   .field-grid {
+    grid-template-columns: 1fr;
+  }
+  .wall-modes,
+  .wall-choice-grid {
     grid-template-columns: 1fr;
   }
   .cost-summary {

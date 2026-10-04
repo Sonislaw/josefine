@@ -179,8 +179,8 @@ export const domSeoContent: Record<DomToolId, ToolContent> = {
   },
   'liczba-plytek': {
     intro:
-      'Kalkulator płytek szacuje liczbę sztuk potrzebnych na jedną powierzchnię albo, w opcjonalnym planie całego pokoju, osobno na podłogę i ściany. Podstawowe obliczenie oraz podgląd prostego układu podłogi pozostają dostępne. W planie pokoju możesz wykorzystać zapisane wymiary, odjąć otwory od ścian i dobrać różne płytki oraz kartony dla obu powierzchni.',
-    how: 'Powierzchnię pojedynczej płytki w cm² przeliczamy na m². Metraż do ułożenia zwiększamy o zapas wybrany dla danej powierzchni, dzielimy przez powierzchnię płytki i zaokrąglamy w górę do pełnej sztuki. Liczbę sztuk dzielimy przez zawartość kartonu i ponownie zaokrąglamy w górę. W planie pokoju podłoga to długość razy szerokość, a ściany to obwód razy wysokość minus wpisana powierzchnia drzwi i okien. Podłogę i ściany liczymy niezależnie, więc nie sumujemy sztuk różnych formatów; koszt łączny pokazujemy dopiero, gdy obie ceny są znane.',
+      'Kalkulator płytek szacuje liczbę sztuk potrzebnych na jedną powierzchnię albo, w opcjonalnym planie pokoju, osobno na podłogę i ściany. Możesz policzyć wszystkie ściany do pełnej wysokości lub wybrać tylko niektóre i określić wysokość ułożenia płytek. Podstawowe obliczenie oraz podgląd prostego układu podłogi pozostają dostępne. W planie pokoju możesz wykorzystać zapisane wymiary, odjąć otwory z obszaru układania i dobrać różne płytki oraz kartony dla obu powierzchni.',
+    how: 'Powierzchnię pojedynczej płytki w cm² przeliczamy na m². Metraż do ułożenia zwiększamy o zapas wybrany dla danej powierzchni, dzielimy przez powierzchnię płytki i zaokrąglamy w górę do pełnej sztuki. Liczbę sztuk dzielimy przez zawartość kartonu i ponownie zaokrąglamy w górę. W planie pokoju podłoga to długość razy szerokość. Dla ścian sumujemy długości wybranych boków, mnożymy przez wysokość ułożenia i odejmujemy otwory znajdujące się w tym obszarze. Podłogę i ściany liczymy niezależnie, więc nie sumujemy sztuk różnych formatów; koszt łączny pokazujemy dopiero, gdy obie ceny są znane.',
     faqs: [
       {
         question: 'Ile płytek 60 × 60 cm na 12 m²?',
@@ -220,7 +220,12 @@ export const domSeoContent: Record<DomToolId, ToolContent> = {
       {
         question: 'Czy drzwi i okna odejmują się też od podłogi?',
         answer:
-          'Nie. Wpisane otwory odejmujemy wyłącznie od powierzchni ścian. Powierzchnia podłogi to długość pokoju pomnożona przez jego szerokość. Jeżeli ściany mają skosy, wnęki albo płytki tylko do części wysokości, zmierz rzeczywistą powierzchnię osobno.',
+          'Nie. Wpisane otwory odejmujemy wyłącznie od powierzchni ścian objętych płytkami. Powierzchnia podłogi to długość pokoju pomnożona przez jego szerokość. Jeśli układasz płytki tylko do części wysokości, odejmij wyłącznie część otworu znajdującą się poniżej tej wysokości.',
+      },
+      {
+        question: 'Jak obliczyć płytki na jedną ścianę lub do połowy wysokości łazienki?',
+        answer:
+          'W planie pokoju wybierz „Wybrany fragment”, zaznacz jedną albo kilka ścian i wpisz wysokość ułożenia. Ściany A i B mają długość pokoju, a C i D jego szerokość. Kalkulator policzy metraż tylko zaznaczonych ścian do wskazanej wysokości. Otwory podaj dla tego samego obszaru.',
       },
     ],
   },
