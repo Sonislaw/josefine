@@ -232,6 +232,11 @@ export const domSeoContent: Record<DomToolId, ToolContent> = {
         answer:
           'Wybierz „Dodam otwory osobno”. Dla okna podaj szerokość, wysokość, dolną krawędź od podłogi i ścianę. Kalkulator odejmie wyłącznie część okna znajdującą się poniżej wysokości płytek. Okno ponad płytkami albo na niezaznaczonej ścianie nie zmieni wyniku.',
       },
+      {
+        question: 'Czy zobaczę powierzchnię każdej ściany osobno?',
+        answer:
+          'Tak. Plan pokazuje metraż ścian A–D przed odjęciem otworów. Gdy dodasz drzwi i okna osobno, zobaczysz również odliczenie i powierzchnię netto każdej zaznaczonej ściany. Przy jednej ręcznie podanej sumie otworów nie da się rzetelnie przypisać odliczenia do konkretnej ściany, dlatego podajemy tylko łączny metraż netto. Kartony liczymy z sumy, a nie przez osobne zaokrąglanie każdej ściany.',
+      },
     ],
   },
   'kalkulator-fugi': {

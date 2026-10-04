@@ -47,6 +47,15 @@ export interface TileWallOpeningDeduction {
   onSelectedWall: boolean
 }
 
+export interface TileWallBreakdown {
+  side: TileRoomWallSide
+  selected: boolean
+  wallLength: number
+  grossArea: number
+  openingArea: number | null // null when only an unassigned manual total is known
+  netArea: number | null
+}
+
 export interface TileRoomPlanInput {
   room: RoomDimensions
   openings: number // manual m²; ignored when detailedOpenings is provided
@@ -62,6 +71,7 @@ export interface TileRoomPlanResult {
   grossWalls: number
   openings: number
   openingDetails: readonly TileWallOpeningDeduction[] | null
+  wallBreakdown: readonly TileWallBreakdown[] | null
   netWalls: number
   knownCost: number
   missingPriceCount: number
@@ -133,6 +143,55 @@ export function calculateTiledWallOpenings(
   return Number.isFinite(totalArea) ? { totalArea, details } : null
 }
 
+/** Manual opening totals cannot be honestly attributed to individual walls. */
+export function calculateTileWallBreakdown(
+  room: RoomDimensions,
+  coverage?: TileWallCoverage,
+  openingDetails: readonly TileWallOpeningDeduction[] | null = null,
+  manualOpenings = 0,
+): TileWallBreakdown[] | null {
+  if (
+    calculateTiledWallArea(room, coverage) === null ||
+    !Number.isFinite(manualOpenings) ||
+    manualOpenings < 0 ||
+    (openingDetails &&
+      openingDetails.some(
+        (detail) =>
+          !tileRoomWallSides.includes(detail.opening.side) ||
+          !Number.isFinite(detail.area) ||
+          detail.area < 0,
+      ))
+  )
+    return null
+
+  const selectedSides = coverage?.sides ?? tileRoomWallSides
+  const height = coverage?.height ?? room.height
+  return tileRoomWallSides.map((side) => {
+    const selected = selectedSides.includes(side)
+    const wallLength = side === 'lengthA' || side === 'lengthB' ? room.length : room.width
+    const grossArea = selected ? wallLength * height : 0
+    const openingArea = !selected
+      ? 0
+      : openingDetails
+        ? openingDetails
+            .filter((detail) => detail.opening.side === side)
+            .reduce((sum, detail) => sum + detail.area, 0)
+        : manualOpenings === 0
+          ? 0
+          : null
+    const remainingArea = openingArea === null ? null : grossArea - openingArea
+    return {
+      side,
+      selected,
+      wallLength,
+      grossArea,
+      openingArea,
+      netArea:
+        remainingArea !== null && remainingArea < 0 && remainingArea > -1e-9 ? 0 : remainingArea,
+    }
+  })
+}
+
 function calculateSurface(area: number, input: TileSurfaceInput): TileSurfaceResult | null {
   const { tileLength, tileWidth, waste, tilesPerBox, boxPrice } = input
   if (
@@ -183,13 +242,25 @@ export function calculateTileRoomPlan(input: TileRoomPlanInput): TileRoomPlanRes
       ? calculateTiledWallOpenings(input.room, input.detailedOpenings, input.wallCoverage)
       : null
   const openings = input.walls ? (detailed?.totalArea ?? input.openings) : 0
+  const wallBreakdown = input.walls
+    ? calculateTileWallBreakdown(
+        input.room,
+        input.wallCoverage,
+        detailed?.details ?? null,
+        detailed ? 0 : openings,
+      )
+    : null
   if (
     !metrics ||
     (!input.floor && !input.walls) ||
     (input.walls && input.detailedOpenings !== undefined && !detailed) ||
     !Number.isFinite(openings) ||
     openings < 0 ||
-    (input.walls && (tiledWallArea === null || openings >= tiledWallArea))
+    (input.walls &&
+      (tiledWallArea === null ||
+        openings >= tiledWallArea ||
+        wallBreakdown === null ||
+        wallBreakdown.some((wall) => wall.netArea !== null && wall.netArea < -1e-9)))
   )
     return null
 
@@ -214,6 +285,7 @@ export function calculateTileRoomPlan(input: TileRoomPlanInput): TileRoomPlanRes
     grossWalls,
     openings,
     openingDetails: detailed?.details ?? null,
+    wallBreakdown,
     netWalls,
     knownCost,
     missingPriceCount: prices.filter((price) => price === null).length,

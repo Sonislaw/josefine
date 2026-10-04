@@ -12,6 +12,7 @@ import {
 } from '@/shared/composables/useShareableCalculator'
 import { parseDomNumber } from '../lib/calculations'
 import {
+  calculateTileWallBreakdown,
   calculateTileRoomPlan,
   calculateTiledWallArea,
   calculateTiledWallOpenings,
@@ -255,8 +256,27 @@ const detailedOpeningPreview = computed(() => {
     wallCoverage.value,
   )
 })
+const detailedWallBreakdown = computed(() => {
+  if (!detailedOpeningPreview.value) return null
+  const length = parseDomNumber(room.length)
+  const width = parseDomNumber(room.width)
+  const height = parseDomNumber(room.height)
+  if (length === null || width === null || height === null) return null
+  return calculateTileWallBreakdown(
+    { length, width, height },
+    wallCoverage.value,
+    detailedOpeningPreview.value.details,
+  )
+})
 const openingError = computed(() => {
   if (!includeWalls.value || tiledWallArea.value === null) return null
+  const overfilledWall = detailedWallBreakdown.value?.find(
+    (wall) => wall.openingArea !== null && wall.openingArea > wall.grossArea + 1e-9,
+  )
+  if (overfilledWall) {
+    const label = wallChoices.find((choice) => choice.id === overfilledWall.side)?.label
+    return `Na ${label ?? 'wybranej ścianie'} powierzchnia otworów przekracza obszar płytek.`
+  }
   const openings =
     openingMode.value === 'detailed'
       ? detailedOpeningPreview.value?.totalArea
@@ -543,6 +563,9 @@ function wallChoiceLength(dimension: 'length' | 'width'): string {
   return value !== null && value > 0 && value <= 1000
     ? `${formatArea(value)} m długości`
     : 'Podaj poprawny wymiar pokoju'
+}
+function wallSideLabel(side: TileRoomWallSide): string {
+  return wallChoices.find((choice) => choice.id === side)?.label ?? 'Ściana'
 }
 function groutLink(surface: NonNullable<(typeof views.value)[number]['result']>) {
   return {
@@ -945,6 +968,49 @@ function groutLink(surface: NonNullable<(typeof views.value)[number]['result']>)
             }}): {{ formatArea(plan.grossWalls) }} m² przed odjęciem otworów −
             {{ formatArea(plan.openings) }} m² =
             <strong>{{ formatArea(plan.netWalls) }} m²</strong> do ułożenia.
+          </div>
+          <div v-if="plan.wallBreakdown" class="wall-breakdown">
+            <div class="wall-breakdown-heading">
+              <h5>Jak powstaje metraż ścian?</h5>
+              <p>
+                Sprawdź każdą ścianę przed zakupem. Kartony liczymy z sumy, bez zaokrąglania osobno.
+              </p>
+            </div>
+            <div class="wall-breakdown-grid">
+              <article
+                v-for="wall in plan.wallBreakdown"
+                :key="wall.side"
+                class="wall-breakdown-card"
+                :class="{ 'wall-breakdown-card--excluded': !wall.selected }"
+              >
+                <div class="wall-breakdown-title">
+                  <h6>{{ wallSideLabel(wall.side) }}</h6>
+                  <small>{{ formatArea(wall.wallLength) }} m długości</small>
+                </div>
+                <p v-if="!wall.selected" class="excluded-note">Bez płytek</p>
+                <dl v-else>
+                  <div>
+                    <dt>Przed odjęciem</dt>
+                    <dd>{{ formatArea(wall.grossArea) }} m²</dd>
+                  </div>
+                  <div>
+                    <dt>Otwory</dt>
+                    <dd>
+                      {{ wall.openingArea === null ? '—' : `${formatArea(wall.openingArea)} m²` }}
+                    </dd>
+                  </div>
+                  <div class="wall-net">
+                    <dt>Pod płytki</dt>
+                    <dd>{{ wall.netArea === null ? '—' : `${formatArea(wall.netArea)} m²` }}</dd>
+                  </div>
+                </dl>
+              </article>
+            </div>
+            <p v-if="openingMode === 'total' && plan.openings > 0" class="unassigned-openings-note">
+              Podano tylko łączną powierzchnię otworów, więc nie wiemy, na której ścianie je odjąć.
+              Metraż netto ścian zobaczysz po dodaniu drzwi i okien osobno; łączny wynik powyżej już
+              uwzględnia wpisane {{ formatArea(plan.openings) }} m².
+            </p>
           </div>
           <div class="result-grid">
             <article
@@ -1535,6 +1601,88 @@ a:focus-visible {
 .area-summary strong {
   color: #fff;
 }
+.wall-breakdown {
+  margin-top: 1.15rem;
+}
+.wall-breakdown-heading h5 {
+  color: #fff;
+  font-size: 1rem;
+}
+.wall-breakdown-heading p {
+  margin-top: 0.25rem;
+  color: #cde2d2;
+  font-size: 0.72rem;
+  line-height: 1.5;
+}
+.wall-breakdown-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.6rem;
+  margin-top: 0.75rem;
+}
+.wall-breakdown-card {
+  min-width: 0;
+  padding: 0.85rem;
+  border: 1px solid #b7d4bd55;
+  border-radius: 10px;
+  background: #ffffff16;
+}
+.wall-breakdown-card--excluded {
+  border-style: dashed;
+  background: #ffffff0a;
+}
+.wall-breakdown-title {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.2rem 0.5rem;
+}
+.wall-breakdown-title h6 {
+  font-family: var(--font-heading);
+  font-size: 0.9rem;
+}
+.wall-breakdown-title small {
+  color: #c6ddcb;
+  font-size: 0.67rem;
+}
+.wall-breakdown-card dl {
+  display: grid;
+  gap: 0.45rem;
+  margin-top: 0.8rem;
+}
+.wall-breakdown-card dl > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.4rem;
+}
+.wall-breakdown-card dt,
+.wall-breakdown-card dd,
+.excluded-note {
+  font-size: 0.68rem;
+}
+.wall-breakdown-card dt {
+  color: #c6ddcb;
+}
+.wall-breakdown-card dd {
+  margin: 0;
+  font-weight: 800;
+  text-align: right;
+}
+.wall-breakdown-card .wall-net {
+  padding-top: 0.45rem;
+  border-top: 1px solid #ffffff36;
+}
+.excluded-note {
+  margin-top: 0.75rem;
+  color: #c6ddcb;
+}
+.unassigned-openings-note {
+  margin-top: 0.7rem;
+  color: #e8d7b6;
+  font-size: 0.72rem;
+  line-height: 1.5;
+}
 .result-grid {
   margin-top: 1rem;
 }
@@ -1618,6 +1766,9 @@ a:focus-visible {
 .results :deep(.add-row) {
   margin-top: 1.1rem;
 }
+.results :deep(.room-picker label) {
+  color: #e5f2df;
+}
 .results :deep(.add-button) {
   background: #fff;
   color: #28573e;
@@ -1643,6 +1794,11 @@ a:focus-visible {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+@media (max-width: 1100px) {
+  .wall-breakdown-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
 @media (max-width: 600px) {
   .plan-header {
     padding: 1.25rem;
@@ -1661,7 +1817,8 @@ a:focus-visible {
   }
   .wall-modes,
   .wall-choice-grid,
-  .opening-input-grid {
+  .opening-input-grid,
+  .wall-breakdown-grid {
     grid-template-columns: 1fr;
   }
   .cost-summary {
