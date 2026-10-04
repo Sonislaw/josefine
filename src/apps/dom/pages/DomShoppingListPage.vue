@@ -33,7 +33,9 @@ import {
   type RoomLaborSummary,
   type RoomTilingAreas,
 } from '../lib/room-budget'
+import { calculateFloorBudget, type FloorBudgetSummary } from '../lib/floor-budget'
 import { calculateTilingBudget, type TilingBudgetSummary } from '../lib/tiling-budget'
+import DomFloorBudget from '../components/DomFloorBudget.vue'
 import DomRoomBudget from '../components/DomRoomBudget.vue'
 import DomShoppingItemEditor from '../components/DomShoppingItemEditor.vue'
 import DomTilingBudget from '../components/DomTilingBudget.vue'
@@ -77,6 +79,7 @@ interface RoomGroup {
   missingPrices: number
   metrics: RoomMetrics | null
   tiling: RoomTilingAreas
+  floorBudget: FloorBudgetSummary | null
   tilingBudget: TilingBudgetSummary | null
   links: ReturnType<typeof createRoomToolLinks>
   labor: RoomLaborSummary
@@ -100,6 +103,7 @@ function makeGroup(room: ShoppingRoom | null, name: string, groupItems: Shopping
     missingPrices: groupItems.filter((item) => item.cost === null).length,
     metrics,
     tiling,
+    floorBudget: room ? calculateFloorBudget(groupItems, labor, tiling, metrics) : null,
     tilingBudget: room ? calculateTilingBudget(groupItems, labor, tiling, metrics) : null,
     links: room?.dimensions ? createRoomToolLinks(room.dimensions, room.id) : [],
     labor,
@@ -639,6 +643,11 @@ function togglePurchased(itemId: string, event: Event) {
           <p v-if="group.missingPrices && !group.room" class="group-note">
             Pozycji bez ceny: {{ group.missingPrices }}. Suma tej grupy jest niepełna.
           </p>
+          <DomFloorBudget
+            v-if="group.room && group.floorBudget"
+            :room-id="group.room.id"
+            :summary="group.floorBudget"
+          />
           <DomTilingBudget
             v-if="group.room && group.tilingBudget"
             :room-id="group.room.id"

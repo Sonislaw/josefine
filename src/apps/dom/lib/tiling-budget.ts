@@ -1,19 +1,15 @@
 import type { ShoppingItem } from '../stores/shoppingList'
 import type { RoomLaborLine, RoomLaborSummary, RoomTilingAreas } from './room-budget'
 import type { RoomMetrics } from './room-metrics'
+import {
+  makeMaterialBudgetLine,
+  summarizeMaterialBudget,
+  type MaterialBudgetLine,
+} from './material-budget'
 
 export type TilingMaterialId = 'tiles' | 'adhesive' | 'grout'
 
-export interface TilingMaterialLine {
-  id: TilingMaterialId
-  label: string
-  path: string
-  itemCount: number
-  quantityLabel: string
-  pricedCount: number
-  missingPriceCount: number
-  knownCost: number
-}
+export type TilingMaterialLine = MaterialBudgetLine<TilingMaterialId>
 
 export interface TilingBudgetSummary {
   materials: TilingMaterialLine[]
@@ -44,27 +40,6 @@ export function calculateTilingBudget(
   const groutItems = items.filter((item) => item.kind === 'groutPacks')
   if (!tileItems.length && !adhesiveItems.length && !groutItems.length) return null
 
-  const materialLine = (
-    id: TilingMaterialId,
-    label: string,
-    path: string,
-    group: ShoppingItem[],
-    quantityLabel: string,
-  ): TilingMaterialLine => ({
-    id,
-    label,
-    path,
-    itemCount: group.length,
-    quantityLabel,
-    pricedCount: group.filter((item) => item.cost !== null).length,
-    missingPriceCount: group.filter((item) => item.cost === null).length,
-    knownCost:
-      group.reduce(
-        (cents, item) => cents + (item.cost === null ? 0 : Math.round(item.cost * 100)),
-        0,
-      ) / 100,
-  })
-
   const boxes = tileItems
     .filter((item) => item.kind === 'tileBoxes')
     .reduce((sum, item) => sum + item.quantity, 0)
@@ -80,16 +55,16 @@ export function calculateTilingBudget(
   const adhesiveQuantity = adhesiveItems.reduce((sum, item) => sum + item.quantity, 0)
   const groutQuantity = groutItems.reduce((sum, item) => sum + item.quantity, 0)
 
-  const materials = [
-    materialLine('tiles', 'Płytki', '/liczba-plytek', tileItems, tileQuantity),
-    materialLine(
+  const materials: TilingMaterialLine[] = [
+    makeMaterialBudgetLine('tiles', 'Płytki', '/liczba-plytek', tileItems, tileQuantity),
+    makeMaterialBudgetLine(
       'adhesive',
       'Klej',
       '/klej-do-plytek',
       adhesiveItems,
       adhesiveQuantity ? `${formatCount(adhesiveQuantity)} work.` : '',
     ),
-    materialLine(
+    makeMaterialBudgetLine(
       'grout',
       'Fuga',
       '/kalkulator-fugi',
@@ -100,16 +75,12 @@ export function calculateTilingBudget(
   const laborLines = labor.lines.filter(
     (line) => line.id === 'tilingFloor' || line.id === 'tilingWalls',
   )
-  const knownCents =
-    materials.reduce((cents, line) => cents + Math.round(line.knownCost * 100), 0) +
-    laborLines.reduce((cents, line) => cents + Math.round(line.cost * 100), 0)
+  const costs = summarizeMaterialBudget(materials, laborLines)
 
   return {
     materials,
     laborLines,
-    knownTotal: knownCents / 100,
-    hasKnownCost: materials.some((line) => line.pricedCount > 0) || laborLines.length > 0,
-    missingPriceCount: materials.reduce((count, line) => count + line.missingPriceCount, 0),
+    ...costs,
     missingAreaCount: tiling.missingAreaCount,
     missingLaborRateFloor:
       tiling.floor > 0 && !laborLines.some((line) => line.id === 'tilingFloor'),
