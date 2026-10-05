@@ -30,7 +30,7 @@ const tools = [
     tag: 'Porównanie ofert',
     number: '03',
     title: 'B2B czy UoP?',
-    text: 'Zestaw dwie propozycje w wybranym miesiącu. Wynik dla 12 podobnych miesięcy to uproszczenie, nie rozliczenie roczne.',
+    text: 'Zestaw dwie propozycje w skali 2026 roku. Porównaj sumy netto i różnicę miesiąc po miesiącu.',
     tone: 'blue',
   },
 ]

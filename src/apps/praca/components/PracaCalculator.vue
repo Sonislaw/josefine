@@ -3,12 +3,9 @@ import { computed, ref } from 'vue'
 import { ArrowLeft, RotateCcw } from '@lucide/vue'
 import { RouterLink } from 'vue-router'
 import {
-  calcB2b,
-  calcUop,
   defaultPeriod,
   isValidAmount,
   lumpRates,
-  monthNames,
   money,
   taxForms,
   zusVariants,
@@ -17,11 +14,13 @@ import {
 } from '../lib/calculations'
 import { calcUopYear } from '../lib/uop-year'
 import { calcB2bYear } from '../lib/b2b-year'
+import { calcWorkYearComparison } from '../lib/work-year-comparison'
 import { pracaPath, pracaSiteName, pracaSiteUrl, usePracaSeo } from '../seo/usePracaSeo'
 import FaqSection from '@/shared/components/FaqSection.vue'
 import ShareResultButton from '@/shared/components/ShareResultButton.vue'
 import UopYearBreakdown from './UopYearBreakdown.vue'
 import B2bYearBreakdown from './B2bYearBreakdown.vue'
+import WorkYearComparison from './WorkYearComparison.vue'
 import {
   booleanShareField,
   choiceShareField,
@@ -31,8 +30,6 @@ import {
 
 const props = defineProps<{ mode: 'uop' | 'b2b' | 'comparison' }>()
 const year = ref<2026>(defaultPeriod.year)
-const month = ref(defaultPeriod.month)
-const period = computed(() => ({ year: year.value, month: month.value }))
 const gross = ref(props.mode === 'comparison' ? 15_000 : 12_000)
 const invoice = ref(props.mode === 'comparison' ? 18_000 : 20_000)
 const costs = ref(1_000),
@@ -59,9 +56,6 @@ const b2bShareFields = [
 ]
 const { buildShareUrl, canShareInputs } = useShareableCalculator(() => [
   numberShareField('rok', year, { choices: [2026], integer: true }),
-  ...(props.mode === 'comparison'
-    ? [numberShareField('miesiac', month, { min: 1, max: 12, integer: true })]
-    : []),
   ...(props.mode === 'b2b' ? [] : uopShareFields),
   ...(props.mode === 'uop' ? [] : b2bShareFields),
 ])
@@ -69,25 +63,9 @@ const validInputs = computed(
   () =>
     (props.mode === 'b2b' || isValidAmount(gross.value)) &&
     (props.mode === 'uop' || (isValidAmount(invoice.value) && isValidAmount(costs.value))) &&
-    Number.isInteger(month.value) &&
-    month.value >= 1 &&
-    month.value <= 12 &&
     (props.mode === 'uop' ||
       form.value !== 'lump' ||
       lumpRates.includes(rate.value as (typeof lumpRates)[number])),
-)
-const uop = computed(() =>
-  validInputs.value && props.mode === 'comparison'
-    ? calcUop(
-        {
-          gross: gross.value,
-          under26: under26.value,
-          elevatedKup: elevatedKup.value,
-          ppk: ppk.value,
-        },
-        period.value,
-      )
-    : null,
 )
 const uopYear = computed(() =>
   validInputs.value && props.mode === 'uop'
@@ -102,9 +80,9 @@ const uopYear = computed(() =>
       )
     : null,
 )
-const b2b = computed(() =>
-  validInputs.value && props.mode === 'comparison'
-    ? calcB2b(
+const b2bYear = computed(() =>
+  validInputs.value && props.mode === 'b2b'
+    ? calcB2bYear(
         {
           invoice: invoice.value,
           costs: costs.value,
@@ -113,13 +91,19 @@ const b2b = computed(() =>
           zus: zus.value,
           sickness: sickness.value,
         },
-        period.value,
+        year.value,
       )
     : null,
 )
-const b2bYear = computed(() =>
-  validInputs.value && props.mode === 'b2b'
-    ? calcB2bYear(
+const comparisonYear = computed(() =>
+  validInputs.value && props.mode === 'comparison'
+    ? calcWorkYearComparison(
+        {
+          gross: gross.value,
+          under26: under26.value,
+          elevatedKup: elevatedKup.value,
+          ppk: ppk.value,
+        },
         {
           invoice: invoice.value,
           costs: costs.value,
@@ -154,7 +138,7 @@ const introText = computed(() =>
     ? 'Zobacz wypłatę na rękę w każdym miesiącu 2026 roku oraz sumę dwunastu wypłat. Kalkulator uwzględnia narastające limity ulgi dla młodych, PIT i składek emerytalno-rentowych.'
     : props.mode === 'b2b'
       ? 'Zobacz, ile może zostać z faktur B2B miesiąc po miesiącu w 2026 roku. Symulacja śledzi narastająco podatek i progi składki zdrowotnej.'
-      : 'Zestaw dwa warianty współpracy i zobacz różnicę w miesięcznym oraz rocznym wyniku.',
+      : 'Zestaw dwie oferty w skali całego 2026 roku. Porównaj sumę dwunastu wypłat UoP z wynikiem B2B po kosztach, składkach, podatku i ewentualnej dopłacie zdrowotnej.',
 )
 const introSymbol = computed(() =>
   props.mode === 'uop' ? 'UoP' : props.mode === 'b2b' ? 'B2B' : '↔',
@@ -164,10 +148,8 @@ const relatedTools = [
   { mode: 'b2b', path: '/ile-na-reke-b2b', title: 'Ile na rękę z B2B?' },
   { mode: 'comparison', path: '/b2b-vs-uop', title: 'B2B vs UoP' },
 ] as const
-const difference = computed(() => (b2b.value && uop.value ? b2b.value.net - uop.value.net : 0))
 const reset = () => {
   year.value = defaultPeriod.year
-  month.value = defaultPeriod.month
   gross.value = props.mode === 'comparison' ? 15_000 : 12_000
   invoice.value = props.mode === 'comparison' ? 18_000 : 20_000
   costs.value = 1_000
@@ -252,7 +234,12 @@ const faqs = computed(() =>
           {
             question: 'Co pokazuje różnica roczna między B2B a UoP?',
             answer:
-              'To jedynie różnica dla 12 identycznych miesięcy. Nie jest rocznym rozliczeniem i nie uwzględnia narastających limitów, płatnego urlopu ani przerw między zleceniami.',
+              'To różnica między sumą 12 szacowanych wypłat UoP a sumą 12 wyników B2B, z uwzględnieniem prognozowanej dopłaty zdrowotnej na ryczałcie. Każdy miesiąc jest liczony osobno, z narastającymi limitami; to nie jest zeznanie podatkowe.',
+          },
+          {
+            question: 'Dlaczego różnica w tabeli miesięcznej nie równa się zawsze różnicy rocznej?',
+            answer:
+              'Przy ryczałcie po zakończeniu roku może powstać dopłata składki zdrowotnej. Pokazujemy ją osobno, poza dwunastoma miesiącami, i uwzględniamy w końcowej różnicy rocznej.',
           },
           {
             question: 'Czy wyższe netto na B2B zawsze oznacza lepszą ofertę?',
@@ -325,21 +312,6 @@ usePracaSeo(seoKey.value, {
           </button>
         </div>
         <div class="mt-7 space-y-5">
-          <label v-if="mode === 'comparison'" class="block"
-            ><span class="text-sm font-semibold">Miesiąc obliczeń · {{ year }}</span>
-            <select
-              v-model.number="month"
-              class="mt-2 h-12 w-full rounded-lg border border-[#d9e1db] bg-white px-3"
-            >
-              <option v-for="(name, index) in monthNames" :key="name" :value="index + 1">
-                {{ name }}
-              </option>
-            </select>
-            <span class="mt-1 block text-xs text-[#66736b]"
-              >Miesiąc wpływa na minimum składki zdrowotnej B2B; pozostałe wyniki są miesięcznym
-              szacunkiem.</span
-            >
-          </label>
           <label v-if="mode !== 'b2b'" class="block"
             ><span class="text-sm font-semibold">{{
               mode === 'comparison' ? 'Brutto UoP miesięcznie' : 'Wynagrodzenie brutto miesięcznie'
@@ -398,18 +370,14 @@ usePracaSeo(seoKey.value, {
                 class="mt-2 h-12 w-full rounded-lg border border-[#d9e1db] bg-white px-3"
               >
                 <option v-for="item in zusVariants" :key="item.value" :value="item.value">
-                  {{
-                    mode === 'b2b' && item.value === 'start'
-                      ? 'Ulga na start → preferencyjny ZUS'
-                      : item.label
-                  }}
+                  {{ item.value === 'start' ? 'Ulga na start → preferencyjny ZUS' : item.label }}
                 </option>
               </select></label
             ><label class="flex gap-3 rounded-lg border border-[#e1e7e2] p-3 text-sm font-semibold"
               ><input v-model="sickness" type="checkbox" class="accent-[#17613f]" /> Opłacam
               dobrowolne chorobowe</label
             >
-            <p v-if="mode === 'b2b' && zus === 'start'" class="text-xs leading-5 text-[#66736b]">
+            <p v-if="zus === 'start'" class="text-xs leading-5 text-[#66736b]">
               Zakładamy start działalności 1 stycznia: bez składek społecznych do czerwca, od lipca
               składki preferencyjne, jeśli spełniasz warunki ulgi.
             </p></template
@@ -422,12 +390,8 @@ usePracaSeo(seoKey.value, {
               Ustawienia umowy o pracę
             </p>
             <label class="flex gap-3 rounded-lg border border-[#e1e7e2] p-3 text-sm font-semibold"
-              ><input v-model="under26" type="checkbox" class="accent-[#17613f]" />
-              {{
-                mode === 'uop'
-                  ? 'Ulga dla młodych przysługuje mi przez cały rok'
-                  : 'Mam mniej niż 26 lat i niewyczerpany limit ulgi'
-              }}</label
+              ><input v-model="under26" type="checkbox" class="accent-[#17613f]" /> Ulga dla młodych
+              przysługuje mi przez cały rok</label
             ><label class="flex gap-3 rounded-lg border border-[#e1e7e2] p-3 text-sm font-semibold"
               ><input v-model="elevatedKup" type="checkbox" class="accent-[#17613f]" /> Podwyższone
               koszty uzyskania przychodu</label
@@ -513,27 +477,56 @@ usePracaSeo(seoKey.value, {
               ><strong>{{ money(b2bYear.netAfterHealthSettlement) }}</strong>
             </div>
           </div></template
-        ><template v-else-if="uop && b2b"
-          ><p class="text-sm text-emerald-100">Porównanie miesięcznego netto</p>
-          <div class="mt-5 grid grid-cols-2 gap-3">
+        ><template v-else-if="mode === 'comparison' && comparisonYear"
+          ><p class="text-sm text-emerald-100">Porównanie roczne · {{ year }}</p>
+          <div class="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div class="rounded-xl bg-white/10 p-4">
-              <p class="text-sm text-white/70">UoP</p>
-              <strong class="mt-1 block text-2xl">{{ money(uop.net) }}</strong>
+              <p class="text-sm text-white/70">UoP · suma wypłat netto</p>
+              <strong class="mt-1 block break-words text-[clamp(1.4rem,3vw,2rem)]">{{
+                money(comparisonYear.uop.totals.net)
+              }}</strong>
             </div>
             <div class="rounded-xl bg-[#a9e4bd] p-4 text-[#123b2d]">
-              <p class="text-sm opacity-75">B2B</p>
-              <strong class="mt-1 block text-2xl">{{ money(b2b.net) }}</strong>
+              <p class="text-sm opacity-75">
+                {{
+                  comparisonYear.b2b.healthSettlement > 0
+                    ? 'B2B · po obciążeniach i dopłacie'
+                    : 'B2B · po obciążeniach'
+                }}
+              </p>
+              <strong class="mt-1 block break-words text-[clamp(1.4rem,3vw,2rem)]">{{
+                money(comparisonYear.b2b.netAfterHealthSettlement)
+              }}</strong>
             </div>
           </div>
           <div class="mt-5 rounded-xl border border-white/15 p-4">
-            <p class="text-sm text-white/70">Różnica miesięczna na B2B</p>
-            <strong class="mt-1 block text-3xl"
-              >{{ difference >= 0 ? '+' : '−' }}{{ money(Math.abs(difference)) }}</strong
+            <p class="text-sm text-white/70">Różnica za 12 miesięcy na B2B</p>
+            <strong class="mt-1 block break-words text-[clamp(1.7rem,5vw,2.5rem)]"
+              >{{ comparisonYear.differenceAfterHealthSettlement > 0 ? '+' : ''
+              }}{{ money(comparisonYear.differenceAfterHealthSettlement) }}</strong
             >
-            <p class="mt-1 text-sm text-white/70">
-              {{ difference >= 0 ? 'więcej' : 'mniej' }} ·
-              {{ money(Math.abs(difference) * 12) }} dla 12 podobnych miesięcy*
+            <p class="mt-2 text-sm text-white/70">
+              <template v-if="comparisonYear.differenceAfterHealthSettlement === 0"
+                >Tyle samo w obu scenariuszach przy podanych założeniach</template
+              >
+              <template v-else
+                >{{ comparisonYear.differenceAfterHealthSettlement > 0 ? 'Więcej' : 'Mniej' }} niż
+                na UoP przy podanych założeniach</template
+              >
             </p>
+          </div>
+          <div
+            v-if="comparisonYear.b2b.healthSettlement > 0"
+            class="mt-4 space-y-2 border-t border-white/15 pt-4 text-sm"
+          >
+            <div class="flex flex-wrap justify-between gap-2">
+              <span>B2B przed dopłatą zdrowotnej</span
+              ><span>{{ money(comparisonYear.b2b.totals.net) }}</span>
+            </div>
+            <div class="flex flex-wrap justify-between gap-2">
+              <span>Możliwa dopłata po roku</span
+              ><span>− {{ money(comparisonYear.b2b.healthSettlement) }}</span>
+            </div>
           </div></template
         >
         <ShareResultButton
@@ -557,13 +550,15 @@ usePracaSeo(seoKey.value, {
           porada podatkowa.
         </p>
         <p v-else class="mt-6 border-t border-white/15 pt-4 text-xs leading-5 text-white/60">
-          Szacunek pojedynczego miesiąca 2026. *Mnożenie przez 12 nie jest rozliczeniem rocznym.
-          Wynik nie stanowi porady podatkowej.
+          Porównujemy 12 miesięcy liczonych narastająco, nie dwie kwoty pomnożone przez 12.
+          Zakładamy stałe brutto UoP, fakturę i koszty B2B. To szacunek, nie zeznanie roczne ani
+          porada podatkowa.
         </p>
       </section>
     </div>
     <UopYearBreakdown v-if="mode === 'uop' && uopYear" :result="uopYear" />
     <B2bYearBreakdown v-if="mode === 'b2b' && b2bYear" :result="b2bYear" />
+    <WorkYearComparison v-if="mode === 'comparison' && comparisonYear" :result="comparisonYear" />
     <section class="explanation">
       <div>
         <p class="intro-kicker">JAK CZYTAĆ WYNIK</p>
@@ -581,8 +576,9 @@ usePracaSeo(seoKey.value, {
           Rzeczywiste terminy płatności składek i zaliczek mogą przesunąć koszty między miesiącami.
         </p>
         <p v-else>
-          To przybliżenie pomocne przy planowaniu budżetu. Uwzględnia tylko wpisane dane i pokazuje
-          reprezentatywny miesiąc, nie faktyczną zaliczkę ani zeznanie roczne.
+          Oba warianty liczymy oddzielnie dla dwunastu miesięcy. W tabeli widać, kiedy zmieniają się
+          wyniki po osiągnięciu limitów. Różnica roczna uwzględnia możliwą dopłatę zdrowotnej na
+          ryczałcie, ale nie wycenia urlopu, chorobowego ani innych warunków współpracy.
         </p>
         <details class="mt-3 rounded-xl border border-[#dde9db] bg-white p-4">
           <summary class="cursor-pointer font-bold text-[#214d38]">
@@ -599,10 +595,10 @@ usePracaSeo(seoKey.value, {
               ukończenia 26 lat w trakcie roku.
             </li>
             <li v-if="mode === 'comparison'">
-              W porównaniu miesięcznym ulga dla młodych zakłada niewyczerpany limit. Progi i limity
-              roczne nie są tam śledzone narastająco.
+              UoP: ulga dla młodych zakłada prawo do zwolnienia przez cały rok. Jej limit, próg PIT
+              i limit podstawy składek emerytalno-rentowych śledzimy narastająco.
             </li>
-            <li v-if="mode === 'b2b'">
+            <li v-if="mode !== 'uop'">
               B2B: faktura bez VAT, stała przez cały rok. Ulga na start zakłada początek
               działalności 1 stycznia i przejście na składki preferencyjne od lipca, jeśli
               przysługują. Składkę zdrowotną przypisujemy do miesiąca uzyskania dochodu; nie
@@ -610,14 +606,9 @@ usePracaSeo(seoKey.value, {
               zapłaconej zdrowotnej 14 100 zł, a dla ryczałtu odliczenie 50% składki oraz możliwą
               dopłatę po roku.
             </li>
-            <li v-if="mode === 'comparison'">
-              B2B: faktura bez VAT; przy ryczałcie próg zdrowotnej szacujemy z 12 takich samych
-              faktur. Dostępne są cztery wybrane stawki ryczałtu — dobierz właściwą dla
-              działalności.
-            </li>
             <li>
               Nie uwzględniamy innych przychodów, dodatkowych ulg ani pełnego rozliczenia rocznego.
-              Miesięczne porównanie B2B vs UoP nadal nie uwzględnia odliczeń składki zdrowotnej.
+              Porównanie nie wycenia urlopu, chorobowego, benefitów ani przerw we współpracy.
             </li>
           </ul>
           <p class="mt-3">
@@ -637,7 +628,7 @@ usePracaSeo(seoKey.value, {
               rel="noopener noreferrer"
               >ZUS</a
             >
-            <template v-if="mode === 'b2b'">
+            <template v-if="mode !== 'uop'">
               oraz
               <a
                 class="underline"
