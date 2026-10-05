@@ -5,15 +5,21 @@ import { RouterLink } from 'vue-router'
 import {
   calcB2b,
   calcUop,
+  defaultPeriod,
+  isValidAmount,
+  lumpRates,
+  monthNames,
   money,
   taxForms,
   zusVariants,
   type TaxForm,
   type ZusVariant,
 } from '../lib/calculations'
+import { calcUopYear } from '../lib/uop-year'
 import { pracaPath, pracaSiteName, pracaSiteUrl, usePracaSeo } from '../seo/usePracaSeo'
 import FaqSection from '@/shared/components/FaqSection.vue'
 import ShareResultButton from '@/shared/components/ShareResultButton.vue'
+import UopYearBreakdown from './UopYearBreakdown.vue'
 import {
   booleanShareField,
   choiceShareField,
@@ -22,6 +28,9 @@ import {
 } from '@/shared/composables/useShareableCalculator'
 
 const props = defineProps<{ mode: 'uop' | 'b2b' | 'comparison' }>()
+const year = ref<2026>(defaultPeriod.year)
+const month = ref(defaultPeriod.month)
+const period = computed(() => ({ year: year.value, month: month.value }))
 const gross = ref(props.mode === 'comparison' ? 15_000 : 12_000)
 const invoice = ref(props.mode === 'comparison' ? 18_000 : 20_000)
 const costs = ref(1_000),
@@ -47,19 +56,64 @@ const b2bShareFields = [
   booleanShareField('chorobowe', sickness),
 ]
 const { buildShareUrl, canShareInputs } = useShareableCalculator(() => [
+  numberShareField('rok', year, { choices: [2026], integer: true }),
+  ...(props.mode === 'uop'
+    ? []
+    : [numberShareField('miesiac', month, { min: 1, max: 12, integer: true })]),
   ...(props.mode === 'b2b' ? [] : uopShareFields),
   ...(props.mode === 'uop' ? [] : b2bShareFields),
 ])
-const isNonnegativeNumber = (value: unknown) =>
-  typeof value === 'number' && Number.isFinite(value) && value >= 0
-const canShare = computed(() =>
-  (props.mode === 'b2b' || isNonnegativeNumber(gross.value)) &&
-  (props.mode === 'uop' ||
-    (isNonnegativeNumber(invoice.value) && isNonnegativeNumber(costs.value))),
+const validInputs = computed(
+  () =>
+    (props.mode === 'b2b' || isValidAmount(gross.value)) &&
+    (props.mode === 'uop' || (isValidAmount(invoice.value) && isValidAmount(costs.value))) &&
+    Number.isInteger(month.value) &&
+    month.value >= 1 &&
+    month.value <= 12 &&
+    (props.mode === 'uop' ||
+      form.value !== 'lump' ||
+      lumpRates.includes(rate.value as (typeof lumpRates)[number])),
 )
-const uop = computed(() => calcUop(gross.value, under26.value, elevatedKup.value, ppk.value))
+const uop = computed(() =>
+  validInputs.value && props.mode === 'comparison'
+    ? calcUop(
+        {
+          gross: gross.value,
+          under26: under26.value,
+          elevatedKup: elevatedKup.value,
+          ppk: ppk.value,
+        },
+        period.value,
+      )
+    : null,
+)
+const uopYear = computed(() =>
+  validInputs.value && props.mode === 'uop'
+    ? calcUopYear(
+        {
+          gross: gross.value,
+          under26: under26.value,
+          elevatedKup: elevatedKup.value,
+          ppk: ppk.value,
+        },
+        year.value,
+      )
+    : null,
+)
 const b2b = computed(() =>
-  calcB2b(invoice.value, costs.value, form.value, rate.value, zus.value, sickness.value),
+  validInputs.value && props.mode !== 'uop'
+    ? calcB2b(
+        {
+          invoice: invoice.value,
+          costs: costs.value,
+          form: form.value,
+          rate: rate.value,
+          zus: zus.value,
+          sickness: sickness.value,
+        },
+        period.value,
+      )
+    : null,
 )
 const path = computed(() =>
   props.mode === 'uop'
@@ -80,7 +134,7 @@ const title = computed(() =>
 )
 const introText = computed(() =>
   props.mode === 'uop'
-    ? 'Zobacz, jak z wynagrodzenia brutto powstaje szacunkowa wypłata na rękę i ile może wynosić całkowity koszt pracodawcy.'
+    ? 'Zobacz wypłatę na rękę w każdym miesiącu 2026 roku oraz sumę dwunastu wypłat. Kalkulator uwzględnia narastające limity ulgi dla młodych, PIT i składek emerytalno-rentowych.'
     : props.mode === 'b2b'
       ? 'Przelicz kwotę faktury na szacunkowy dochód po kosztach działalności, składkach i podatku.'
       : 'Zestaw dwa warianty współpracy i zobacz różnicę w miesięcznym oraz rocznym wyniku.',
@@ -93,8 +147,10 @@ const relatedTools = [
   { mode: 'b2b', path: '/ile-na-reke-b2b', title: 'Ile na rękę z B2B?' },
   { mode: 'comparison', path: '/b2b-vs-uop', title: 'B2B vs UoP' },
 ] as const
-const difference = computed(() => b2b.value.net - uop.value.net)
+const difference = computed(() => (b2b.value && uop.value ? b2b.value.net - uop.value.net : 0))
 const reset = () => {
+  year.value = defaultPeriod.year
+  month.value = defaultPeriod.month
   gross.value = props.mode === 'comparison' ? 15_000 : 12_000
   invoice.value = props.mode === 'comparison' ? 18_000 : 20_000
   costs.value = 1_000
@@ -109,12 +165,12 @@ const faqs = computed(() =>
         {
           question: 'Jak obliczane jest wynagrodzenie netto na UoP?',
           answer:
-            'Kalkulator wynagrodzenia UoP odejmuje od pensji brutto składki społeczne pracownika, składkę zdrowotną oraz szacowaną zaliczkę PIT. Następnie pokazuje kwotę netto, czyli wypłatę na rękę.',
+            'Kalkulator liczy oddzielnie 12 wypłat: od miesięcznej pensji brutto odejmuje składki społeczne, zdrowotną, szacowaną zaliczkę PIT i ewentualną wpłatę pracownika do PPK. Wynik roczny jest sumą tych wypłat.',
         },
         {
           question: 'Czy kalkulator brutto-netto uwzględnia ulgę dla młodych?',
           answer:
-            'Tak. Zaznaczenie opcji dla osoby poniżej 26. roku życia zeruje PIT w uproszczonym wyliczeniu. W praktyce trzeba pamiętać o ustawowym limicie ulgi i innych źródłach przychodu.',
+            'Tak. W wariancie UoP limit ulgi jest liczony narastająco w trakcie 2026 roku. Przyjmujemy jednak, że osoba spełnia warunek wieku przez cały rok i nie korzysta z limitu u innych płatników.',
         },
         {
           question: 'Jak PPK wpływa na wynagrodzenie na rękę?',
@@ -124,7 +180,12 @@ const faqs = computed(() =>
         {
           question: 'Dlaczego wypłata z umowy o pracę może się różnić?',
           answer:
-            'Na kwotę netto wpływają między innymi PIT-2, koszty uzyskania przychodu, premie, absencje, ulgi, PPK oraz rozliczenie rocznych limitów. Wynik kalkulatora ma charakter orientacyjny.',
+            'W ciągu roku może zmienić się stawka zaliczki PIT albo wysokość składek emerytalno-rentowych po osiągnięciu limitu ich podstawy. Na rzeczywistą wypłatę wpływają również premie, nieobecności, inne przychody i indywidualne oświadczenia.',
+        },
+        {
+          question: 'Czy roczna suma netto jest wynikiem rozliczenia PIT?',
+          answer:
+            'Nie. To suma dwunastu szacowanych wypłat przy stałym brutto i przyjętych ustawieniach. Ostateczne rozliczenie podatku może być inne, zwłaszcza przy dodatkowych dochodach, ulgach lub zmianie sytuacji w trakcie roku.',
         },
       ]
     : props.mode === 'b2b'
@@ -164,7 +225,7 @@ const faqs = computed(() =>
           {
             question: 'Co pokazuje różnica roczna między B2B a UoP?',
             answer:
-              'To różnica miesięcznych wyników netto pomnożona przez 12. Nie jest gwarantowanym zyskiem, ponieważ nie obejmuje wszystkich kosztów i korzyści, na przykład płatnego urlopu czy przerw między zleceniami.',
+              'To jedynie różnica dla 12 identycznych miesięcy. Nie jest rocznym rozliczeniem i nie uwzględnia narastających limitów, płatnego urlopu ani przerw między zleceniami.',
           },
           {
             question: 'Czy wyższe netto na B2B zawsze oznacza lepszą ofertę?',
@@ -237,6 +298,21 @@ usePracaSeo(seoKey.value, {
           </button>
         </div>
         <div class="mt-7 space-y-5">
+          <label v-if="mode !== 'uop'" class="block"
+            ><span class="text-sm font-semibold">Miesiąc obliczeń · {{ year }}</span>
+            <select
+              v-model.number="month"
+              class="mt-2 h-12 w-full rounded-lg border border-[#d9e1db] bg-white px-3"
+            >
+              <option v-for="(name, index) in monthNames" :key="name" :value="index + 1">
+                {{ name }}
+              </option>
+            </select>
+            <span class="mt-1 block text-xs text-[#66736b]"
+              >Miesiąc wpływa na minimum składki zdrowotnej B2B; pozostałe wyniki są miesięcznym
+              szacunkiem.</span
+            >
+          </label>
           <label v-if="mode !== 'b2b'" class="block"
             ><span class="text-sm font-semibold">{{
               mode === 'comparison' ? 'Brutto UoP miesięcznie' : 'Wynagrodzenie brutto miesięcznie'
@@ -245,7 +321,7 @@ usePracaSeo(seoKey.value, {
               v-model.number="gross"
               type="number"
               min="0"
-              step="100"
+              step="0.01"
               class="mt-2 h-12 w-full rounded-lg border border-[#d9e1db] px-4 text-lg font-semibold outline-none focus:border-[#25815c]"
           /></label>
           <label v-if="mode !== 'uop'" class="block"
@@ -256,7 +332,7 @@ usePracaSeo(seoKey.value, {
               v-model.number="invoice"
               type="number"
               min="0"
-              step="100"
+              step="0.01"
               class="mt-2 h-12 w-full rounded-lg border border-[#d9e1db] px-4 text-lg font-semibold outline-none focus:border-[#25815c]"
           /></label>
           <template v-if="mode !== 'uop'"
@@ -276,10 +352,9 @@ usePracaSeo(seoKey.value, {
                 v-model.number="rate"
                 class="mt-2 h-12 w-full rounded-lg border border-[#d9e1db] bg-white px-3"
               >
-                <option :value="8.5">8,5%</option>
-                <option :value="12">12%</option>
-                <option :value="15">15%</option>
-                <option :value="17">17%</option>
+                <option v-for="option in lumpRates" :key="option" :value="option">
+                  {{ option }}%
+                </option>
               </select></label
             ><label class="block"
               ><span class="text-sm font-semibold">Koszty działalności miesięcznie</span
@@ -287,7 +362,7 @@ usePracaSeo(seoKey.value, {
                 v-model.number="costs"
                 type="number"
                 min="0"
-                step="100"
+                step="0.01"
                 class="mt-2 h-12 w-full rounded-lg border border-[#d9e1db] px-4" /></label
             ><label class="block"
               ><span class="text-sm font-semibold">Składki społeczne ZUS</span
@@ -312,8 +387,12 @@ usePracaSeo(seoKey.value, {
               Ustawienia umowy o pracę
             </p>
             <label class="flex gap-3 rounded-lg border border-[#e1e7e2] p-3 text-sm font-semibold"
-              ><input v-model="under26" type="checkbox" class="accent-[#17613f]" /> Mam mniej niż 26
-              lat</label
+              ><input v-model="under26" type="checkbox" class="accent-[#17613f]" />
+              {{
+                mode === 'uop'
+                  ? 'Ulga dla młodych przysługuje mi przez cały rok'
+                  : 'Mam mniej niż 26 lat i niewyczerpany limit ulgi'
+              }}</label
             ><label class="flex gap-3 rounded-lg border border-[#e1e7e2] p-3 text-sm font-semibold"
               ><input v-model="elevatedKup" type="checkbox" class="accent-[#17613f]" /> Podwyższone
               koszty uzyskania przychodu</label
@@ -323,39 +402,59 @@ usePracaSeo(seoKey.value, {
             ></template
           >
         </div>
+        <p
+          v-if="!validInputs"
+          role="alert"
+          class="mt-5 rounded-lg border border-[#e6a592] bg-[#fff3ee] p-3 text-sm text-[#963c28]"
+        >
+          Wpisz nieujemne kwoty z maksymalnie dwoma miejscami po przecinku.
+        </p>
       </section>
       <section
         class="result-panel rounded-2xl bg-[#123b2d] p-5 text-white shadow-lg sm:p-7"
         aria-live="polite"
       >
-        <template v-if="mode === 'uop'"
-          ><p class="text-sm text-emerald-100">Szacunkowe wynagrodzenie netto</p>
-          <p class="mt-2 text-5xl font-bold">{{ money(uop.net) }}</p>
-          <p class="mt-1 text-sm text-white/65">na rękę miesięcznie</p>
+        <template v-if="!validInputs">
+          <p class="text-lg font-bold">Sprawdź dane wejściowe</p>
+          <p class="mt-2 text-sm text-white/75">Wynik pojawi się po poprawieniu kwot.</p>
+        </template>
+        <template v-else-if="mode === 'uop' && uopYear"
+          ><p class="text-sm text-emerald-100">Suma szacowanych wypłat netto · {{ year }}</p>
+          <p class="mt-2 text-[clamp(2rem,8vw,3rem)] font-bold">{{ money(uopYear.totals.net) }}</p>
+          <p class="mt-1 text-sm text-white/65">12 miesięcy ze stałym wynagrodzeniem brutto</p>
           <div class="mt-7 space-y-3 border-t border-white/15 pt-5 text-sm">
             <div class="flex justify-between">
-              <span>Brutto</span><strong>{{ money(gross) }}</strong>
+              <span>Brutto w roku</span><strong>{{ money(uopYear.totals.gross) }}</strong>
             </div>
             <div class="flex justify-between">
-              <span>Składki społeczne</span><span>− {{ money(uop.social) }}</span>
+              <span>Składki społeczne</span><span>− {{ money(uopYear.totals.social) }}</span>
             </div>
             <div class="flex justify-between">
-              <span>Zdrowotna</span><span>− {{ money(uop.health) }}</span>
+              <span>Zdrowotna</span><span>− {{ money(uopYear.totals.health) }}</span>
             </div>
             <div class="flex justify-between">
-              <span>PIT</span><span>− {{ money(uop.tax) }}</span>
+              <span>PIT pobrany w roku</span><span>− {{ money(uopYear.totals.tax) }}</span>
+            </div>
+            <div v-if="ppk" class="flex justify-between">
+              <span>PPK pracownika</span><span>− {{ money(uopYear.totals.ppkEmployee) }}</span>
             </div>
             <div class="flex justify-between border-t border-white/15 pt-3 font-bold">
-              <span>Rocznie na rękę</span><span>{{ money(uop.net * 12) }}</span>
+              <span>Styczeń na rękę</span><span>{{ money(uopYear.months[0]?.net ?? 0) }}</span>
             </div>
             <div class="flex justify-between">
-              <span>Koszt pracodawcy</span><strong>{{ money(uop.employerCost) }}</strong>
+              <span>Grudzień na rękę</span><span>{{ money(uopYear.months[11]?.net ?? 0) }}</span>
+            </div>
+            <div class="flex justify-between border-t border-white/15 pt-3">
+              <span>Koszt pracodawcy w roku</span
+              ><strong>{{ money(uopYear.totals.employerCost) }}</strong>
             </div>
           </div></template
-        ><template v-else-if="mode === 'b2b'"
+        ><template v-else-if="mode === 'b2b' && b2b"
           ><p class="text-sm text-emerald-100">Szacunkowo zostaje</p>
-          <p class="mt-2 text-5xl font-bold">{{ money(b2b.net) }}</p>
-          <p class="mt-1 text-sm text-white/65">po kosztach, składkach i podatku</p>
+          <p class="mt-2 text-[clamp(2rem,8vw,3rem)] font-bold">{{ money(b2b.net) }}</p>
+          <p class="mt-1 text-sm text-white/65">
+            po kosztach, składkach i podatku · {{ monthNames[month - 1] }} {{ year }}
+          </p>
           <div class="mt-7 space-y-3 border-t border-white/15 pt-5 text-sm">
             <div class="flex justify-between">
               <span>Faktura</span><strong>{{ money(invoice) }}</strong>
@@ -373,10 +472,10 @@ usePracaSeo(seoKey.value, {
               <span>Podatek</span><span>− {{ money(b2b.tax) }}</span>
             </div>
             <div class="flex justify-between border-t border-white/15 pt-3 font-bold">
-              <span>Rocznie na rękę</span><span>{{ money(b2b.net * 12) }}</span>
+              <span>12 podobnych miesięcy*</span><span>{{ money(b2b.net * 12) }}</span>
             </div>
           </div></template
-        ><template v-else
+        ><template v-else-if="uop && b2b"
           ><p class="text-sm text-emerald-100">Porównanie miesięcznego netto</p>
           <div class="mt-5 grid grid-cols-2 gap-3">
             <div class="rounded-xl bg-white/10 p-4">
@@ -395,26 +494,92 @@ usePracaSeo(seoKey.value, {
             >
             <p class="mt-1 text-sm text-white/70">
               {{ difference >= 0 ? 'więcej' : 'mniej' }} ·
-              {{ money(Math.abs(difference) * 12) }} rocznie
+              {{ money(Math.abs(difference) * 12) }} dla 12 podobnych miesięcy*
             </p>
           </div></template
         >
-        <ShareResultButton :get-url="buildShareUrl" :disabled="!canShare || !canShareInputs" class="mt-6" />
-        <p class="mt-6 border-t border-white/15 pt-4 text-xs leading-5 text-white/60">
-          Założenia: uproszczona kalkulacja na 2026 r. Wynik zależy od indywidualnej sytuacji i nie
-          stanowi porady podatkowej.
+        <ShareResultButton
+          :get-url="buildShareUrl"
+          :disabled="!validInputs || !canShareInputs"
+          class="mt-6"
+        />
+        <p
+          v-if="mode === 'uop'"
+          class="mt-6 border-t border-white/15 pt-4 text-xs leading-5 text-white/60"
+        >
+          Suma 12 szacowanych wypłat w {{ year }} r., nie wynik zeznania rocznego. Zakładamy jeden
+          etat, stałe brutto i PIT-2 u tego pracodawcy. To nie jest porada podatkowa.
+        </p>
+        <p v-else class="mt-6 border-t border-white/15 pt-4 text-xs leading-5 text-white/60">
+          Szacunek pojedynczego miesiąca 2026. *Mnożenie przez 12 nie jest rozliczeniem rocznym.
+          Wynik nie stanowi porady podatkowej.
         </p>
       </section>
     </div>
+    <UopYearBreakdown v-if="mode === 'uop' && uopYear" :result="uopYear" />
     <section class="explanation">
       <div>
         <p class="intro-kicker">JAK CZYTAĆ WYNIK</p>
         <h2>Od liczby do decyzji.</h2>
       </div>
-      <p>
-        To przybliżenie pomocne przy planowaniu budżetu i porównywaniu ofert. Kalkulator nie
-        uwzględnia wszystkich ulg, limitów, dodatkowych źródeł dochodu ani zmian przepisów.
-      </p>
+      <div class="text-sm leading-7 text-[#667e6b]">
+        <p v-if="mode === 'uop'">
+          Roczna suma jest złożona z dwunastu miesięcznych wypłat, a nie z pomnożenia jednej kwoty.
+          Próg PIT, limit ulgi dla młodych i limit podstawy składek emerytalno-rentowych są śledzone
+          narastająco. To nadal szacunek przy stałej pensji, nie rozliczenie PIT.
+        </p>
+        <p v-else>
+          To przybliżenie pomocne przy planowaniu budżetu. Uwzględnia tylko wpisane dane i pokazuje
+          reprezentatywny miesiąc, nie faktyczną zaliczkę ani zeznanie roczne.
+        </p>
+        <details class="mt-3 rounded-xl border border-[#dde9db] bg-white p-4">
+          <summary class="cursor-pointer font-bold text-[#214d38]">
+            Założenia i ograniczenia obliczeń
+          </summary>
+          <ul class="mt-3 list-disc space-y-1 pl-5">
+            <li>
+              UoP: jeden etat, pełny miesiąc, PIT-2 z pomniejszeniem o 300 zł, standardowa stopa
+              wypadkowa 1,67%. Wpłatę pracodawcy do PPK opodatkowujemy w tym samym miesiącu.
+            </li>
+            <li v-if="mode === 'uop'">
+              Ulga dla młodych zakłada prawo do zwolnienia przez cały rok; jej limit, próg PIT i
+              limit podstawy składek są liczone narastająco. Nie uwzględniamy innych płatników ani
+              ukończenia 26 lat w trakcie roku.
+            </li>
+            <li v-else>
+              W porównaniu miesięcznym ulga dla młodych zakłada niewyczerpany limit. Progi i limity
+              roczne nie są tam śledzone narastająco.
+            </li>
+            <li v-if="mode !== 'uop'">
+              B2B: faktura bez VAT; przy ryczałcie próg zdrowotnej szacujemy z 12 takich samych
+              faktur. Dostępne są cztery wybrane stawki ryczałtu — dobierz właściwą dla
+              działalności.
+            </li>
+            <li>
+              Nie uwzględniamy innych przychodów, dodatkowych ulg ani rozliczenia rocznego. B2B nie
+              uwzględnia odliczeń składki zdrowotnej.
+            </li>
+          </ul>
+          <p class="mt-3">
+            Źródła:
+            <a
+              class="underline"
+              href="https://www.podatki.gov.pl/podatki-osobiste/pit/stawki-i-limity"
+              target="_blank"
+              rel="noopener noreferrer"
+              >podatki.gov.pl</a
+            >
+            i
+            <a
+              class="underline"
+              href="https://www.zus.pl/pl/firmy/przedsiebiorco-przeczytaj-wazne/kalkulator-skladki-zdrowotnej"
+              target="_blank"
+              rel="noopener noreferrer"
+              >ZUS</a
+            >.
+          </p>
+        </details>
+      </div>
     </section>
     <FaqSection :items="faqs" :title="`Pytania o: ${title}`" />
     <section class="related">

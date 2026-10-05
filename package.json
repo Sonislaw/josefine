@@ -11,6 +11,7 @@
     "build-only": "vite-ssg build",
     "check:og": "node scripts/check-og-images.mjs",
     "type-check": "vue-tsc --build",
+    "test:praca": "node --test src/apps/praca/lib/*.test.mjs",
     "lint": "run-s \"lint:*\"",
     "lint:oxlint": "oxlint . --fix",
     "lint:eslint": "eslint . --fix --cache",
