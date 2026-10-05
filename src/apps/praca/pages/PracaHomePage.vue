@@ -21,7 +21,7 @@ const tools = [
     tag: 'Działalność gospodarcza',
     number: '02',
     title: 'Ile zostaje z faktury B2B?',
-    text: 'Zobacz szacunkowy dochód po kosztach firmy, ZUS, składce zdrowotnej i podatku.',
+    text: 'Zobacz szacunkowy wynik B2B w każdym miesiącu 2026 roku oraz roczną sumę po kosztach, składkach i podatku.',
     tone: 'sand',
   },
   {
@@ -30,7 +30,7 @@ const tools = [
     tag: 'Porównanie ofert',
     number: '03',
     title: 'B2B czy UoP?',
-    text: 'Zestaw dwie propozycje i zobacz różnicę w miesięcznych oraz rocznych kwotach netto.',
+    text: 'Zestaw dwie propozycje w wybranym miesiącu. Wynik dla 12 podobnych miesięcy to uproszczenie, nie rozliczenie roczne.',
     tone: 'blue',
   },
 ]

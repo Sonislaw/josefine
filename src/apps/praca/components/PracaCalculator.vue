@@ -16,10 +16,12 @@ import {
   type ZusVariant,
 } from '../lib/calculations'
 import { calcUopYear } from '../lib/uop-year'
+import { calcB2bYear } from '../lib/b2b-year'
 import { pracaPath, pracaSiteName, pracaSiteUrl, usePracaSeo } from '../seo/usePracaSeo'
 import FaqSection from '@/shared/components/FaqSection.vue'
 import ShareResultButton from '@/shared/components/ShareResultButton.vue'
 import UopYearBreakdown from './UopYearBreakdown.vue'
+import B2bYearBreakdown from './B2bYearBreakdown.vue'
 import {
   booleanShareField,
   choiceShareField,
@@ -57,9 +59,9 @@ const b2bShareFields = [
 ]
 const { buildShareUrl, canShareInputs } = useShareableCalculator(() => [
   numberShareField('rok', year, { choices: [2026], integer: true }),
-  ...(props.mode === 'uop'
-    ? []
-    : [numberShareField('miesiac', month, { min: 1, max: 12, integer: true })]),
+  ...(props.mode === 'comparison'
+    ? [numberShareField('miesiac', month, { min: 1, max: 12, integer: true })]
+    : []),
   ...(props.mode === 'b2b' ? [] : uopShareFields),
   ...(props.mode === 'uop' ? [] : b2bShareFields),
 ])
@@ -101,7 +103,7 @@ const uopYear = computed(() =>
     : null,
 )
 const b2b = computed(() =>
-  validInputs.value && props.mode !== 'uop'
+  validInputs.value && props.mode === 'comparison'
     ? calcB2b(
         {
           invoice: invoice.value,
@@ -112,6 +114,21 @@ const b2b = computed(() =>
           sickness: sickness.value,
         },
         period.value,
+      )
+    : null,
+)
+const b2bYear = computed(() =>
+  validInputs.value && props.mode === 'b2b'
+    ? calcB2bYear(
+        {
+          invoice: invoice.value,
+          costs: costs.value,
+          form: form.value,
+          rate: rate.value,
+          zus: zus.value,
+          sickness: sickness.value,
+        },
+        year.value,
       )
     : null,
 )
@@ -136,7 +153,7 @@ const introText = computed(() =>
   props.mode === 'uop'
     ? 'Zobacz wypłatę na rękę w każdym miesiącu 2026 roku oraz sumę dwunastu wypłat. Kalkulator uwzględnia narastające limity ulgi dla młodych, PIT i składek emerytalno-rentowych.'
     : props.mode === 'b2b'
-      ? 'Przelicz kwotę faktury na szacunkowy dochód po kosztach działalności, składkach i podatku.'
+      ? 'Zobacz, ile może zostać z faktur B2B miesiąc po miesiącu w 2026 roku. Symulacja śledzi narastająco podatek i progi składki zdrowotnej.'
       : 'Zestaw dwa warianty współpracy i zobacz różnicę w miesięcznym oraz rocznym wyniku.',
 )
 const introSymbol = computed(() =>
@@ -209,6 +226,16 @@ const faqs = computed(() =>
             question: 'Czym różni się skala, liniowy i ryczałt?',
             answer:
               'Skala podatkowa korzysta z progów i kwoty zmniejszającej podatek, liniowy stosuje stałą stawkę 19%, a ryczałt liczy podatek od przychodu według właściwej stawki. Wybór zależy od branży, kosztów i sytuacji podatnika.',
+          },
+          {
+            question: 'Dlaczego wynik B2B zmienia się w ciągu roku?',
+            answer:
+              'Symulacja śledzi przychód i dochód narastająco. Na skali może zmienić się stawka zaliczki PIT, a na ryczałcie po przekroczeniu progów przychodu wzrasta miesięczna składka zdrowotna.',
+          },
+          {
+            question: 'Czy po roku trzeba dopłacić składkę zdrowotną na ryczałcie?',
+            answer:
+              'Może tak być. Roczna stawka zdrowotna zależy od całorocznego przychodu i dotyczy wszystkich miesięcy objętych ubezpieczeniem. Kalkulator pokazuje szacowaną dopłatę osobno od sumy miesięcznych wyników.',
           },
         ]
       : [
@@ -298,7 +325,7 @@ usePracaSeo(seoKey.value, {
           </button>
         </div>
         <div class="mt-7 space-y-5">
-          <label v-if="mode !== 'uop'" class="block"
+          <label v-if="mode === 'comparison'" class="block"
             ><span class="text-sm font-semibold">Miesiąc obliczeń · {{ year }}</span>
             <select
               v-model.number="month"
@@ -371,13 +398,21 @@ usePracaSeo(seoKey.value, {
                 class="mt-2 h-12 w-full rounded-lg border border-[#d9e1db] bg-white px-3"
               >
                 <option v-for="item in zusVariants" :key="item.value" :value="item.value">
-                  {{ item.label }}
+                  {{
+                    mode === 'b2b' && item.value === 'start'
+                      ? 'Ulga na start → preferencyjny ZUS'
+                      : item.label
+                  }}
                 </option>
               </select></label
             ><label class="flex gap-3 rounded-lg border border-[#e1e7e2] p-3 text-sm font-semibold"
               ><input v-model="sickness" type="checkbox" class="accent-[#17613f]" /> Opłacam
               dobrowolne chorobowe</label
-            ></template
+            >
+            <p v-if="mode === 'b2b' && zus === 'start'" class="text-xs leading-5 text-[#66736b]">
+              Zakładamy start działalności 1 stycznia: bez składek społecznych do czerwca, od lipca
+              składki preferencyjne, jeśli spełniasz warunki ulgi.
+            </p></template
           >
           <template v-if="mode !== 'b2b'"
             ><p
@@ -449,30 +484,33 @@ usePracaSeo(seoKey.value, {
               ><strong>{{ money(uopYear.totals.employerCost) }}</strong>
             </div>
           </div></template
-        ><template v-else-if="mode === 'b2b' && b2b"
-          ><p class="text-sm text-emerald-100">Szacunkowo zostaje</p>
-          <p class="mt-2 text-[clamp(2rem,8vw,3rem)] font-bold">{{ money(b2b.net) }}</p>
-          <p class="mt-1 text-sm text-white/65">
-            po kosztach, składkach i podatku · {{ monthNames[month - 1] }} {{ year }}
-          </p>
+        ><template v-else-if="mode === 'b2b' && b2bYear"
+          ><p class="text-sm text-emerald-100">Suma po miesięcznych obciążeniach · {{ year }}</p>
+          <p class="mt-2 text-[clamp(2rem,8vw,3rem)] font-bold">{{ money(b2bYear.totals.net) }}</p>
+          <p class="mt-1 text-sm text-white/65">12 miesięcy ze stałą fakturą i kosztami</p>
           <div class="mt-7 space-y-3 border-t border-white/15 pt-5 text-sm">
             <div class="flex justify-between">
-              <span>Faktura</span><strong>{{ money(invoice) }}</strong>
+              <span>Faktury w roku</span><strong>{{ money(b2bYear.totals.invoice) }}</strong>
             </div>
             <div class="flex justify-between">
-              <span>Koszty</span><span>− {{ money(costs) }}</span>
+              <span>Koszty</span><span>− {{ money(b2bYear.totals.costs) }}</span>
             </div>
             <div class="flex justify-between">
-              <span>ZUS</span><span>− {{ money(b2b.social) }}</span>
+              <span>Składki społeczne</span><span>− {{ money(b2bYear.totals.social) }}</span>
             </div>
             <div class="flex justify-between">
-              <span>Zdrowotna</span><span>− {{ money(b2b.health) }}</span>
+              <span>Zdrowotna</span><span>− {{ money(b2bYear.totals.health) }}</span>
             </div>
             <div class="flex justify-between">
-              <span>Podatek</span><span>− {{ money(b2b.tax) }}</span>
+              <span>Szacowane zaliczki PIT</span><span>− {{ money(b2bYear.totals.tax) }}</span>
             </div>
-            <div class="flex justify-between border-t border-white/15 pt-3 font-bold">
-              <span>12 podobnych miesięcy*</span><span>{{ money(b2b.net * 12) }}</span>
+            <div v-if="form === 'lump'" class="flex justify-between border-t border-white/15 pt-3">
+              <span>Szacowana dopłata zdrowotnej po roku</span
+              ><span>− {{ money(b2bYear.healthSettlement) }}</span>
+            </div>
+            <div v-if="form === 'lump'" class="flex justify-between font-bold">
+              <span>Po uwzględnieniu dopłaty</span
+              ><strong>{{ money(b2bYear.netAfterHealthSettlement) }}</strong>
             </div>
           </div></template
         ><template v-else-if="uop && b2b"
@@ -510,6 +548,14 @@ usePracaSeo(seoKey.value, {
           Suma 12 szacowanych wypłat w {{ year }} r., nie wynik zeznania rocznego. Zakładamy jeden
           etat, stałe brutto i PIT-2 u tego pracodawcy. To nie jest porada podatkowa.
         </p>
+        <p
+          v-else-if="mode === 'b2b'"
+          class="mt-6 border-t border-white/15 pt-4 text-xs leading-5 text-white/60"
+        >
+          Szacunek 12 miesięcy w {{ year }} r. przy stałych przychodach i kosztach. Dopłata
+          zdrowotnej na ryczałcie nie jest miesięczną wypłatą. To nie jest zeznanie roczne ani
+          porada podatkowa.
+        </p>
         <p v-else class="mt-6 border-t border-white/15 pt-4 text-xs leading-5 text-white/60">
           Szacunek pojedynczego miesiąca 2026. *Mnożenie przez 12 nie jest rozliczeniem rocznym.
           Wynik nie stanowi porady podatkowej.
@@ -517,6 +563,7 @@ usePracaSeo(seoKey.value, {
       </section>
     </div>
     <UopYearBreakdown v-if="mode === 'uop' && uopYear" :result="uopYear" />
+    <B2bYearBreakdown v-if="mode === 'b2b' && b2bYear" :result="b2bYear" />
     <section class="explanation">
       <div>
         <p class="intro-kicker">JAK CZYTAĆ WYNIK</p>
@@ -527,6 +574,11 @@ usePracaSeo(seoKey.value, {
           Roczna suma jest złożona z dwunastu miesięcznych wypłat, a nie z pomnożenia jednej kwoty.
           Próg PIT, limit ulgi dla młodych i limit podstawy składek emerytalno-rentowych są śledzone
           narastająco. To nadal szacunek przy stałej pensji, nie rozliczenie PIT.
+        </p>
+        <p v-else-if="mode === 'b2b'">
+          To symulacja dwunastu faktur, a nie wynik jednej pomnożony przez 12. Podatek liczymy
+          narastająco, zaś przy ryczałcie pokazujemy także możliwą dopłatę zdrowotnej po roku.
+          Rzeczywiste terminy płatności składek i zaliczek mogą przesunąć koszty między miesiącami.
         </p>
         <p v-else>
           To przybliżenie pomocne przy planowaniu budżetu. Uwzględnia tylko wpisane dane i pokazuje
@@ -546,18 +598,26 @@ usePracaSeo(seoKey.value, {
               limit podstawy składek są liczone narastająco. Nie uwzględniamy innych płatników ani
               ukończenia 26 lat w trakcie roku.
             </li>
-            <li v-else>
+            <li v-if="mode === 'comparison'">
               W porównaniu miesięcznym ulga dla młodych zakłada niewyczerpany limit. Progi i limity
               roczne nie są tam śledzone narastająco.
             </li>
-            <li v-if="mode !== 'uop'">
+            <li v-if="mode === 'b2b'">
+              B2B: faktura bez VAT, stała przez cały rok. Ulga na start zakłada początek
+              działalności 1 stycznia i przejście na składki preferencyjne od lipca, jeśli
+              przysługują. Składkę zdrowotną przypisujemy do miesiąca uzyskania dochodu; nie
+              odtwarzamy przesunięcia wpłaty o miesiąc. Dla liniowego uwzględniamy limit odliczenia
+              zapłaconej zdrowotnej 14 100 zł, a dla ryczałtu odliczenie 50% składki oraz możliwą
+              dopłatę po roku.
+            </li>
+            <li v-if="mode === 'comparison'">
               B2B: faktura bez VAT; przy ryczałcie próg zdrowotnej szacujemy z 12 takich samych
               faktur. Dostępne są cztery wybrane stawki ryczałtu — dobierz właściwą dla
               działalności.
             </li>
             <li>
-              Nie uwzględniamy innych przychodów, dodatkowych ulg ani rozliczenia rocznego. B2B nie
-              uwzględnia odliczeń składki zdrowotnej.
+              Nie uwzględniamy innych przychodów, dodatkowych ulg ani pełnego rozliczenia rocznego.
+              Miesięczne porównanie B2B vs UoP nadal nie uwzględnia odliczeń składki zdrowotnej.
             </li>
           </ul>
           <p class="mt-3">
@@ -576,7 +636,18 @@ usePracaSeo(seoKey.value, {
               target="_blank"
               rel="noopener noreferrer"
               >ZUS</a
-            >.
+            >
+            <template v-if="mode === 'b2b'">
+              oraz
+              <a
+                class="underline"
+                href="https://podatki.gov.pl/ulgi-i-odliczenia/odliczenie-skladek-na-ubezpieczenie-zdrowotne-pit"
+                target="_blank"
+                rel="noopener noreferrer"
+                >odliczenie zdrowotnej</a
+              >
+            </template>
+            .
           </p>
         </details>
       </div>

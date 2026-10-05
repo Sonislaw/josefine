@@ -35,6 +35,7 @@ export const rules2026 = {
       lumpAmounts: [498.35, 830.58, 1495.04],
     },
     linearTaxRate: 0.19,
+    linearHealthDeductionLimit: 14_100,
   },
   scale: { annualThreshold: 120_000, lowerRate: 0.12, upperRate: 0.32, annualReduction: 3600 },
 } as const
