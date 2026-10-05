@@ -569,6 +569,7 @@ h3 {
 }
 .faq-wrap {
   padding-top: 3.5rem;
+  padding-bottom: 5rem;
 }
 @media (max-width: 850px) {
   .hero-inner {
