@@ -14,6 +14,7 @@ import {
 } from '../lib/calculations'
 import { calcUopYear } from '../lib/uop-year'
 import { calcB2bYear } from '../lib/b2b-year'
+import { findRequiredB2bInvoice } from '../lib/b2b-required-invoice'
 import { calcWorkYearComparison } from '../lib/work-year-comparison'
 import { pracaPath, pracaSiteName, pracaSiteUrl, usePracaSeo } from '../seo/usePracaSeo'
 import FaqSection from '@/shared/components/FaqSection.vue'
@@ -106,6 +107,21 @@ const comparisonYear = computed(() =>
         },
         {
           invoice: invoice.value,
+          costs: costs.value,
+          form: form.value,
+          rate: rate.value,
+          zus: zus.value,
+          sickness: sickness.value,
+        },
+        year.value,
+      )
+    : null,
+)
+const requiredInvoice = computed(() =>
+  comparisonYear.value
+    ? findRequiredB2bInvoice(
+        comparisonYear.value.uop.totals.net,
+        {
           costs: costs.value,
           form: form.value,
           rate: rate.value,
@@ -240,6 +256,11 @@ const faqs = computed(() =>
             question: 'Dlaczego różnica w tabeli miesięcznej nie równa się zawsze różnicy rocznej?',
             answer:
               'Przy ryczałcie po zakończeniu roku może powstać dopłata składki zdrowotnej. Pokazujemy ją osobno, poza dwunastoma miesiącami, i uwzględniamy w końcowej różnicy rocznej.',
+          },
+          {
+            question: 'Jaką fakturę B2B trzeba wystawiać, aby dorównać UoP?',
+            answer:
+              'Kalkulator szuka najniższej pełnej kwoty złotych miesięcznej faktury netto bez VAT, która przy 12 identycznych fakturach oraz wybranych kosztach, formie opodatkowania i składkach daje co najmniej roczną sumę wypłat netto z UoP. Uwzględniamy przewidywaną dopłatę zdrowotnej na ryczałcie. Nie wyceniamy urlopu, chorobowego ani miesięcy bez faktury.',
           },
           {
             question: 'Czy wyższe netto na B2B zawsze oznacza lepszą ofertę?',
@@ -559,6 +580,51 @@ usePracaSeo(seoKey.value, {
     <UopYearBreakdown v-if="mode === 'uop' && uopYear" :result="uopYear" />
     <B2bYearBreakdown v-if="mode === 'b2b' && b2bYear" :result="b2bYear" />
     <WorkYearComparison v-if="mode === 'comparison' && comparisonYear" :result="comparisonYear" />
+    <section
+      v-if="mode === 'comparison' && comparisonYear"
+      class="mt-7 rounded-[22px] border border-[#d9e7d9] bg-[#eef6e9] p-5 sm:p-8"
+      aria-live="polite"
+    >
+      <p class="intro-kicker">CEL: TYLE SAMO NA RĘKĘ W ROKU</p>
+      <h2
+        class="mt-2 font-[var(--font-heading)] text-[clamp(1.6rem,3vw,2.3rem)] font-bold tracking-tight text-[#214d38]"
+      >
+        Jakiej faktury B2B potrzebujesz?
+      </h2>
+      <template v-if="requiredInvoice">
+        <p class="mt-5 text-sm text-[#567461]">Faktura netto bez VAT · co miesiąc</p>
+        <strong class="mt-1 block text-[clamp(2rem,5vw,3rem)] leading-tight text-[#174a32]">{{
+          money(requiredInvoice.invoice)
+        }}</strong>
+        <p class="mt-3 max-w-3xl text-sm leading-7 text-[#4f6b59]">
+          Przy obecnych kosztach, podatku i składkach daje około
+          <strong>{{ money(requiredInvoice.annualNet) }}</strong> po roku, wobec
+          <strong>{{ money(comparisonYear.uop.totals.net) }}</strong> z UoP.
+          <template v-if="invoice < requiredInvoice.invoice">
+            To o {{ money(requiredInvoice.invoice - invoice) }} więcej niż wpisana faktura.
+          </template>
+          <template v-else-if="invoice > requiredInvoice.invoice">
+            To o {{ money(invoice - requiredInvoice.invoice) }} mniej niż wpisana faktura.
+          </template>
+        </p>
+        <button
+          v-if="invoice !== requiredInvoice.invoice"
+          type="button"
+          class="mt-5 rounded-xl bg-[#17613f] px-5 py-3 text-sm font-bold text-white transition-colors hover:bg-[#124c32] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#17613f]"
+          @click="invoice = requiredInvoice.invoice"
+        >
+          Wpisz tę fakturę do porównania
+        </button>
+      </template>
+      <p v-else class="mt-4 text-sm leading-7 text-[#4f6b59]">
+        Przy tych ustawieniach nie udało się osiągnąć rocznego wyniku UoP w obsługiwanym zakresie
+        faktury. Sprawdź kwoty i koszty.
+      </p>
+      <p class="mt-5 max-w-3xl border-t border-[#cfdfcf] pt-4 text-xs leading-6 text-[#5a7562]">
+        Szacunek zakłada 12 jednakowych faktur i 12 miesięcy tych samych kosztów. Kwotę podajemy w
+        pełnych złotych. Nie uwzględniamy miesięcy bez faktury, urlopu, chorobowego ani benefitów.
+      </p>
+    </section>
     <section class="explanation">
       <div>
         <p class="intro-kicker">JAK CZYTAĆ WYNIK</p>

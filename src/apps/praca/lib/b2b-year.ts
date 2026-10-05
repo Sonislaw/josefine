@@ -28,6 +28,7 @@ export interface B2bYearResult {
   year: 2026
   months: B2bYearMonth[]
   totals: Omit<B2bYearMonth, 'month' | 'zusVariant' | 'events'>
+  annualLumpHealthBracket: 0 | 1 | 2 | null
   healthSettlement: number
   netAfterHealthSettlement: number
 }
@@ -165,27 +166,26 @@ export function calcB2bYear(input: B2bInput, year: 2026 = 2026): B2bYearResult {
   }
   // On the lump-sum method the final annual bracket applies to all twelve
   // covered months; the difference is paid in the subsequent settlement.
-  const healthSettlement =
+  const annualLumpHealthBracket =
     input.form === 'lump'
+      ? previousHealthRevenue <= b2b.health.lumpThresholds[0]
+        ? 0
+        : previousHealthRevenue <= b2b.health.lumpThresholds[1]
+          ? 1
+          : 2
+      : null
+  const healthSettlement =
+    annualLumpHealthBracket !== null
       ? Math.max(
           0,
-          roundCents(
-            b2b.health.lumpAmounts[
-              previousHealthRevenue <= b2b.health.lumpThresholds[0]
-                ? 0
-                : previousHealthRevenue <= b2b.health.lumpThresholds[1]
-                  ? 1
-                  : 2
-            ]! *
-              12 -
-              totals.health,
-          ),
+          roundCents(b2b.health.lumpAmounts[annualLumpHealthBracket]! * 12 - totals.health),
         )
       : 0
   return {
     year,
     months,
     totals,
+    annualLumpHealthBracket,
     healthSettlement,
     netAfterHealthSettlement: roundCents(totals.net - healthSettlement),
   }
