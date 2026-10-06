@@ -23,6 +23,7 @@ import ShareResultButton from '@/shared/components/ShareResultButton.vue'
 import UopYearBreakdown from './UopYearBreakdown.vue'
 import B2bYearBreakdown from './B2bYearBreakdown.vue'
 import WorkYearComparison from './WorkYearComparison.vue'
+import B2bInvoiceBreakPlanner from './B2bInvoiceBreakPlanner.vue'
 import {
   booleanShareField,
   choiceShareField,
@@ -59,6 +60,21 @@ const editedMonths = computed(() => invoiceOverrides.value.filter((value) => val
 const setInvoiceOverride = (index: number, event: Event) => {
   const raw = (event.target as HTMLInputElement).value
   invoiceOverrides.value[index] = raw === '' ? '' : Number(raw)
+}
+const applyInvoiceBreak = (index: number, amount: number) => {
+  if (
+    !useInvoicePlan.value ||
+    !Number.isInteger(index) ||
+    index < 0 ||
+    index > 11 ||
+    !isValidAmount(amount)
+  )
+    return
+  invoiceOverrides.value[index] = amount
+}
+const restoreBaseInvoice = (index: number) => {
+  if (!useInvoicePlan.value || !Number.isInteger(index) || index < 0 || index > 11) return
+  invoiceOverrides.value[index] = null
 }
 const invoicePlanShareField = {
   key: 'plan',
@@ -304,6 +320,11 @@ const faqs = computed(() =>
               'Oprócz miesięcznego wynagrodzenia netto porównaj płatny urlop, zwolnienie chorobowe, benefity, okres wypowiedzenia, koszty księgowości, sprzętu oraz stabilność współpracy. Dopiero wtedy porównanie B2B vs UoP jest miarodajne.',
           },
           {
+            question: 'Jak uwzględnić przerwę w fakturowaniu B2B?',
+            answer:
+              'Włącz plan 12 faktur i skorzystaj z pomocnika przerw. Wybierz miesiąc, liczbę dni rozliczeniowych, liczbę dni bez fakturowania oraz sposób rozliczenia przyjęty w kontrakcie. Przy fakturze zależnej od dni możesz zapisać proponowaną kwotę w planie. To nie oznacza zawieszenia działalności: koszty i składki są nadal liczone.',
+          },
+          {
             question: 'Co pokazuje różnica roczna między B2B a UoP?',
             answer:
               'To różnica między sumą 12 szacowanych wypłat UoP a sumą 12 wyników B2B, z uwzględnieniem prognozowanego rocznego wyrównania zdrowotnej na ryczałcie. Możesz zaplanować osobną fakturę w każdym miesiącu; limity liczymy narastająco. To nie jest zeznanie podatkowe.',
@@ -453,6 +474,13 @@ usePracaSeo(seoKey.value, {
                 </button>
               </div>
             </div>
+            <B2bInvoiceBreakPlanner
+              v-if="useInvoicePlan"
+              :base-invoice="invoice"
+              :overrides="invoiceOverrides"
+              @apply="applyInvoiceBreak"
+              @restore-base="restoreBaseInvoice"
+            />
             <p v-if="useInvoicePlan" class="mt-3 text-xs leading-5 text-[#667e6b]">
               Zmienione miesiące: {{ editedMonths }} z 12. Zero faktury nie zawiesza działalności:
               koszty i składki nadal są uwzględniane.
