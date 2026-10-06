@@ -3,7 +3,7 @@ import test from 'node:test'
 import { createJiti } from 'jiti'
 
 const jiti = createJiti(import.meta.url)
-const { calcB2bYear } = jiti('./b2b-year.ts')
+const { calcB2bYear, calcB2bYearFromPlan } = jiti('./b2b-year.ts')
 const { rules2026 } = jiti('./rules/2026.ts')
 
 const baseInput = {
@@ -99,12 +99,44 @@ test('zero income and invalid data remain explicit', () => {
   const zero = calcB2bYear({ ...baseInput, invoice: 0, costs: 0, zus: 'start' })
   assert.equal(zero.totals.tax, 0)
   assert.equal(zero.months[0].net, -314.96)
-  assert.equal(
-    zero.totals.net,
-    Math.round(-(zero.totals.health + zero.totals.social) * 100) / 100,
-  )
+  assert.equal(zero.totals.net, Math.round(-(zero.totals.health + zero.totals.social) * 100) / 100)
   assert.throws(() => calcB2bYear({ ...baseInput, invoice: -1 }), RangeError)
   assert.throws(() => calcB2bYear({ ...baseInput, costs: Infinity }), RangeError)
   assert.throws(() => calcB2bYear({ ...baseInput, form: 'lump', rate: 99 }), RangeError)
   assert.throws(() => calcB2bYear(baseInput, 2027), RangeError)
+})
+
+test('a twelve-month plan with identical invoices preserves the original calculation', () => {
+  const original = calcB2bYear(baseInput)
+  const planned = calcB2bYearFromPlan({ ...baseInput, invoices: Array(12).fill(baseInput.invoice) })
+  assert.deepEqual(planned, original)
+})
+
+test('a zero-invoice month retains fixed costs and contributions', () => {
+  const invoices = Array(12).fill(baseInput.invoice)
+  invoices[6] = 0
+  const result = calcB2bYearFromPlan({ ...baseInput, invoices })
+  assert.equal(result.months[6].invoice, 0)
+  assert.equal(result.months[6].costs, baseInput.costs)
+  assert.ok(result.months[6].social > 0)
+  assert.ok(result.months[6].health > 0)
+  assert.ok(result.months[6].net < 0)
+  assert.equal(result.totals.invoice, baseInput.invoice * 11)
+  assert.throws(() => calcB2bYearFromPlan({ ...baseInput, invoices: [1000] }), RangeError)
+  assert.throws(
+    () => calcB2bYearFromPlan({ ...baseInput, invoices: Array(12).fill(-1) }),
+    RangeError,
+  )
+})
+
+test('variable lump-sum invoices can lead to an estimated annual health refund', () => {
+  const invoices = [62_000, ...Array(11).fill(0)]
+  const result = calcB2bYearFromPlan({ ...baseInput, costs: 0, form: 'lump', invoices })
+  assert.equal(result.annualLumpHealthBracket, 0)
+  assert.ok(result.months[0].health > result.months[11].health)
+  assert.ok(result.healthSettlement < 0)
+  assert.equal(
+    result.netAfterHealthSettlement,
+    Math.round((result.totals.net - result.healthSettlement) * 100) / 100,
+  )
 })

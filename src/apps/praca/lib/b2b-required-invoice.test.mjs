@@ -4,7 +4,7 @@ import { createJiti } from 'jiti'
 
 const jiti = createJiti(import.meta.url)
 const { findRequiredB2bInvoice } = jiti('./b2b-required-invoice.ts')
-const { calcB2bYear } = jiti('./b2b-year.ts')
+const { calcB2bYear, calcB2bYearFromPlan } = jiti('./b2b-year.ts')
 const { calcUopYear } = jiti('./uop-year.ts')
 
 const settings = {
@@ -53,4 +53,22 @@ test('reports an unreachable target and rejects invalid input', () => {
   assert.equal(findRequiredB2bInvoice(2_000_000_000, settings), null)
   assert.throws(() => findRequiredB2bInvoice(-1, settings), RangeError)
   assert.throws(() => findRequiredB2bInvoice(100_000, { ...settings, costs: -1 }), RangeError)
+})
+
+test('finds the lowest base invoice while preserving fixed months including zero', () => {
+  const target = calcUopYear({ gross: 15_000, under26: false, elevatedKup: false, ppk: false })
+    .totals.net
+  const overrides = Array(12).fill(null)
+  overrides[6] = 0
+  overrides[11] = 10_000
+  const result = findRequiredB2bInvoice(target, settings, 2026, overrides)
+  assert.ok(result)
+  const annualNet = (base) =>
+    calcB2bYearFromPlan({ ...settings, invoices: overrides.map((amount) => amount ?? base) })
+      .netAfterHealthSettlement
+  assert.equal(result.annualNet, annualNet(result.invoice))
+  assert.ok(result.annualNet >= target)
+  assert.ok(annualNet(result.invoice - 1) < target)
+  assert.equal(findRequiredB2bInvoice(target, settings, 2026, Array(12).fill(0)), null)
+  assert.throws(() => findRequiredB2bInvoice(target, settings, 2026, [0]), RangeError)
 })

@@ -59,3 +59,17 @@ test('each side retains its own cumulative events and input validation', () => {
   assert.throws(() => calcWorkYearComparison(uop, { ...b2b, invoice: Infinity }), RangeError)
   assert.throws(() => calcWorkYearComparison(uop, b2b, 2027), RangeError)
 })
+
+test('comparison uses the supplied monthly B2B invoices without changing UoP', () => {
+  const baseline = calcWorkYearComparison(uop, b2b)
+  const invoices = Array(12).fill(b2b.invoice)
+  invoices[7] = 0
+  const planned = calcWorkYearComparison(uop, b2b, 2026, invoices)
+  assert.deepEqual(planned.uop, baseline.uop)
+  assert.equal(planned.months[7].b2b.invoice, 0)
+  assert.equal(planned.b2b.totals.invoice, baseline.b2b.totals.invoice - b2b.invoice)
+  assert.equal(
+    planned.differenceAfterHealthSettlement,
+    cents(planned.b2b.netAfterHealthSettlement - planned.uop.totals.net),
+  )
+})

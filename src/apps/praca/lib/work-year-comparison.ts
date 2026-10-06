@@ -1,5 +1,5 @@
 import { roundCents, type B2bInput, type UopInput } from './calculations'
-import { calcB2bYear, type B2bYearMonth, type B2bYearResult } from './b2b-year'
+import { calcB2bYear, calcB2bYearFromPlan, type B2bYearMonth, type B2bYearResult } from './b2b-year'
 import { calcUopYear, type UopYearMonth, type UopYearResult } from './uop-year'
 
 export interface WorkYearComparisonMonth {
@@ -23,9 +23,12 @@ export function calcWorkYearComparison(
   uopInput: UopInput,
   b2bInput: B2bInput,
   year: 2026 = 2026,
+  invoices?: readonly number[],
 ): WorkYearComparison {
   const uop = calcUopYear(uopInput, year)
-  const b2b = calcB2bYear(b2bInput, year)
+  const b2b = invoices
+    ? calcB2bYearFromPlan({ ...b2bInput, invoices }, year)
+    : calcB2bYear(b2bInput, year)
   const months = uop.months.map((uopMonth, index) => {
     const b2bMonth = b2b.months[index]!
     return {

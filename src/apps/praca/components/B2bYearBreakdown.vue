@@ -128,8 +128,9 @@ const eventLabels: Record<B2bYearEvent, string> = {
       </table>
     </div>
     <p v-if="result.healthSettlement" class="mt-4 text-sm leading-6 text-[#667e6b]">
-      Po roku może dojść jeszcze szacowana dopłata zdrowotnej:
-      <strong class="text-[#214d38]">{{ money(result.healthSettlement) }}</strong
+      Po roku może dojść jeszcze szacowane wyrównanie zdrowotnej ({{
+        result.healthSettlement > 0 ? 'dopłata' : 'zwrot'
+      }}): <strong class="text-[#214d38]">{{ money(Math.abs(result.healthSettlement)) }}</strong
       >. Nie jest ujęta w miesięcznych wypłatach powyżej.
     </p>
   </section>

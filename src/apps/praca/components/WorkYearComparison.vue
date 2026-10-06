@@ -35,7 +35,7 @@ const b2bEventLabels: Record<B2bYearEvent, string> = {
     </h2>
     <p class="mt-2 max-w-3xl text-sm leading-6 text-[#667e6b]">
       Oba scenariusze liczymy narastająco. Dodatnia różnica oznacza, że w danym miesiącu więcej
-      środków zostaje z B2B. Ewentualną dopłatę zdrowotnej na ryczałcie pokazujemy osobno pod
+      środków zostaje z B2B. Ewentualne wyrównanie zdrowotnej na ryczałcie pokazujemy osobno pod
       tabelą, bo jest rozliczana po roku.
     </p>
 
@@ -47,6 +47,8 @@ const b2bEventLabels: Record<B2bYearEvent, string> = {
       >
         <h3 class="font-bold capitalize text-[#214d38]">{{ monthNames[item.month - 1] }}</h3>
         <dl class="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 text-sm">
+          <dt>Faktura B2B</dt>
+          <dd class="text-right font-semibold">{{ money(item.b2b.invoice) }}</dd>
           <dt>UoP netto</dt>
           <dd class="text-right font-semibold">{{ money(item.uop.net) }}</dd>
           <dt>B2B po obciążeniach</dt>
@@ -77,7 +79,7 @@ const b2bEventLabels: Record<B2bYearEvent, string> = {
     </div>
 
     <div class="mt-6 hidden overflow-x-auto rounded-xl border border-[#dce8db] md:block">
-      <table class="w-full min-w-[680px] border-collapse bg-white text-left text-sm">
+      <table class="w-full min-w-[760px] border-collapse bg-white text-left text-sm">
         <caption class="sr-only">
           Roczne porównanie wynagrodzenia UoP i B2B w
           {{
@@ -88,6 +90,7 @@ const b2bEventLabels: Record<B2bYearEvent, string> = {
         <thead class="bg-[#edf3e9] text-[#315a42]">
           <tr>
             <th scope="col" class="px-4 py-3">Miesiąc</th>
+            <th scope="col" class="px-4 py-3 text-right">Faktura B2B</th>
             <th scope="col" class="px-4 py-3 text-right">UoP netto</th>
             <th scope="col" class="px-4 py-3 text-right">B2B po obciążeniach</th>
             <th scope="col" class="px-4 py-3 text-right">Różnica na B2B</th>
@@ -114,6 +117,7 @@ const b2bEventLabels: Record<B2bYearEvent, string> = {
                 >B2B: {{ b2bEventLabels[event] }}</span
               >
             </th>
+            <td class="px-4 py-3 text-right">{{ money(item.b2b.invoice) }}</td>
             <td class="px-4 py-3 text-right">{{ money(item.uop.net) }}</td>
             <td class="px-4 py-3 text-right">{{ money(item.b2b.net) }}</td>
             <td class="px-4 py-3 text-right font-bold text-[#214d38]">
@@ -124,8 +128,9 @@ const b2bEventLabels: Record<B2bYearEvent, string> = {
         <tfoot class="border-t-2 border-[#cbdcc9] bg-[#f2f7ee] font-bold text-[#214d38]">
           <tr>
             <th scope="row" class="px-4 py-3">
-              {{ result.b2b.healthSettlement > 0 ? 'Razem, przed dopłatą' : 'Razem' }}
+              {{ result.b2b.healthSettlement !== 0 ? 'Razem, przed wyrównaniem' : 'Razem' }}
             </th>
+            <td class="px-4 py-3 text-right">{{ money(result.b2b.totals.invoice) }}</td>
             <td class="px-4 py-3 text-right">{{ money(result.uop.totals.net) }}</td>
             <td class="px-4 py-3 text-right">{{ money(result.b2b.totals.net) }}</td>
             <td class="px-4 py-3 text-right">
@@ -142,11 +147,13 @@ const b2bEventLabels: Record<B2bYearEvent, string> = {
       class="mt-4 rounded-xl bg-[#fff1e4] p-4 text-sm leading-6 text-[#674b3b]"
     >
       <strong
-        >Po roku: szacowana dopłata zdrowotnej B2B {{ money(result.b2b.healthSettlement) }}.</strong
+        >Po roku: szacowana
+        {{ result.b2b.healthSettlement > 0 ? 'dopłata' : 'kwota zwrotu' }} zdrowotnej B2B
+        {{ money(Math.abs(result.b2b.healthSettlement)) }}.</strong
       >
-      Po jej uwzględnieniu różnica roczna na B2B wynosi
+      Po uwzględnieniu wyrównania różnica roczna na B2B wynosi
       {{ result.differenceAfterHealthSettlement > 0 ? '+' : ''
-      }}{{ money(result.differenceAfterHealthSettlement) }}. Nie doliczamy dopłaty do żadnego
+      }}{{ money(result.differenceAfterHealthSettlement) }}. Nie przypisujemy wyrównania do żadnego
       miesiąca w tabeli.
     </div>
   </section>

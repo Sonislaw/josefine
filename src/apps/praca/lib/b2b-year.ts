@@ -34,14 +34,28 @@ export interface B2bYearResult {
 }
 
 /**
- * Projection for twelve identical invoices and costs. Health is attributed to
+ * Projection for twelve identical invoices and costs.
+ */
+export function calcB2bYear(input: B2bInput, year: 2026 = 2026): B2bYearResult {
+  return calcB2bYearFromPlan({ ...input, invoices: Array(12).fill(input.invoice) }, year)
+}
+
+/**
+ * Projection for twelve invoices and fixed monthly costs. Health is attributed to
  * the income month, rather than the following ZUS payment month. Tax advances
  * and the lump-sum health bracket are tracked cumulatively. This is not an
  * annual tax return or an exact payment calendar; see METODOLOGIA.md.
  */
-export function calcB2bYear(input: B2bInput, year: 2026 = 2026): B2bYearResult {
+export function calcB2bYearFromPlan(
+  input: Omit<B2bInput, 'invoice'> & { invoices: readonly number[] },
+  year: 2026 = 2026,
+): B2bYearResult {
   if (year !== rules2026.year) throw new RangeError('Nieobsługiwany rok rozliczenia B2B.')
-  if (!isValidAmount(input.invoice) || !isValidAmount(input.costs))
+  if (
+    input.invoices.length !== 12 ||
+    !input.invoices.every(isValidAmount) ||
+    !isValidAmount(input.costs)
+  )
     throw new RangeError('Nieprawidłowa kwota faktury lub kosztów.')
   if (
     !taxForms.some(({ value }) => value === input.form) ||
@@ -61,13 +75,14 @@ export function calcB2bYear(input: B2bInput, year: 2026 = 2026): B2bYearResult {
   const months: B2bYearMonth[] = []
 
   for (let month = 1; month <= 12; month++) {
+    const invoice = input.invoices[month - 1]!
     // A January start means six full months of the start-up relief. Assuming
     // eligibility, preferential contributions follow from July.
     const zusVariant = input.zus === 'start' && month > 6 ? 'preferential' : input.zus
     const socialVariant = b2b.social[zusVariant]
     const social = input.sickness ? socialVariant.withSickness : socialVariant.withoutSickness
-    cumulativeInvoice = roundCents(cumulativeInvoice + input.invoice)
-    cumulativeIncome = roundCents(cumulativeIncome + input.invoice - input.costs - social)
+    cumulativeInvoice = roundCents(cumulativeInvoice + invoice)
+    cumulativeIncome = roundCents(cumulativeIncome + invoice - input.costs - social)
     cumulativeSocial = roundCents(cumulativeSocial + social)
     const healthRevenue = Math.max(0, roundCents(cumulativeInvoice - cumulativeSocial))
     const healthBracket =
@@ -83,7 +98,7 @@ export function calcB2bYear(input: B2bInput, year: 2026 = 2026): B2bYearResult {
         : roundCents(
             Math.max(
               minimumHealth,
-              Math.max(0, input.invoice - input.costs - social) *
+              Math.max(0, invoice - input.costs - social) *
                 (input.form === 'scale' ? b2b.health.scaleRate : b2b.health.linearRate),
             ),
           )
@@ -144,12 +159,12 @@ export function calcB2bYear(input: B2bInput, year: 2026 = 2026): B2bYearResult {
     months.push({
       month,
       zusVariant,
-      invoice: input.invoice,
+      invoice,
       costs: input.costs,
       social,
       health,
       tax,
-      net: roundCents(input.invoice - input.costs - social - health - tax),
+      net: roundCents(invoice - input.costs - social - health - tax),
       events,
     })
   }
@@ -165,7 +180,7 @@ export function calcB2bYear(input: B2bInput, year: 2026 = 2026): B2bYearResult {
     net: sum('net'),
   }
   // On the lump-sum method the final annual bracket applies to all twelve
-  // covered months; the difference is paid in the subsequent settlement.
+  // covered months; a signed difference is settled after the year (negative = refund).
   const annualLumpHealthBracket =
     input.form === 'lump'
       ? previousHealthRevenue <= b2b.health.lumpThresholds[0]
@@ -176,10 +191,7 @@ export function calcB2bYear(input: B2bInput, year: 2026 = 2026): B2bYearResult {
       : null
   const healthSettlement =
     annualLumpHealthBracket !== null
-      ? Math.max(
-          0,
-          roundCents(b2b.health.lumpAmounts[annualLumpHealthBracket]! * 12 - totals.health),
-        )
+      ? roundCents(b2b.health.lumpAmounts[annualLumpHealthBracket]! * 12 - totals.health)
       : 0
   return {
     year,

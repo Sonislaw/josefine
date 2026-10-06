@@ -7,6 +7,7 @@ import {
   isValidAmount,
   lumpRates,
   money,
+  monthNames,
   taxForms,
   zusVariants,
   type TaxForm,
@@ -41,6 +42,52 @@ const sickness = ref(false),
   under26 = ref(false),
   elevatedKup = ref(false),
   ppk = ref(false)
+// Null means this month inherits the base invoice; zero is an explicit no-invoice month.
+const useInvoicePlan = ref(false)
+const invoiceOverrides = ref<(number | '' | null)[]>(Array(12).fill(null))
+const validInvoicePlan = computed(
+  () =>
+    !useInvoicePlan.value ||
+    invoiceOverrides.value.every((value) => value === null || isValidAmount(value)),
+)
+const effectiveInvoices = computed(() =>
+  useInvoicePlan.value
+    ? invoiceOverrides.value.map((value) => (value === null ? invoice.value : Number(value)))
+    : undefined,
+)
+const editedMonths = computed(() => invoiceOverrides.value.filter((value) => value !== null).length)
+const setInvoiceOverride = (index: number, event: Event) => {
+  const raw = (event.target as HTMLInputElement).value
+  invoiceOverrides.value[index] = raw === '' ? '' : Number(raw)
+}
+const invoicePlanShareField = {
+  key: 'plan',
+  read: () => {
+    if (!useInvoicePlan.value) return '0'
+    if (!validInvoicePlan.value) return null
+    return `1:${invoiceOverrides.value.map((value) => (value === null ? '-' : value)).join(',')}`
+  },
+  restore: (raw: string) => {
+    if (raw === '0') {
+      useInvoicePlan.value = false
+      invoiceOverrides.value = Array(12).fill(null)
+      return
+    }
+    if (!raw.startsWith('1:') || raw.length > 180) return
+    const fields = raw.slice(2).split(',')
+    if (fields.length !== 12) return
+    const parsed = fields.map((field) => (field === '-' ? null : Number(field)))
+    if (
+      !fields.every(
+        (field, index) =>
+          field === '-' || (/^\d+(?:\.\d{1,2})?$/.test(field) && isValidAmount(parsed[index])),
+      )
+    )
+      return
+    invoiceOverrides.value = parsed
+    useInvoicePlan.value = true
+  },
+}
 const uopShareFields = [
   numberShareField('brutto', gross, { min: 0 }),
   booleanShareField('ponizej26', under26),
@@ -59,11 +106,13 @@ const { buildShareUrl, canShareInputs } = useShareableCalculator(() => [
   numberShareField('rok', year, { choices: [2026], integer: true }),
   ...(props.mode === 'b2b' ? [] : uopShareFields),
   ...(props.mode === 'uop' ? [] : b2bShareFields),
+  ...(props.mode === 'comparison' ? [invoicePlanShareField] : []),
 ])
 const validInputs = computed(
   () =>
     (props.mode === 'b2b' || isValidAmount(gross.value)) &&
     (props.mode === 'uop' || (isValidAmount(invoice.value) && isValidAmount(costs.value))) &&
+    (props.mode !== 'comparison' || validInvoicePlan.value) &&
     (props.mode === 'uop' ||
       form.value !== 'lump' ||
       lumpRates.includes(rate.value as (typeof lumpRates)[number])),
@@ -114,6 +163,7 @@ const comparisonYear = computed(() =>
           sickness: sickness.value,
         },
         year.value,
+        effectiveInvoices.value,
       )
     : null,
 )
@@ -129,6 +179,9 @@ const requiredInvoice = computed(() =>
           sickness: sickness.value,
         },
         year.value,
+        useInvoicePlan.value
+          ? invoiceOverrides.value.map((value) => (value === null ? null : Number(value)))
+          : undefined,
       )
     : null,
 )
@@ -154,7 +207,7 @@ const introText = computed(() =>
     ? 'Zobacz wypłatę na rękę w każdym miesiącu 2026 roku oraz sumę dwunastu wypłat. Kalkulator uwzględnia narastające limity ulgi dla młodych, PIT i składek emerytalno-rentowych.'
     : props.mode === 'b2b'
       ? 'Zobacz, ile może zostać z faktur B2B miesiąc po miesiącu w 2026 roku. Symulacja śledzi narastająco podatek i progi składki zdrowotnej.'
-      : 'Zestaw dwie oferty w skali całego 2026 roku. Porównaj sumę dwunastu wypłat UoP z wynikiem B2B po kosztach, składkach, podatku i ewentualnej dopłacie zdrowotnej.',
+      : 'Zestaw dwie oferty w skali całego 2026 roku. Porównaj dwanaście wypłat UoP z wynikiem B2B; możesz też zaplanować inną fakturę w każdym miesiącu.',
 )
 const introSymbol = computed(() =>
   props.mode === 'uop' ? 'UoP' : props.mode === 'b2b' ? 'B2B' : '↔',
@@ -174,6 +227,8 @@ const reset = () => {
   rate.value = 12
   zus.value = 'full'
   sickness.value = under26.value = elevatedKup.value = ppk.value = false
+  useInvoicePlan.value = false
+  invoiceOverrides.value = Array(12).fill(null)
 }
 const faqs = computed(() =>
   props.mode === 'uop'
@@ -251,17 +306,17 @@ const faqs = computed(() =>
           {
             question: 'Co pokazuje różnica roczna między B2B a UoP?',
             answer:
-              'To różnica między sumą 12 szacowanych wypłat UoP a sumą 12 wyników B2B, z uwzględnieniem prognozowanej dopłaty zdrowotnej na ryczałcie. Każdy miesiąc jest liczony osobno, z narastającymi limitami; to nie jest zeznanie podatkowe.',
+              'To różnica między sumą 12 szacowanych wypłat UoP a sumą 12 wyników B2B, z uwzględnieniem prognozowanego rocznego wyrównania zdrowotnej na ryczałcie. Możesz zaplanować osobną fakturę w każdym miesiącu; limity liczymy narastająco. To nie jest zeznanie podatkowe.',
           },
           {
             question: 'Dlaczego różnica w tabeli miesięcznej nie równa się zawsze różnicy rocznej?',
             answer:
-              'Przy ryczałcie po zakończeniu roku może powstać dopłata składki zdrowotnej. Pokazujemy ją osobno, poza dwunastoma miesiącami, i uwzględniamy w końcowej różnicy rocznej.',
+              'Przy ryczałcie po zakończeniu roku może powstać dopłata lub zwrot składki zdrowotnej. Pokazujemy to wyrównanie osobno, poza dwunastoma miesiącami, i uwzględniamy w końcowej różnicy rocznej.',
           },
           {
             question: 'Jaką fakturę B2B trzeba wystawiać, aby dorównać UoP?',
             answer:
-              'Kalkulator szuka najniższej pełnej kwoty złotych miesięcznej faktury netto bez VAT, która przy 12 identycznych fakturach oraz wybranych kosztach, formie opodatkowania i składkach daje co najmniej roczną sumę wypłat netto z UoP. Uwzględniamy przewidywaną dopłatę zdrowotnej na ryczałcie. Nie wyceniamy urlopu, chorobowego ani miesięcy bez faktury.',
+              'Kalkulator szuka najniższej pełnej kwoty złotych bazowej faktury netto bez VAT, która daje co najmniej roczną sumę wypłat netto z UoP. W planie miesięcznym zmienia tylko miesiące bez indywidualnej kwoty; wpisane kwoty, także 0 zł, zostają bez zmian. Uwzględnia koszty, składki, podatek i szacowane wyrównanie zdrowotnej na ryczałcie. Nie wycenia urlopu ani chorobowego.',
           },
           {
             question: 'Czy wyższe netto na B2B zawsze oznacza lepszą ofertę?',
@@ -347,7 +402,9 @@ usePracaSeo(seoKey.value, {
           /></label>
           <label v-if="mode !== 'uop'" class="block"
             ><span class="text-sm font-semibold">{{
-              mode === 'comparison' ? 'Faktura B2B netto / miesiąc' : 'Miesięczna faktura netto'
+              mode === 'comparison'
+                ? 'Bazowa faktura B2B netto / miesiąc'
+                : 'Miesięczna faktura netto'
             }}</span
             ><input
               v-model.number="invoice"
@@ -356,6 +413,51 @@ usePracaSeo(seoKey.value, {
               step="0.01"
               class="mt-2 h-12 w-full rounded-lg border border-[#d9e1db] px-4 text-lg font-semibold outline-none focus:border-[#25815c]"
           /></label>
+          <div
+            v-if="mode === 'comparison'"
+            class="rounded-xl border border-[#dce8db] bg-[#f6faf3] p-4"
+          >
+            <label class="flex cursor-pointer items-center gap-3 text-sm font-bold text-[#214d38]">
+              <input v-model="useInvoicePlan" type="checkbox" class="size-4 accent-[#17613f]" />
+              Zaplanuj osobno 12 faktur B2B
+            </label>
+            <p class="mt-2 text-xs leading-5 text-[#667e6b]">
+              Zmień tylko wybrane miesiące. Pozostałe przejmą kwotę bazową powyżej. Możesz wpisać 0
+              zł, gdy w danym miesiącu nie wystawisz faktury.
+            </p>
+            <div v-if="useInvoicePlan" class="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
+              <div v-for="(value, index) in invoiceOverrides" :key="index" class="min-w-0">
+                <label
+                  :for="`invoice-month-${index}`"
+                  class="block text-xs font-semibold capitalize text-[#315a42]"
+                >
+                  {{ monthNames[index] }}
+                </label>
+                <input
+                  :id="`invoice-month-${index}`"
+                  :value="value === null ? invoice : value"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  class="mt-1 h-10 w-full rounded-lg border border-[#d9e1db] bg-white px-2 text-sm font-semibold outline-none focus:border-[#25815c]"
+                  @input="setInvoiceOverride(index, $event)"
+                />
+                <button
+                  v-if="value !== null"
+                  type="button"
+                  class="mt-1 text-xs font-semibold text-[#17613f] underline"
+                  :aria-label="`Przywróć bazową fakturę: ${monthNames[index]}`"
+                  @click="invoiceOverrides[index] = null"
+                >
+                  Bazowa
+                </button>
+              </div>
+            </div>
+            <p v-if="useInvoicePlan" class="mt-3 text-xs leading-5 text-[#667e6b]">
+              Zmienione miesiące: {{ editedMonths }} z 12. Zero faktury nie zawiesza działalności:
+              koszty i składki nadal są uwzględniane.
+            </p>
+          </div>
           <template v-if="mode !== 'uop'"
             ><label class="block"
               ><span class="text-sm font-semibold">Forma opodatkowania</span
@@ -513,7 +615,9 @@ usePracaSeo(seoKey.value, {
                 {{
                   comparisonYear.b2b.healthSettlement > 0
                     ? 'B2B · po obciążeniach i dopłacie'
-                    : 'B2B · po obciążeniach'
+                    : comparisonYear.b2b.healthSettlement < 0
+                      ? 'B2B · po obciążeniach i zwrocie'
+                      : 'B2B · po obciążeniach'
                 }}
               </p>
               <strong class="mt-1 block break-words text-[clamp(1.4rem,3vw,2rem)]">{{
@@ -538,16 +642,23 @@ usePracaSeo(seoKey.value, {
             </p>
           </div>
           <div
-            v-if="comparisonYear.b2b.healthSettlement > 0"
+            v-if="comparisonYear.b2b.healthSettlement !== 0"
             class="mt-4 space-y-2 border-t border-white/15 pt-4 text-sm"
           >
             <div class="flex flex-wrap justify-between gap-2">
-              <span>B2B przed dopłatą zdrowotnej</span
+              <span>B2B przed rocznym wyrównaniem zdrowotnej</span
               ><span>{{ money(comparisonYear.b2b.totals.net) }}</span>
             </div>
             <div class="flex flex-wrap justify-between gap-2">
-              <span>Możliwa dopłata po roku</span
-              ><span>− {{ money(comparisonYear.b2b.healthSettlement) }}</span>
+              <span>{{
+                comparisonYear.b2b.healthSettlement > 0
+                  ? 'Możliwa dopłata po roku'
+                  : 'Możliwy zwrot po roku'
+              }}</span
+              ><span
+                >{{ comparisonYear.b2b.healthSettlement > 0 ? '−' : '+' }}
+                {{ money(Math.abs(comparisonYear.b2b.healthSettlement)) }}</span
+              >
             </div>
           </div></template
         >
@@ -573,8 +684,8 @@ usePracaSeo(seoKey.value, {
         </p>
         <p v-else class="mt-6 border-t border-white/15 pt-4 text-xs leading-5 text-white/60">
           Porównujemy 12 miesięcy liczonych narastająco, nie dwie kwoty pomnożone przez 12.
-          Zakładamy stałe brutto UoP, fakturę i koszty B2B. To szacunek, nie zeznanie roczne ani
-          porada podatkowa.
+          Zakładamy stałe brutto UoP i koszty B2B; faktury mogą się różnić, gdy włączysz plan. To
+          szacunek, nie zeznanie roczne ani porada podatkowa.
         </p>
       </section>
     </div>
@@ -593,7 +704,13 @@ usePracaSeo(seoKey.value, {
         Jakiej faktury B2B potrzebujesz?
       </h2>
       <template v-if="requiredInvoice">
-        <p class="mt-5 text-sm text-[#567461]">Faktura netto bez VAT · co miesiąc</p>
+        <p class="mt-5 text-sm text-[#567461]">
+          {{
+            useInvoicePlan
+              ? 'Bazowa faktura netto bez VAT · w niezmienionych miesiącach'
+              : 'Faktura netto bez VAT · co miesiąc'
+          }}
+        </p>
         <strong class="mt-1 block text-[clamp(2rem,5vw,3rem)] leading-tight text-[#174a32]">{{
           money(requiredInvoice.invoice)
         }}</strong>
@@ -614,16 +731,29 @@ usePracaSeo(seoKey.value, {
           class="mt-5 rounded-xl bg-[#17613f] px-5 py-3 text-sm font-bold text-white transition-colors hover:bg-[#124c32] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#17613f]"
           @click="invoice = requiredInvoice.invoice"
         >
-          Wpisz tę fakturę do porównania
+          Wpisz tę kwotę jako bazową fakturę
         </button>
       </template>
+      <p
+        v-else-if="useInvoicePlan && editedMonths === 12"
+        class="mt-4 text-sm leading-7 text-[#4f6b59]"
+      >
+        Wszystkie miesiące mają własne kwoty. Przywróć kwotę bazową w co najmniej jednym miesiącu,
+        aby wyliczyć potrzebną fakturę.
+      </p>
       <p v-else class="mt-4 text-sm leading-7 text-[#4f6b59]">
         Przy tych ustawieniach nie udało się osiągnąć rocznego wyniku UoP w obsługiwanym zakresie
         faktury. Sprawdź kwoty i koszty.
       </p>
       <p class="mt-5 max-w-3xl border-t border-[#cfdfcf] pt-4 text-xs leading-6 text-[#5a7562]">
-        Szacunek zakłada 12 jednakowych faktur i 12 miesięcy tych samych kosztów. Kwotę podajemy w
-        pełnych złotych. Nie uwzględniamy miesięcy bez faktury, urlopu, chorobowego ani benefitów.
+        <template v-if="useInvoicePlan"
+          >Zmieniamy wyłącznie bazową kwotę w miesiącach bez indywidualnej faktury; pozostałe kwoty
+          pozostają bez zmian.</template
+        >
+        <template v-else>Zakładamy 12 jednakowych faktur.</template>
+        Koszty są takie same przez 12 miesięcy. Szukaną kwotę podajemy w pełnych złotych. Zero
+        faktury nie oznacza zawieszenia działalności. Nie wyceniamy urlopu, chorobowego ani
+        benefitów.
       </p>
     </section>
     <section class="explanation">
@@ -666,12 +796,19 @@ usePracaSeo(seoKey.value, {
               i limit podstawy składek emerytalno-rentowych śledzimy narastająco.
             </li>
             <li v-if="mode !== 'uop'">
-              B2B: faktura bez VAT, stała przez cały rok. Ulga na start zakłada początek
-              działalności 1 stycznia i przejście na składki preferencyjne od lipca, jeśli
-              przysługują. Składkę zdrowotną przypisujemy do miesiąca uzyskania dochodu; nie
-              odtwarzamy przesunięcia wpłaty o miesiąc. Dla liniowego uwzględniamy limit odliczenia
-              zapłaconej zdrowotnej 14 100 zł, a dla ryczałtu odliczenie 50% składki oraz możliwą
-              dopłatę po roku.
+              B2B: faktura bez VAT.
+              <template v-if="mode === 'comparison'"
+                >W porównaniu możesz podać różne kwoty na poszczególne miesiące.</template
+              >
+              Ulga na start zakłada początek działalności 1 stycznia i przejście na składki
+              preferencyjne od lipca, jeśli przysługują. Składkę zdrowotną przypisujemy do miesiąca
+              uzyskania dochodu; nie odtwarzamy przesunięcia wpłaty o miesiąc. Dla liniowego
+              uwzględniamy limit odliczenia zapłaconej zdrowotnej 14 100 zł, a dla ryczałtu
+              odliczenie 50% składki oraz możliwe roczne wyrównanie.
+            </li>
+            <li v-if="mode === 'comparison' && useInvoicePlan">
+              Miesiąc z fakturą 0 zł nadal oznacza aktywną działalność, stałe koszty i składki. Nie
+              modelujemy zawieszenia firmy ani ewentualnego zwrotu zaliczek PIT w rocznym zeznaniu.
             </li>
             <li>
               Nie uwzględniamy innych przychodów, dodatkowych ulg ani pełnego rozliczenia rocznego.

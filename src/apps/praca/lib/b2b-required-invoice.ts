@@ -1,5 +1,5 @@
 import { roundCents, type B2bInput } from './calculations'
-import { calcB2bYear, type B2bYearResult } from './b2b-year'
+import { calcB2bYear, calcB2bYearFromPlan, type B2bYearResult } from './b2b-year'
 
 export interface B2bRequiredInvoice {
   invoice: number
@@ -10,8 +10,8 @@ export interface B2bRequiredInvoice {
 const maxMonthlyInvoice = 100_000_000
 
 /**
- * Finds the first whole-PLN monthly invoice whose 12-month B2B result reaches
- * the UoP target. Reuses the annual model, including the lump-sum health
+ * Finds the first whole-PLN base invoice whose 12-month B2B result reaches
+ * the UoP target. Fixed monthly overrides remain untouched. Reuses the annual model, including the lump-sum health
  * settlement. On lump-sum tax the annual health bracket causes downward jumps
  * in net, so a single binary search over the entire range would be incorrect.
  */
@@ -19,15 +19,30 @@ export function findRequiredB2bInvoice(
   targetAnnualNet: number,
   settings: Omit<B2bInput, 'invoice'>,
   year: 2026 = 2026,
+  invoiceOverrides?: readonly (number | null)[],
 ): B2bRequiredInvoice | null {
   if (!Number.isFinite(targetAnnualNet) || targetAnnualNet < 0)
     throw new RangeError('Nieprawidłowa roczna kwota netto UoP.')
+  if (
+    invoiceOverrides &&
+    (invoiceOverrides.length !== 12 ||
+      invoiceOverrides.some(
+        (value) => value !== null && (!Number.isFinite(value) || value < 0 || value > 100_000_000),
+      ))
+  )
+    throw new RangeError('Nieprawidłowy plan faktur B2B.')
+  if (invoiceOverrides?.every((value) => value !== null)) return null
 
   const cache = new Map<number, B2bYearResult>()
   const at = (invoice: number) => {
     let result = cache.get(invoice)
     if (!result) {
-      result = calcB2bYear({ ...settings, invoice }, year)
+      result = invoiceOverrides
+        ? calcB2bYearFromPlan(
+            { ...settings, invoices: invoiceOverrides.map((value) => value ?? invoice) },
+            year,
+          )
+        : calcB2bYear({ ...settings, invoice }, year)
       cache.set(invoice, result)
     }
     return result
