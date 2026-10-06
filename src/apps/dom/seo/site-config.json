@@ -37,7 +37,7 @@
       "key": "koszt-pradu",
       "path": "/koszt-pradu",
       "title": "Kalkulator kosztu prądu — porównaj urządzenia | Dom",
-      "description": "Policz koszt pracy urządzenia i porównaj dwa urządzenia przy tym samym czasie używania oraz cenie kWh. Zobacz dzień, miesiąc, rok i różnicę.",
+      "description": "Policz koszt prądu dla lodówki, piekarnika, klimatyzacji lub komputera. Edytuj przykładową moc i czas pracy, sprawdź prognozę i porównaj urządzenia.",
       "socialImage": "/og/dom.png",
       "socialImageAlt": "Dom — praktyczne kalkulatory"
     },

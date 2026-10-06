@@ -41,9 +41,11 @@ import { calculateSkirtingPlan } from '../lib/skirting'
 import { calculateRoomMetrics, parseRoomDimension, type RoomDimensions } from '../lib/room-metrics'
 import type { TileOrientation } from '../lib/tile-layout'
 import { isValidOptionalPaintCanPrice, parsePaintCanSize } from '../lib/paint-purchase'
+import type { EnergyPreset } from '../lib/energy-presets'
 import type { DomBasicToolId } from '../manifest'
 import { domPath } from '../seo/useDomSeo'
 import DomEnergyProjection from './DomEnergyProjection.vue'
+import DomEnergyPresets from './DomEnergyPresets.vue'
 import DomWaterMeter from './DomWaterMeter.vue'
 import DomWaterSavings from './DomWaterSavings.vue'
 import DomRoomPicker from './DomRoomPicker.vue'
@@ -513,6 +515,15 @@ function reset() {
 function useMeterVolume(volume: number) {
   if (volume > 0) form.volume = String(volume)
 }
+
+function useEnergyPreset(preset: EnergyPreset) {
+  if (props.toolId !== 'koszt-pradu') return
+  form.power = preset.powerWatts
+  form.hours = preset.hoursPerUseDay
+  dailyHours.value = preset.hoursPerUseDay
+  daysPerWeek.value = preset.daysPerWeek
+  // Cena kWh należy do użytkownika: przykład urządzenia jej nie nadpisuje.
+}
 </script>
 
 <template>
@@ -574,6 +585,14 @@ function useMeterVolume(volume: number) {
           v-model:water-rate="waterRate"
           v-model:sewage-rate="sewageRate"
           v-model:fixed-charge="fixedCharge"
+        />
+        <DomEnergyPresets
+          v-if="toolId === 'koszt-pradu'"
+          :power="form.power ?? ''"
+          :hours="form.hours ?? ''"
+          :daily-hours="dailyHours"
+          :days-per-week="daysPerWeek"
+          @select="useEnergyPreset"
         />
         <div class="fields">
           <div v-for="field in visibleFields" :key="field.id" class="field">

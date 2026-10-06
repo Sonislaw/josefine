@@ -89,7 +89,7 @@ export const domSeoContent: Record<DomToolId, ToolContent> = {
   },
   'koszt-pradu': {
     intro:
-      'Kalkulator kosztu prądu pozwala oszacować wydatek dla jednego okresu pracy urządzenia, regularnego używania albo porównać dwa urządzenia. Dla porównania wpisujesz moce A i B, wspólny czas używania oraz cenę kWh. Zobaczysz koszt dnia, średniego miesiąca, roku i różnicę bez zmiany podstawowego obliczenia.',
+      'Kalkulator kosztu prądu pozwala oszacować wydatek dla jednego okresu pracy urządzenia, regularnego używania albo porównać dwa urządzenia. Możesz zacząć od przykładu lodówki, piekarnika, klimatyzacji lub komputera, a potem zmienić moc i czas pracy na własne dane. Zobaczysz koszt dnia, średniego miesiąca i roku.',
     how: 'Moc w watach dzielimy przez 1 000, aby otrzymać kilowaty. Podstawowy wynik mnoży tę wartość przez łączną liczbę godzin i cenę kWh. Prognoza i porównanie uwzględniają godziny w dniu używania oraz liczbę takich dni w tygodniu. Przyjmujemy 365 dni w roku, a średni miesiąc to 1/12 roku. Oba porównywane urządzenia mają ten sam harmonogram i stawkę; różnica kosztów nie mówi nic o ich wydajności ani o rzeczywistym poborze mocy przy termostacie.',
     faqs: [
       {
@@ -111,6 +111,12 @@ export const domSeoContent: Record<DomToolId, ToolContent> = {
         question: 'Jak porównać koszt używania dwóch urządzeń?',
         answer:
           'Otwórz panel porównania, wpisz moc urządzenia A i B oraz wspólną cenę energii i czas pracy. Wynik pokaże oba koszty oraz różnicę dla dnia używania, średniego miesiąca i roku. To porównanie rachunku za energię przy przyjętych danych, a nie ocena skuteczności urządzeń.',
+      },
+      {
+        question:
+          'Czy przykładowe wartości dla lodówki, piekarnika, klimatyzacji i komputera są dokładne?',
+        answer:
+          'Nie. Kafelki wpisują orientacyjną moc i czas pracy, które możesz edytować. Dla lodówki używamy średniej mocy rozłożonej na całą dobę, a nie chwilowej mocy sprężarki. Dla klimatyzacji roczna prognoza zakłada taki sam harmonogram przez cały rok, więc nie opisuje automatycznie jednego sezonu chłodzenia. Cenę kWh wpisujesz samodzielnie.',
       },
     ],
   },
