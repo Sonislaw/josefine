@@ -3,13 +3,25 @@ import { computed } from 'vue'
 import { ArrowDownToLine, Droplets } from '@lucide/vue'
 import { parseDomNumber } from '../lib/calculations'
 import { calculateMeterUsage } from '../lib/practical'
+import { calculateWaterPeriod } from '../lib/water-cost'
 
 const previous = defineModel<string>('previous', { required: true })
 const current = defineModel<string>('current', { required: true })
+const startDate = defineModel<string>('startDate', { required: true })
+const endDate = defineModel<string>('endDate', { required: true })
+const props = defineProps<{ unitRate: number | null }>()
 const emit = defineEmits<{ useVolume: [volume: number] }>()
 const usage = computed(() => calculateMeterUsage(previous.value, current.value))
+const period = computed(() =>
+  calculateWaterPeriod(usage.value, startDate.value, endDate.value, props.unitRate),
+)
+const hasDates = computed(() => startDate.value !== '' || endDate.value !== '')
 const format = (value: number) =>
   new Intl.NumberFormat('pl-PL', { maximumFractionDigits: 3 }).format(value)
+const money = (value: number) =>
+  new Intl.NumberFormat('pl-PL', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(
+    value,
+  )
 
 function applyUsage() {
   if (usage.value !== null) emit('useVolume', usage.value)
@@ -71,9 +83,44 @@ function applyUsage() {
         <p v-else>Wpisz oba odczyty. Aktualny nie może być mniejszy od poprzedniego.</p>
       </div>
     </div>
+    <div class="date-fields">
+      <div>
+        <label for="meter-start-date">Data poprzedniego odczytu <small>(opcjonalnie)</small></label>
+        <input
+          id="meter-start-date"
+          v-model="startDate"
+          type="date"
+          :aria-invalid="hasDates && !period"
+        />
+      </div>
+      <div>
+        <label for="meter-end-date">Data aktualnego odczytu <small>(opcjonalnie)</small></label>
+        <input
+          id="meter-end-date"
+          v-model="endDate"
+          type="date"
+          :aria-invalid="hasDates && !period"
+        />
+      </div>
+    </div>
+    <div v-if="period" class="period-summary" aria-live="polite">
+      <strong>{{ period.days }} dni między odczytami</strong>
+      <span>Średnio {{ format(period.litersPerDay) }} l dziennie</span>
+      <span
+        >Przy tym tempie przez 30 dni: {{ format(period.volume30Days) }} m³<span
+          v-if="period.cost30Days !== null"
+        >
+          · około {{ money(period.cost30Days) }} zł za zużycie</span
+        ></span
+      >
+      <small>Prognoza zakłada równe zużycie i nie obejmuje opłaty stałej.</small>
+    </div>
+    <p v-else-if="hasDates" class="date-error">
+      Aby obliczyć średnią, wpisz oba odczyty i dwie daty; aktualna data musi być późniejsza.
+    </p>
     <p class="caveat">
-      Przy wymianie lub wyzerowaniu licznika sprawdź odczyty na rachunku. Ten pomocnik nie
-      uwzględnia opłat stałych.
+      Przy wymianie lub wyzerowaniu licznika sprawdź odczyty na rachunku. Ten pomocnik nie dolicza
+      opłaty stałej do prognozy.
     </p>
   </section>
 </template>
@@ -231,6 +278,60 @@ h3 {
   font-size: 0.72rem;
   line-height: 1.6;
 }
+.date-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  margin-top: 1.2rem;
+}
+.date-fields label {
+  display: block;
+  margin-bottom: 0.45rem;
+  color: #3c6351;
+  font-size: 0.77rem;
+  font-weight: 800;
+}
+.date-fields label small {
+  color: #758979;
+  font-weight: 500;
+}
+.date-fields input {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 45px;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid #cddfd4;
+  border-radius: 10px;
+  background: #fff;
+  color: #254934;
+  font: inherit;
+}
+.date-fields input[aria-invalid='true'] {
+  border-color: #bc715b;
+}
+.date-fields input:focus-visible {
+  outline: 2px solid #285b42;
+  outline-offset: 2px;
+}
+.period-summary {
+  display: grid;
+  gap: 0.4rem;
+  margin-top: 1.2rem;
+  padding: 1rem 1.25rem;
+  border: 1px solid #c9dfd5;
+  border-radius: 14px;
+  background: #e8f4ec;
+  color: #315844;
+  font-size: 0.82rem;
+}
+.period-summary small {
+  color: #668171;
+}
+.date-error {
+  margin-top: 0.8rem;
+  color: #a95242;
+  font-size: 0.75rem;
+}
 @media (max-width: 800px) {
   .meter-grid {
     grid-template-columns: 1fr;
@@ -239,6 +340,9 @@ h3 {
 @media (max-width: 620px) {
   .practical-panel {
     padding: 1.3rem;
+  }
+  .date-fields {
+    grid-template-columns: 1fr;
   }
 }
 </style>

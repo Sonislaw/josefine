@@ -116,8 +116,8 @@ export const domSeoContent: Record<DomToolId, ToolContent> = {
   },
   'koszt-wody': {
     intro:
-      'Kalkulator kosztu wody pomaga oszacować cenę zużycia w metrach sześciennych. Możesz podać jedną łączną stawkę za m³ albo osobne ceny wody i odprowadzania ścieków. Jeśli masz dwa odczyty wodomierza, pomocnik obliczy różnicę i wstawi ją do wybranego wariantu kalkulatora.',
-    how: 'Zużycie to aktualny odczyt minus poprzedni; jeden metr sześcienny to 1 000 litrów. Przy jednej stawce mnożymy zużycie przez wpisaną cenę za m³. W trybie „Woda + ścieki” mnożymy to samo zużycie przez każdą z dwóch stawek, zaokrąglamy obie pozycje do groszy i sumujemy. Kalkulator nie dolicza opłat stałych ani nie uwzględnia sytuacji, w których ilość ścieków jest rozliczana inaczej niż pobór wody.',
+      'Kalkulator kosztu wody pomaga oszacować rachunek na podstawie zużycia w m³. Możesz wpisać jedną łączną stawkę lub osobne ceny wody i ścieków, a także opcjonalną opłatę stałą za ten rachunek. Pomocnik odczytów pokaże średnie zużycie dzienne i orientacyjny koszt 30 dni. Sprawdzisz też, ile może dać codzienne oszczędzanie wody.',
+    how: 'Zużycie to aktualny odczyt minus poprzedni; jeden metr sześcienny to 1 000 litrów. Koszt zmienny liczymy z zużycia i ceny za m³. W trybie „Woda + ścieki” obie pozycje zaokrąglamy do groszy przed sumowaniem. Wpisaną opłatę stałą dodajemy do kosztu tego rachunku, ale nie do prognozy 30 dni ani symulacji oszczędności. Średnia dzienna wynika z różnicy dat i odczytów; prognoza zakłada takie samo tempo przez 30 dni. Zakładamy, że ilość ścieków jest równa poborowi wody.',
     faqs: [
       {
         question: 'Ile litrów ma 1 m³ wody?',
@@ -137,6 +137,21 @@ export const domSeoContent: Record<DomToolId, ToolContent> = {
         question: 'Jak obliczyć zużycie wody z odczytów wodomierza?',
         answer:
           'Od aktualnego odczytu odejmij poprzedni. Możesz wpisać oba wskazania do pomocnika pod kalkulatorem i przenieść wynik do pola zużycia jednym kliknięciem. Jeżeli licznik został wymieniony lub wyzerowany, sprawdź rozliczenie na rachunku.',
+      },
+      {
+        question: 'Czy mogę doliczyć opłatę stałą z rachunku?',
+        answer:
+          'Tak. Wpisz jej kwotę w opcjonalnym polu. Kalkulator doda ją raz do szacowanego kosztu za podane zużycie. Nie doliczy jej do prognozy ani symulacji oszczędzania.',
+      },
+      {
+        question: 'Jak policzyć średnie dzienne zużycie wody?',
+        answer:
+          'Podaj dwa odczyty wodomierza i daty ich wykonania. Różnicę wskazań przeliczymy na litry i podzielimy przez liczbę dni między odczytami. Daty nie są potrzebne do samego obliczenia różnicy wskazań.',
+      },
+      {
+        question: 'Ile zaoszczędzę, zużywając mniej wody?',
+        answer:
+          'Wpisz, o ile litrów dziennie chcesz zmniejszyć zużycie. Symulacja pokaże m³ i przybliżoną oszczędność przez 30 dni przy podanych stawkach za m³. Opłaty stałe pozostaną bez zmian.',
       },
     ],
   },

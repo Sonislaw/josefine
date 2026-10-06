@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { parseWaterRate } from '../lib/practical'
+import { parseFixedCharge } from '../lib/water-cost'
 
 type WaterPricingMode = 'combined' | 'split'
 
 const mode = defineModel<WaterPricingMode>('mode', { required: true })
 const waterRate = defineModel<string>('waterRate', { required: true })
 const sewageRate = defineModel<string>('sewageRate', { required: true })
+const fixedCharge = defineModel<string>('fixedCharge', { required: true })
 </script>
 
 <template>
@@ -74,6 +76,32 @@ const sewageRate = defineModel<string>('sewageRate', { required: true })
         sprawdź dane z rachunku.
       </p>
     </div>
+    <div class="rate-field fixed-field">
+      <label for="water-fixed-charge"
+        >Opłata stała za ten rachunek <span>(opcjonalnie)</span></label
+      >
+      <div class="input-wrap">
+        <input
+          id="water-fixed-charge"
+          v-model="fixedCharge"
+          type="text"
+          inputmode="decimal"
+          autocomplete="off"
+          placeholder="0,00"
+          :aria-invalid="parseFixedCharge(fixedCharge) === null"
+          :aria-describedby="
+            parseFixedCharge(fixedCharge) === null ? 'water-fixed-error' : 'water-fixed-help'
+          "
+        /><span>zł</span>
+      </div>
+      <p v-if="parseFixedCharge(fixedCharge) === null" id="water-fixed-error" class="field-error">
+        Wpisz kwotę od 0 do 100 000 zł, z dokładnością do groszy.
+      </p>
+      <p v-else id="water-fixed-help">
+        Przepisz sumę opłat stałych z rachunku za ten okres. Nie doliczamy jej do prognozy ani
+        oszczędności.
+      </p>
+    </div>
   </div>
 </template>
 
@@ -134,6 +162,14 @@ const sewageRate = defineModel<string>('sewageRate', { required: true })
 }
 .rate-field {
   min-width: 0;
+}
+.fixed-field {
+  padding-top: 0.8rem;
+  border-top: 1px solid #d7e4d7;
+}
+.fixed-field label span {
+  color: #647a68;
+  font-weight: 500;
 }
 .rate-field label {
   display: block;

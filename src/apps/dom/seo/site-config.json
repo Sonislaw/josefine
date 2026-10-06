@@ -45,7 +45,7 @@
       "key": "koszt-wody",
       "path": "/koszt-wody",
       "title": "Kalkulator kosztu wody i ścieków — zużycie w m³ | Dom",
-      "description": "Oblicz zużycie z odczytów wodomierza i sprawdź koszt przy jednej stawce albo osobnych cenach wody i ścieków. Zobacz rozbicie rachunku.",
+      "description": "Policz koszt wody i ścieków z opcjonalną opłatą stałą. Sprawdź średnie dzienne zużycie z dat odczytów, prognozę 30 dni i możliwe oszczędności.",
       "socialImage": "/og/dom.png",
       "socialImageAlt": "Dom — praktyczne kalkulatory"
     },

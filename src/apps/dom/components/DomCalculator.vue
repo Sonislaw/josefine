@@ -27,11 +27,16 @@ import {
 } from '../lib/calculations'
 import {
   calculateMeterUsage,
-  calculateSplitWaterCost,
   parseDailyHours,
   parseDaysPerWeek,
   parseWaterRate,
 } from '../lib/practical'
+import {
+  calculateWaterBill,
+  calculateWaterPeriod,
+  parseDailyWaterSavings,
+  parseFixedCharge,
+} from '../lib/water-cost'
 import { calculateSkirtingPlan } from '../lib/skirting'
 import { calculateRoomMetrics, parseRoomDimension, type RoomDimensions } from '../lib/room-metrics'
 import type { TileOrientation } from '../lib/tile-layout'
@@ -40,6 +45,7 @@ import type { DomBasicToolId } from '../manifest'
 import { domPath } from '../seo/useDomSeo'
 import DomEnergyProjection from './DomEnergyProjection.vue'
 import DomWaterMeter from './DomWaterMeter.vue'
+import DomWaterSavings from './DomWaterSavings.vue'
 import DomRoomPicker from './DomRoomPicker.vue'
 import type { ShoppingRoom } from '../stores/shoppingList'
 
@@ -68,9 +74,13 @@ const dailyHours = ref('3')
 const daysPerWeek = ref('7')
 const meterPrevious = ref('')
 const meterCurrent = ref('')
+const meterStartDate = ref('')
+const meterEndDate = ref('')
 const waterMode = ref<'combined' | 'split'>('combined')
 const waterRate = ref('6,20')
 const sewageRate = ref('11,50')
+const fixedCharge = ref('')
+const savingsLiters = ref('20')
 const panelPackPrice = ref('')
 const includeUnderlay = ref(false)
 const underlayCoverage = ref('10')
@@ -256,6 +266,22 @@ const { buildShareUrl, canShareInputs } = useShareableCalculator([
           meterCurrent,
           (raw) => raw === '' || parseDomNumber(raw) !== null,
         ),
+        textShareField('fixedCharge', fixedCharge, (raw) => parseFixedCharge(raw) !== null),
+        textShareField(
+          'meterStartDate',
+          meterStartDate,
+          (raw) => raw === '' || /^\d{4}-\d{2}-\d{2}$/.test(raw),
+        ),
+        textShareField(
+          'meterEndDate',
+          meterEndDate,
+          (raw) => raw === '' || /^\d{4}-\d{2}-\d{2}$/.test(raw),
+        ),
+        textShareField(
+          'savingsLiters',
+          savingsLiters,
+          (raw) => parseDailyWaterSavings(raw) !== null,
+        ),
       ]
     : []),
   ...(props.toolId === 'liczba-paczek-paneli'
@@ -312,12 +338,33 @@ function buildCalculatorShareUrl() {
     url.searchParams.delete('waterRate')
     url.searchParams.delete('sewageRate')
   }
+  for (const key of ['fixedCharge', 'meterStartDate', 'meterEndDate']) {
+    if (url.searchParams.get(key) === '') url.searchParams.delete(key)
+  }
   return url.href
 }
+const waterBill = computed(() =>
+  props.toolId === 'koszt-wody'
+    ? calculateWaterBill({
+        volume: parseDomNumber(form.volume ?? ''),
+        mode: waterMode.value,
+        combinedRate: parseDomNumber(form.price ?? ''),
+        waterRate: parseWaterRate(waterRate.value),
+        sewageRate: parseWaterRate(sewageRate.value),
+        fixedCharge: parseFixedCharge(fixedCharge.value),
+      })
+    : null,
+)
 const canSharePractical = computed(() => {
   if (props.toolId !== 'koszt-wody') return true
-  if (meterPrevious.value === '' && meterCurrent.value === '') return true
-  return calculateMeterUsage(meterPrevious.value, meterCurrent.value) !== null
+  const hasMeter = meterPrevious.value !== '' || meterCurrent.value !== ''
+  const usage = hasMeter ? calculateMeterUsage(meterPrevious.value, meterCurrent.value) : null
+  if (hasMeter && usage === null) return false
+  const hasDates = meterStartDate.value !== '' || meterEndDate.value !== ''
+  if (!hasDates) return true
+  return (
+    hasMeter && calculateWaterPeriod(usage, meterStartDate.value, meterEndDate.value, null) !== null
+  )
 })
 
 function errorFor(field: InputField): string | null {
@@ -339,19 +386,28 @@ const results = computed<ResultRow[] | null>(() => {
     if (errorFor(field)) return null
     values[field.id] = parseDomNumber(form[field.id]!)!
   }
-  if (props.toolId === 'koszt-wody' && waterMode.value === 'split') {
+  if (props.toolId === 'koszt-wody') {
     const volume = values.volume
-    if (volume === undefined) return null
-    const split = calculateSplitWaterCost(
-      volume,
-      parseWaterRate(waterRate.value),
-      parseWaterRate(sewageRate.value),
-    )
-    if (!split) return null
+    const bill = waterBill.value
+    if (volume === undefined || !bill) return null
     const rows: ResultRow[] = [
-      { label: 'Szacowany koszt', value: split.totalCost, unit: 'zł', kind: 'money' },
-      { label: 'Woda', value: split.waterCost, unit: 'zł', kind: 'money' },
-      { label: 'Ścieki', value: split.sewageCost, unit: 'zł', kind: 'money' },
+      { label: 'Szacowany koszt', value: bill.totalCost, unit: 'zł', kind: 'money' },
+      ...(waterMode.value === 'split'
+        ? [
+            { label: 'Woda', value: bill.waterCost, unit: 'zł', kind: 'money' as const },
+            { label: 'Ścieki', value: bill.sewageCost, unit: 'zł', kind: 'money' as const },
+          ]
+        : [
+            {
+              label: 'Koszt zużycia',
+              value: bill.variableCost,
+              unit: 'zł',
+              kind: 'money' as const,
+            },
+          ]),
+      ...(bill.fixedCharge > 0
+        ? [{ label: 'Opłata stała', value: bill.fixedCharge, unit: 'zł', kind: 'money' as const }]
+        : []),
       { label: 'Zużycie w litrach', value: volume * 1000, unit: 'l' },
     ]
     return rows.every((row) => Number.isFinite(row.value)) ? rows : null
@@ -422,9 +478,13 @@ function reset() {
   daysPerWeek.value = '7'
   meterPrevious.value = ''
   meterCurrent.value = ''
+  meterStartDate.value = ''
+  meterEndDate.value = ''
   waterMode.value = 'combined'
   waterRate.value = '6,20'
   sewageRate.value = '11,50'
+  fixedCharge.value = ''
+  savingsLiters.value = '20'
   panelPackPrice.value = ''
   includeUnderlay.value = false
   underlayCoverage.value = '10'
@@ -513,6 +573,7 @@ function useMeterVolume(volume: number) {
           v-model:mode="waterMode"
           v-model:water-rate="waterRate"
           v-model:sewage-rate="sewageRate"
+          v-model:fixed-charge="fixedCharge"
         />
         <div class="fields">
           <div v-for="field in visibleFields" :key="field.id" class="field">
@@ -577,8 +638,10 @@ function useMeterVolume(volume: number) {
         <p class="output-note">
           {{
             toolId === 'koszt-wody' && waterMode === 'split'
-              ? 'Zakładamy takie samo zużycie dla wody i ścieków. Wynik nie obejmuje opłat stałych ani innych pozycji rachunku.'
-              : definition.note
+              ? 'Zakładamy takie samo zużycie dla wody i ścieków. Opłatę stałą uwzględniamy tylko wtedy, gdy ją wpiszesz; inne pozycje rachunku nie są dodawane.'
+              : toolId === 'koszt-wody'
+                ? 'Opłatę stałą uwzględniamy tylko wtedy, gdy ją wpiszesz. Inne pozycje rachunku nie są dodawane.'
+                : definition.note
           }}
         </p>
       </div>
@@ -587,8 +650,10 @@ function useMeterVolume(volume: number) {
       <span>WZÓR</span
       ><strong>{{
         toolId === 'koszt-wody' && waterMode === 'split'
-          ? 'zużycie × cena wody + zużycie × cena ścieków'
-          : definition.formula
+          ? 'zużycie × cena wody + zużycie × cena ścieków + opcjonalna opłata stała'
+          : toolId === 'koszt-wody'
+            ? 'zużycie × cena za 1 m³ + opcjonalna opłata stała'
+            : definition.formula
       }}</strong
       ><small>{{
         toolId === 'koszt-wody' && waterMode === 'split'
@@ -630,7 +695,15 @@ function useMeterVolume(volume: number) {
     v-if="toolId === 'koszt-wody'"
     v-model:previous="meterPrevious"
     v-model:current="meterCurrent"
+    v-model:start-date="meterStartDate"
+    v-model:end-date="meterEndDate"
+    :unit-rate="waterBill?.unitRate ?? null"
     @use-volume="useMeterVolume"
+  />
+  <DomWaterSavings
+    v-if="toolId === 'koszt-wody'"
+    v-model:liters-per-day="savingsLiters"
+    :unit-rate="waterBill?.unitRate ?? null"
   />
   <DomPanelPurchasePlan
     v-if="toolId === 'liczba-paczek-paneli'"
