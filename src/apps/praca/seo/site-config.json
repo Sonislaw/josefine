@@ -5,7 +5,7 @@
       "key": "home",
       "path": "/",
       "title": "Kalkulatory wynagrodzeń — brutto netto UoP i B2B | PracaNaRękę",
-      "description": "Sprawdź wynagrodzenie netto na umowie o pracę i B2B. Skorzystaj z kalkulatora brutto netto i porównaj oferty pracy.",
+      "description": "Sprawdź wynagrodzenie netto na UoP i B2B, przelicz docelowe netto na potrzebne brutto oraz porównaj oferty pracy w skali roku.",
       "socialImage": "/og/praca.png",
       "socialImageAlt": "PracaNaRękę — kalkulatory wynagrodzeń"
     },
@@ -14,6 +14,14 @@
       "path": "/ile-na-reke-uop",
       "title": "Kalkulator wynagrodzenia UoP — ile na rękę z brutto? | PracaNaRękę",
       "description": "Oblicz wynagrodzenie netto z umowy o pracę miesiąc po miesiącu w 2026 roku. Zobacz składki, PIT, koszt pracodawcy i sumę dwunastu wypłat.",
+      "socialImage": "/og/praca.png",
+      "socialImageAlt": "PracaNaRękę — kalkulatory wynagrodzeń"
+    },
+    {
+      "key": "uop-gross",
+      "path": "/netto-na-brutto-uop",
+      "title": "Kalkulator netto na brutto UoP — ile brutto dla wybranej wypłaty? | PracaNaRękę",
+      "description": "Wpisz, ile chcesz otrzymywać na rękę na UoP w 2026 roku. Sprawdź potrzebne brutto dla średniej miesięcznej lub minimum w każdym miesiącu i zobacz 12 wypłat.",
       "socialImage": "/og/praca.png",
       "socialImageAlt": "PracaNaRękę — kalkulatory wynagrodzeń"
     },

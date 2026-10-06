@@ -1,5 +1,13 @@
 <script setup lang="ts">
-import { ArrowRight, ArrowUpRight, BriefcaseBusiness, Check, Scale, Wallet } from '@lucide/vue'
+import {
+  ArrowRight,
+  ArrowUpRight,
+  BriefcaseBusiness,
+  Check,
+  Scale,
+  Target,
+  Wallet,
+} from '@lucide/vue'
 import { RouterLink } from 'vue-router'
 import FaqSection from '@/shared/components/FaqSection.vue'
 import workIllustration from '../assets/work-illustration.svg'
@@ -16,10 +24,19 @@ const tools = [
     tone: 'sage',
   },
   {
+    path: '/netto-na-brutto-uop',
+    icon: Target,
+    tag: 'Umowa o pracę',
+    number: '02',
+    title: 'Ile brutto dla wybranego netto?',
+    text: 'Podaj docelową wypłatę na rękę i sprawdź, jakie brutto potrzebujesz — średnio lub w każdym miesiącu.',
+    tone: 'mint',
+  },
+  {
     path: '/ile-na-reke-b2b',
     icon: Wallet,
     tag: 'Działalność gospodarcza',
-    number: '02',
+    number: '03',
     title: 'Ile zostaje z faktury B2B?',
     text: 'Zobacz szacunkowy wynik B2B w każdym miesiącu 2026 roku oraz roczną sumę po kosztach, składkach i podatku.',
     tone: 'sand',
@@ -28,7 +45,7 @@ const tools = [
     path: '/b2b-vs-uop',
     icon: Scale,
     tag: 'Porównanie ofert',
-    number: '03',
+    number: '04',
     title: 'B2B czy UoP?',
     text: 'Zestaw dwie propozycje w skali 2026 roku. Porównaj sumy netto i różnicę miesiąc po miesiącu.',
     tone: 'blue',
@@ -96,7 +113,7 @@ usePracaSeo('home', {
           <h1>Twoja praca. <em>Twoje warunki.</em></h1>
           <p>
             Kwota z oferty to dopiero początek rozmowy. Sprawdź, ile możesz otrzymać na rękę na UoP
-            i B2B, a potem porównaj scenariusze z uwzględnieniem kosztów i składek.
+            i B2B, oblicz potrzebne brutto dla wybranej wypłaty i porównaj scenariusze.
           </p>
           <div class="hero-actions">
             <RouterLink :to="pracaPath('/b2b-vs-uop')" class="hero-cta"
@@ -124,7 +141,7 @@ usePracaSeo('home', {
     <section class="topic-strip" aria-label="Co można policzyć">
       <div>
         <BriefcaseBusiness :size="24" aria-hidden="true" /><strong>UoP</strong
-        ><small>Pensja netto i koszt pracodawcy</small>
+        ><small>Od brutto do netto i od celu netto do brutto</small>
       </div>
       <div>
         <Wallet :size="24" aria-hidden="true" /><strong>B2B</strong
@@ -145,7 +162,7 @@ usePracaSeo('home', {
             wejściowej powstaje szacunkowy wynik.
           </p>
         </div>
-        <span class="tool-count">03 <small>kalkulatory</small></span>
+        <span class="tool-count">04 <small>kalkulatory</small></span>
       </div>
       <div class="tool-grid">
         <RouterLink
@@ -427,7 +444,7 @@ h3 {
 }
 .tool-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1rem;
   margin-top: 2rem;
 }
@@ -453,6 +470,10 @@ h3 {
 .tool-card--sand {
   --card: #f5eadb;
   --ink: #a7835a;
+}
+.tool-card--mint {
+  --card: #e5f2e9;
+  --ink: #659c7b;
 }
 .tool-card--blue {
   --card: #e0ecec;

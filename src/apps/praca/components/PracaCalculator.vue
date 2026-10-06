@@ -161,6 +161,7 @@ const introSymbol = computed(() =>
 )
 const relatedTools = [
   { mode: 'uop', path: '/ile-na-reke-uop', title: 'Ile na rękę z UoP?' },
+  { mode: 'uop-gross', path: '/netto-na-brutto-uop', title: 'Ile brutto dla wybranego netto?' },
   { mode: 'b2b', path: '/ile-na-reke-b2b', title: 'Ile na rękę z B2B?' },
   { mode: 'comparison', path: '/b2b-vs-uop', title: 'B2B vs UoP' },
 ] as const
@@ -724,7 +725,11 @@ usePracaSeo(seoKey.value, {
           :key="item.mode"
           :to="pracaPath(item.path)"
           ><span>{{
-            item.mode === 'comparison' ? 'Porównanie ofert' : item.mode.toUpperCase()
+            item.mode === 'comparison'
+              ? 'Porównanie ofert'
+              : item.mode === 'uop-gross'
+                ? 'UOP · NETTO → BRUTTO'
+                : item.mode.toUpperCase()
           }}</span
           ><strong>{{ item.title }}</strong></RouterLink
         >
@@ -866,7 +871,7 @@ usePracaSeo(seoKey.value, {
 }
 .related-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 1rem;
   margin-top: 1.2rem;
 }
