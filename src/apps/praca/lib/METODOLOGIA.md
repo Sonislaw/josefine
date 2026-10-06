@@ -35,4 +35,10 @@ Obsługiwany rok: **2026**. Kalkulatory UoP i B2B liczą osobno dwanaście kolej
 - Porównanie nie wycenia płatnego urlopu, chorobowego, benefitów, przerw w zleceniach ani innych praw i ryzyk związanych z formą współpracy. Same kwoty po obciążeniach nie przesądzają, która oferta jest korzystniejsza.
 - Składki zależne od kwoty zaokrąglamy do groszy, a szacowany PIT do pełnych złotych. Dane wejściowe muszą być skończonymi kwotami nieujemnymi, maksymalnie z dwoma miejscami po przecinku. Kalkulator nie zastępuje księgowej ani doradcy podatkowego.
 
+## Wpływ planu faktur na wynik
+
+Gdy w porównaniu B2B vs UoP zmieniono przynajmniej jeden miesiąc planu, pokazujemy wariant bazowy z 12 jednakowymi fakturami oraz wariant z faktycznie wpisanymi fakturami. Oba warianty używają tego samego silnika `calcB2bYear`, roku, formy opodatkowania, kosztów i ZUS. Różnica przychodów to `suma faktur w planie − suma faktur bazowych`; różnica kwoty pozostającej to `wynik planu po rocznym wyrównaniu zdrowotnej − wynik bazowy po rocznym wyrównaniu zdrowotnej`. Wyrównanie zdrowotnej jest uwzględnione raz w każdym wariancie. Wskazanie zmienionych miesięcy wynika z porównania rzeczywistych kwot faktur, więc nadpisanie miesiąca taką samą kwotą nie jest traktowane jako zmiana.
+
+To porównanie szacowanych wyników ekonomicznych, a nie prognoza gotówki: nie modeluje terminów zapłaty faktur, składek i podatków ani salda konta.
+
 Ewentualne dalsze rozszerzenia powinny zachować oddzielne silniki roczne i jasno odróżniać przepływy w trakcie roku od późniejszych wyrównań.

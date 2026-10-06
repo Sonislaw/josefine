@@ -15,6 +15,7 @@ import {
 } from '../lib/calculations'
 import { calcUopYear } from '../lib/uop-year'
 import { calcB2bYear } from '../lib/b2b-year'
+import { calcB2bPlanImpact } from '../lib/b2b-plan-impact'
 import { findRequiredB2bInvoice } from '../lib/b2b-required-invoice'
 import { calcWorkYearComparison } from '../lib/work-year-comparison'
 import { pracaPath, pracaSiteName, pracaSiteUrl, usePracaSeo } from '../seo/usePracaSeo'
@@ -24,6 +25,7 @@ import UopYearBreakdown from './UopYearBreakdown.vue'
 import B2bYearBreakdown from './B2bYearBreakdown.vue'
 import WorkYearComparison from './WorkYearComparison.vue'
 import B2bInvoiceBreakPlanner from './B2bInvoiceBreakPlanner.vue'
+import B2bPlanImpact from './B2bPlanImpact.vue'
 import {
   booleanShareField,
   choiceShareField,
@@ -183,6 +185,25 @@ const comparisonYear = computed(() =>
       )
     : null,
 )
+const planImpact = computed(() =>
+  props.mode === 'comparison' &&
+  useInvoicePlan.value &&
+  editedMonths.value > 0 &&
+  comparisonYear.value
+    ? calcB2bPlanImpact(
+        {
+          invoice: invoice.value,
+          costs: costs.value,
+          form: form.value,
+          rate: rate.value,
+          zus: zus.value,
+          sickness: sickness.value,
+        },
+        comparisonYear.value.b2b,
+        year.value,
+      )
+    : null,
+)
 const requiredInvoice = computed(() =>
   comparisonYear.value
     ? findRequiredB2bInvoice(
@@ -223,7 +244,7 @@ const introText = computed(() =>
     ? 'Zobacz wypłatę na rękę w każdym miesiącu 2026 roku oraz sumę dwunastu wypłat. Kalkulator uwzględnia narastające limity ulgi dla młodych, PIT i składek emerytalno-rentowych.'
     : props.mode === 'b2b'
       ? 'Zobacz, ile może zostać z faktur B2B miesiąc po miesiącu w 2026 roku. Symulacja śledzi narastająco podatek i progi składki zdrowotnej.'
-      : 'Zestaw dwie oferty w skali całego 2026 roku. Porównaj dwanaście wypłat UoP z wynikiem B2B; możesz też zaplanować inną fakturę w każdym miesiącu.',
+      : 'Zestaw dwie oferty w skali całego 2026 roku. Porównaj dwanaście wypłat UoP z wynikiem B2B; zaplanuj faktury miesięczne i zobacz wpływ zmian na roczny wynik.',
 )
 const introSymbol = computed(() =>
   props.mode === 'uop' ? 'UoP' : props.mode === 'b2b' ? 'B2B' : '↔',
@@ -323,6 +344,11 @@ const faqs = computed(() =>
             question: 'Jak uwzględnić przerwę w fakturowaniu B2B?',
             answer:
               'Włącz plan 12 faktur i skorzystaj z pomocnika przerw. Wybierz miesiąc, liczbę dni rozliczeniowych, liczbę dni bez fakturowania oraz sposób rozliczenia przyjęty w kontrakcie. Przy fakturze zależnej od dni możesz zapisać proponowaną kwotę w planie. To nie oznacza zawieszenia działalności: koszty i składki są nadal liczone.',
+          },
+          {
+            question: 'Ile zmienia plan faktur w rocznym wyniku B2B?',
+            answer:
+              'Po zmianie kwoty w wybranym miesiącu porównujemy dwa całoroczne warianty: 12 pełnych faktur bazowych oraz Twój plan. Pokazujemy różnicę w sumie faktur i kwocie pozostającej po kosztach, składkach, podatku oraz szacowanym rocznym wyrównaniu zdrowotnej. To nie jest prognoza salda konta ani harmonogram płatności.',
           },
           {
             question: 'Co pokazuje różnica roczna między B2B a UoP?',
@@ -719,6 +745,7 @@ usePracaSeo(seoKey.value, {
     </div>
     <UopYearBreakdown v-if="mode === 'uop' && uopYear" :result="uopYear" />
     <B2bYearBreakdown v-if="mode === 'b2b' && b2bYear" :result="b2bYear" />
+    <B2bPlanImpact v-if="mode === 'comparison' && planImpact" :impact="planImpact" />
     <WorkYearComparison v-if="mode === 'comparison' && comparisonYear" :result="comparisonYear" />
     <section
       v-if="mode === 'comparison' && comparisonYear"
