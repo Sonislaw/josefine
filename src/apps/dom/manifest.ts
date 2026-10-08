@@ -51,6 +51,14 @@ export const domTools = [
     accent: 'peach',
   },
   {
+    id: 'kalkulator-gladzi',
+    title: 'Kalkulator gładzi',
+    description: 'Oblicza ilość gładzi, pełne worki lub wiadra oraz koszt przed malowaniem.',
+    category: 'Remont',
+    symbol: 'kg',
+    accent: 'sage',
+  },
+  {
     id: 'plytki-na-podloge',
     title: 'Płytki na podłogę',
     description: 'Oblicza liczbę płytek i kartonów na podłogę oraz pokazuje orientacyjny układ.',
@@ -117,6 +125,7 @@ export type DomBasicToolId = Exclude<
   | 'klej-do-plytek'
   | 'plytki-na-sciane'
   | 'kalkulator-wylewki'
+  | 'kalkulator-gladzi'
 >
 
 export const domModule = {

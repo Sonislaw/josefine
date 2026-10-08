@@ -48,6 +48,7 @@ import DomEnergyProjection from './DomEnergyProjection.vue'
 import DomEnergyPresets from './DomEnergyPresets.vue'
 import DomWaterMeter from './DomWaterMeter.vue'
 import DomWaterSavings from './DomWaterSavings.vue'
+import DomPaintToPlasterLink from './DomPaintToPlasterLink.vue'
 import DomRoomPicker from './DomRoomPicker.vue'
 import type { ShoppingRoom } from '../stores/shoppingList'
 
@@ -777,6 +778,10 @@ function useEnergyPreset(preset: EnergyPreset) {
     v-model:board-price="boardPrice"
     :perimeter="results?.[0]?.value ?? null"
     :preferred-room-id="effectiveRoomId"
+  />
+  <DomPaintToPlasterLink
+    v-if="toolId === 'ilosc-farby' && results"
+    :area="parseDomNumber(form.area ?? '')"
   />
   <DomPaintPurchasePlan
     v-if="toolId === 'ilosc-farby'"

@@ -70,3 +70,9 @@ test('room overview exposes a separate wall tile calculator with room dimensions
     roomId: 'room-1',
   })
 })
+
+test('room overview prefills plaster with gross wall area to edit after subtracting openings', () => {
+  const plaster = createRoomToolLinks(dimensions, 'room-1')[5]
+  assert.equal(plaster.to.path.endsWith('/kalkulator-gladzi'), true)
+  assert.deepEqual(plaster.to.query, { area: '45', roomId: 'room-1' })
+})

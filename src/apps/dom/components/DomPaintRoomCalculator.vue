@@ -18,6 +18,7 @@ import {
 import { isValidOptionalPaintCanPrice, parsePaintCanSize } from '../lib/paint-purchase'
 import type { RoomDimensions } from '../lib/room-metrics'
 import DomPaintPurchasePlan from './DomPaintPurchasePlan.vue'
+import DomPaintToPlasterLink from './DomPaintToPlasterLink.vue'
 
 type PaintFieldId = 'length' | 'width' | 'height' | 'doors' | 'windows' | 'coats' | 'coverage'
 interface PaintField {
@@ -540,6 +541,7 @@ function reset() {
       ><small>Zapas: +10%</small>
     </div>
   </section>
+  <DomPaintToPlasterLink v-if="result" :area="result.paintArea" />
   <DomPaintPurchasePlan
     v-model:can-size="paintCanSize"
     v-model:can-price="paintCanPrice"

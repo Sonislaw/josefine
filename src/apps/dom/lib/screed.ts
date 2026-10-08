@@ -40,26 +40,22 @@ export function calculateScreed(input: ScreedInput): ScreedResult | null {
 
   const volumeM3 = (areaM2 * thicknessMm) / 1000
   const baseKg = areaM2 * thicknessMm * consumptionKgPerM2Mm
-  const requiredKg = baseKg * (1 + reservePercent / 100)
-  const bagCount = Math.ceil(requiredKg / bagWeightKg)
-  const purchasedKg = bagCount * bagWeightKg
-  const priceCents = bagPrice === null ? null : Math.round(bagPrice * 100)
-  const costCents = priceCents === null ? null : bagCount * priceCents
-  if (
-    ![volumeM3, baseKg, requiredKg, purchasedKg].every(Number.isFinite) ||
-    !Number.isSafeInteger(bagCount) ||
-    bagCount <= 0 ||
-    (costCents !== null && !Number.isSafeInteger(costCents))
-  )
-    return null
+  const packages = calculateMaterialPackages({
+    baseKg,
+    reservePercent,
+    packageWeightKg: bagWeightKg,
+    packagePrice: bagPrice,
+  })
+  if (!Number.isFinite(volumeM3) || !packages) return null
 
   return {
     volumeM3,
-    baseKg,
-    requiredKg,
-    bagCount,
-    purchasedKg,
-    remainingKg: Math.max(0, purchasedKg - requiredKg),
-    estimatedCost: costCents === null ? null : costCents / 100,
+    baseKg: packages.baseKg,
+    requiredKg: packages.requiredKg,
+    bagCount: packages.packageCount,
+    purchasedKg: packages.purchasedKg,
+    remainingKg: packages.remainingKg,
+    estimatedCost: packages.estimatedCost,
   }
 }
+import { calculateMaterialPackages } from './material-packages'

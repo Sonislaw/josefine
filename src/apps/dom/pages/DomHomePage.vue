@@ -33,12 +33,12 @@ const faq = [
   {
     question: 'Czy mogę użyć wymiarów pokoju w kilku kalkulatorach?',
     answer:
-      'Tak. W panelu na stronie głównej wpisz długość, szerokość i wysokość prostokątnego pokoju. Zobaczysz powierzchnię podłogi i ścian, obwód oraz kubaturę. Linki do paneli, płytek i wylewki przeniosą metraż podłogi, link do listew przeniesie długość i szerokość, a linki do farby i tapety otworzą kalkulatory z wpisanymi wymiarami.',
+      'Tak. W panelu na stronie głównej wpisz długość, szerokość i wysokość prostokątnego pokoju. Zobaczysz powierzchnię podłogi i ścian, obwód oraz kubaturę. Linki do paneli, płytek i wylewki przeniosą metraż podłogi, link do listew przeniesie długość i szerokość, a link do gładzi przeniesie powierzchnię ścian przed odjęciem otworów. Do farby i tapety przejdziesz z wymiarami pokoju.',
   },
   {
     question: 'Czy kalkulatory nadają się do planowania remontu?',
     answer:
-      'Tak, pomagają oszacować ilość farby, rolek tapety, płytek, kleju, fugi, wylewki i paczek paneli. Metraż podłogi możesz przenieść z planera pokoju do kalkulatora wylewki, paneli lub płytek. Przy zakupie sprawdź zalecenia producenta, zapas na docinki oraz rzeczywiste wymiary pomieszczenia.',
+      'Tak, pomagają oszacować ilość farby, gładzi, rolek tapety, płytek, kleju, fugi, wylewki i paczek paneli. Metraż podłogi możesz przenieść z planera pokoju do kalkulatora wylewki, paneli lub płytek. Przy zakupie sprawdź zalecenia producenta, zapas na docinki oraz rzeczywiste wymiary pomieszczenia.',
   },
   {
     question: 'Co obejmują kalkulatory kosztu prądu i wody?',
@@ -115,7 +115,7 @@ useDomSeo('home', {
       </div>
       <div>
         <span class="topic-number">03</span><strong>Remont</strong
-        ><small>Farba, tapeta, płytki, wylewka i panele</small>
+        ><small>Farba, gładź, płytki, wylewka i panele</small>
       </div>
     </section>
 

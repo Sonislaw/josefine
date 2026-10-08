@@ -198,6 +198,38 @@ export const domSeoContent: Record<DomToolId, ToolContent> = {
       },
     ],
   },
+  'kalkulator-gladzi': {
+    intro:
+      'Kalkulator gładzi pomaga przygotować zakup przed malowaniem ścian lub sufitu. Wpisz powierzchnię, zużycie wybranego produktu i wielkość opakowania, a otrzymasz kilogramy oraz liczbę pełnych worków albo wiader. Jeśli najpierw policzysz ściany w kalkulatorze farby, możesz przenieść metraż po odjęciu drzwi i okien. Metraż z planera pokoju jest wartością przed odjęciem otworów.',
+    how: 'Wybierz jednostkę zużycia podaną przez producenta: kg/m² przy warstwie 1 mm albo kg/m² na jedną warstwę. W pierwszym trybie mnożymy powierzchnię przez łączną grubość w mm i zużycie; w drugim przez liczbę warstw i zużycie na warstwę. Dodajemy wybrany zapas, dzielimy masę przez wagę worka lub wiadra i zaokrąglamy w górę do pełnego opakowania. Cena jest opcjonalna i dotyczy kupowanych opakowań, nie samej ilości zużytej masy. Przed pracą sprawdź maksymalną grubość i warunki stosowania konkretnego produktu.',
+    faqs: [
+      {
+        question: 'Ile gładzi na 45 m² ścian?',
+        answer:
+          'Przy łącznej grubości 2 mm i zużyciu 1 kg/m²/mm potrzeba 90 kg bez zapasu. Po doliczeniu 10% zapasu to około 99 kg, czyli 5 pełnych opakowań po 20 kg. Dla Twojego produktu wpisz wartości z opakowania.',
+      },
+      {
+        question: 'Czy zużycie w kg/m²/mm jest tym samym co kg/m² na warstwę?',
+        answer:
+          'Nie. Zużycie na milimetr mnoży się przez łączną grubość gładzi, a zużycie na warstwę przez liczbę warstw. Kalkulator ma osobne tryby, żeby nie mieszać tych jednostek. Kieruj się zapisem na opakowaniu wybranego produktu.',
+      },
+      {
+        question: 'Czy można policzyć gotową gładź w wiadrze?',
+        answer:
+          'Tak. Wybierz „Wiadra”, podaj masę i opcjonalną cenę jednego wiadra. Sposób obliczania kilogramów jest taki sam; zmienia się nazwa opakowania oraz dane, które wpisujesz.',
+      },
+      {
+        question: 'Czy należy odjąć powierzchnię okien i drzwi?',
+        answer:
+          'Tak, jeśli ich nie wygładzasz. Link z planera pokoju przenosi powierzchnię ścian przed odjęciem otworów, więc możesz ją skorygować ręcznie. W trybie pokoju kalkulatora farby otwory są już odejmowane przed przeniesieniem metrażu do gładzi.',
+      },
+      {
+        question: 'Czy kalkulator uwzględnia sufit, grunt i szlifowanie?',
+        answer:
+          'Sufit uwzględnisz, dodając jego powierzchnię do pola metrażu. Koszt dotyczy tylko wpisanej gładzi w pełnych opakowaniach; grunt, materiały ścierne, robociznę i transport zaplanuj osobno.',
+      },
+    ],
+  },
   'plytki-na-podloge': {
     intro:
       'Kalkulator płytek podłogowych przelicza powierzchnię na potrzebną liczbę sztuk z wybranym zapasem. Możesz podać metraż ręcznie lub wstawić wymiary pokoju z Mojego remontu. Podgląd prostego układu pomaga zobaczyć docinki, a plan zakupu przelicza wynik na pełne kartony.',

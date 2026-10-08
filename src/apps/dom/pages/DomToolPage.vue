@@ -26,6 +26,9 @@ const DomWallTilePlan = defineAsyncComponent(() => import('../components/DomWall
 const DomScreedCalculator = defineAsyncComponent(
   () => import('../components/DomScreedCalculator.vue'),
 )
+const DomPlasterCalculator = defineAsyncComponent(
+  () => import('../components/DomPlasterCalculator.vue'),
+)
 const tool = domTools.find((item) => item.id === props.toolId)!
 const content = domSeoContent[props.toolId]
 const relatedTools = domTools
@@ -81,7 +84,10 @@ useDomSeo(props.toolId, {
       v-else-if="toolId === 'klej-do-plytek'"
     /><DomWallTilePlan v-else-if="toolId === 'plytki-na-sciane'" /><DomScreedCalculator
       v-else-if="toolId === 'kalkulator-wylewki'"
-    /><DomCalculator v-else :tool-id="toolId" />
+    /><DomPlasterCalculator v-else-if="toolId === 'kalkulator-gladzi'" /><DomCalculator
+      v-else
+      :tool-id="toolId"
+    />
     <section class="explanation">
       <div class="explanation-lead">
         <p class="section-kicker">PRAKTYCZNE WYJAŚNIENIE</p>

@@ -116,6 +116,14 @@ export function createRoomToolLinks(dimensions: RoomDimensions, roomId?: string)
       to: createWallTileRoomToolLink(dimensions, roomId),
     },
     {
+      title: 'Gładź na ściany',
+      detail: `${format(metrics.walls)} m² ścian przed odjęciem otworów`,
+      to: {
+        path: domPath('/kalkulator-gladzi'),
+        query: { area: toQueryNumber(metrics.walls), ...context },
+      },
+    },
+    {
       title: 'Farba na ściany',
       detail: `${format(metrics.walls)} m² ścian przed odjęciem otworów`,
       to: {
