@@ -5,7 +5,7 @@
       "key": "home",
       "path": "/",
       "title": "Kalkulatory domowe: metry, remont i rachunki | Dom",
-      "description": "Podaj wymiary pokoju raz i przejdź do obliczeń podłogi, ścian, farby, tapety, płytek, kleju, fugi i paneli. Sprawdź też koszt prądu i wody.",
+      "description": "Podaj wymiary pokoju raz i przejdź do obliczeń podłogi, farby, tapety, płytek, wylewki, kleju, fugi i paneli. Sprawdź też koszt prądu i wody.",
       "socialImage": "/og/dom.png",
       "socialImageAlt": "Dom — praktyczne kalkulatory"
     },
@@ -94,6 +94,14 @@
       "path": "/liczba-paczek-paneli",
       "title": "Kalkulator paczek paneli — ile paczek potrzeba? | Dom",
       "description": "Oblicz liczbę paczek paneli z powierzchni pomieszczenia, wydajności paczki i zapasu na docinki.",
+      "socialImage": "/og/dom.png",
+      "socialImageAlt": "Dom — praktyczne kalkulatory"
+    },
+    {
+      "key": "kalkulator-wylewki",
+      "path": "/kalkulator-wylewki",
+      "title": "Kalkulator wylewki — ile kg i worków kupić? | Dom",
+      "description": "Policz objętość wylewki w m³, kilogramy mieszanki i liczbę pełnych worków. Uwzględnij grubość warstwy, zużycie produktu, zapas i cenę worka.",
       "socialImage": "/og/dom.png",
       "socialImageAlt": "Dom — praktyczne kalkulatory"
     },

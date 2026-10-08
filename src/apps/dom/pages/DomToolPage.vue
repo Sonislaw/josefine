@@ -23,6 +23,9 @@ const DomTileAdhesiveCalculator = defineAsyncComponent(
   () => import('../components/DomTileAdhesiveCalculator.vue'),
 )
 const DomWallTilePlan = defineAsyncComponent(() => import('../components/DomWallTilePlan.vue'))
+const DomScreedCalculator = defineAsyncComponent(
+  () => import('../components/DomScreedCalculator.vue'),
+)
 const tool = domTools.find((item) => item.id === props.toolId)!
 const content = domSeoContent[props.toolId]
 const relatedTools = domTools
@@ -76,10 +79,9 @@ useDomSeo(props.toolId, {
       v-else-if="toolId === 'liczba-rolek-tapety'"
     /><DomGroutCalculator v-else-if="toolId === 'kalkulator-fugi'" /><DomTileAdhesiveCalculator
       v-else-if="toolId === 'klej-do-plytek'"
-    /><DomWallTilePlan v-else-if="toolId === 'plytki-na-sciane'" /><DomCalculator
-      v-else
-      :tool-id="toolId"
-    />
+    /><DomWallTilePlan v-else-if="toolId === 'plytki-na-sciane'" /><DomScreedCalculator
+      v-else-if="toolId === 'kalkulator-wylewki'"
+    /><DomCalculator v-else :tool-id="toolId" />
     <section class="explanation">
       <div class="explanation-lead">
         <p class="section-kicker">PRAKTYCZNE WYJAŚNIENIE</p>

@@ -52,10 +52,16 @@ test('room overview prefills the floor tile calculator with saved dimensions', (
   assert.deepEqual(createFloorTileRoomToolLink(null, 'room-1').query, { roomId: 'room-1' })
 })
 
+test('room overview prefills the screed calculator with floor area', () => {
+  const links = createRoomToolLinks(dimensions, 'room-1')
+  assert.equal(links[3].to.path.endsWith('/kalkulator-wylewki'), true)
+  assert.deepEqual(links[3].to.query, { area: '20', roomId: 'room-1' })
+})
+
 test('room overview exposes a separate wall tile calculator with room dimensions', () => {
   const walls = createWallTileRoomToolLink(dimensions, 'room-1')
   const links = createRoomToolLinks(dimensions, 'room-1')
-  assert.deepEqual(links[3].to, walls)
+  assert.deepEqual(links[4].to, walls)
   assert.equal(walls.path.endsWith('/plytki-na-sciane'), true)
   assert.deepEqual(walls.query, {
     roomLength: '5',

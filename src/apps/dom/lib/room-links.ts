@@ -103,6 +103,14 @@ export function createRoomToolLinks(dimensions: RoomDimensions, roomId?: string)
       to: createFloorTileRoomToolLink(dimensions, roomId),
     },
     {
+      title: 'Wylewka podłogowa',
+      detail: `${format(metrics.floor)} m² podłogi`,
+      to: {
+        path: domPath('/kalkulator-wylewki'),
+        query: { area: toQueryNumber(metrics.floor), ...context },
+      },
+    },
+    {
       title: 'Płytki na ścianę',
       detail: `${format(metrics.walls)} m² ścian przed odjęciem otworów`,
       to: createWallTileRoomToolLink(dimensions, roomId),

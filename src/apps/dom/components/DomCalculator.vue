@@ -443,6 +443,7 @@ const nextTools = computed(() => {
   const destinations = [
     { title: 'Panele', detail: 'Jeśli mierzysz podłogę', path: '/liczba-paczek-paneli' },
     { title: 'Płytki na podłogę', detail: 'Jeśli mierzysz podłogę', path: '/plytki-na-podloge' },
+    { title: 'Wylewka', detail: 'Jeśli przygotowujesz podłogę', path: '/kalkulator-wylewki' },
     { title: 'Farba', detail: 'Jeśli mierzysz ścianę', path: '/ilosc-farby' },
   ]
   return destinations.map((item) => ({
@@ -855,7 +856,7 @@ function useEnergyPreset(preset: EnergyPreset) {
 }
 .next-tools-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.6rem;
 }
 .next-tools-grid a {

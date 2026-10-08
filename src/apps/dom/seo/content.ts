@@ -363,6 +363,38 @@ export const domSeoContent: Record<DomToolId, ToolContent> = {
       },
     ],
   },
+  'kalkulator-wylewki': {
+    intro:
+      'Planujesz wyrównać podłogę przed ułożeniem paneli albo płytek? Kalkulator wylewki pomoże oszacować objętość warstwy, zapotrzebowanie na suchą mieszankę oraz liczbę pełnych worków. Możesz przenieść metraż z planera pokoju lub wpisać własną powierzchnię. Jeśli znasz cenę worka, zobaczysz też orientacyjny koszt materiału.',
+    how: 'Objętość w m³ to powierzchnia w m² pomnożona przez grubość w mm i podzielona przez 1000. Ilość mieszanki liczymy osobno: powierzchnia × grubość × zużycie podane przez producenta w kg/m²/mm. Następnie doliczamy wybrany zapas i dzielimy wynik przez wagę worka, zaokrąglając do pełnej sztuki. Dla przykładu: 20 m², warstwa 10 mm i zużycie 1,8 kg/m²/mm daje 360 kg bez zapasu; przy 5% zapasie i workach po 25 kg potrzeba 16 worków. Wynik nie określa, czy produkt nadaje się do danej grubości i podłoża — sprawdź kartę techniczną.',
+    faqs: [
+      {
+        question: 'Ile worków wylewki potrzeba na 20 m²?',
+        answer:
+          'To zależy od grubości warstwy, zużycia wybranego produktu i wagi worka. Przy 10 mm, zużyciu 1,8 kg/m²/mm, 5% zapasie i workach po 25 kg potrzeba 16 pełnych worków. Wpisz dane swojego produktu, aby otrzymać właściwy szacunek.',
+      },
+      {
+        question: 'Jak przeliczyć powierzchnię i grubość wylewki na m³?',
+        answer:
+          'Pomnóż powierzchnię w m² przez grubość w mm i podziel przez 1000. Na przykład 20 m² przy warstwie 10 mm to 0,2 m³. Sama objętość nie wystarczy jednak do obliczenia liczby worków suchej mieszanki.',
+      },
+      {
+        question: 'Skąd wziąć zużycie w kg/m²/mm?',
+        answer:
+          'Sprawdź opakowanie lub kartę techniczną wybranej wylewki. Producenci podają orientacyjne zużycie dla określonej grubości warstwy. Jeśli dane są podane w kg/m²/cm, podziel tę wartość przez 10 przed wpisaniem jej do pola kg/m²/mm.',
+      },
+      {
+        question: 'Czy kalkulator uwzględnia zapas i koszt zakupu?',
+        answer:
+          'Tak. Zapas zwiększa ilość potrzebnej mieszanki, a liczba worków jest zawsze zaokrąglana w górę. Po wpisaniu ceny jednego worka kalkulator przemnoży ją przez liczbę kupowanych worków. Nie dolicza transportu, robocizny ani innych warstw podłogi.',
+      },
+      {
+        question: 'Czy każdą wylewkę można wykonać na dowolną grubość?',
+        answer:
+          'Nie. Dopuszczalny zakres grubości, przygotowanie podłoża i warunki stosowania zależą od produktu. Kalkulator liczy ilość materiału, ale nie dobiera technologii wykonania podłogi.',
+      },
+    ],
+  },
   'liczba-rolek-tapety': {
     intro:
       'Kalkulator rolek tapety pozwala zaplanować zakup na cały prostokątny pokój albo na jedną wybraną ścianę, na przykład akcentową. Uwzględnia szerokość i długość rolki, wysokość ściany, zapas na przycięcie każdego pasa, prosty raport wzoru oraz dodatkowy zapas. Zapisany pokój z Mojego remontu może uzupełnić wymiary pokoju lub wysokość pojedynczej ściany.',

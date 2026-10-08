@@ -91,6 +91,14 @@ export const domTools = [
     accent: 'sage',
   },
   {
+    id: 'kalkulator-wylewki',
+    title: 'Kalkulator wylewki',
+    description: 'Oblicza objętość warstwy, ilość mieszanki, liczbę worków i koszt zakupu.',
+    category: 'Remont',
+    symbol: 'mm',
+    accent: 'sand',
+  },
+  {
     id: 'liczba-rolek-tapety',
     title: 'Liczba rolek tapety',
     description:
@@ -104,7 +112,11 @@ export const domTools = [
 export type DomToolId = (typeof domTools)[number]['id']
 export type DomBasicToolId = Exclude<
   DomToolId,
-  'liczba-rolek-tapety' | 'kalkulator-fugi' | 'klej-do-plytek' | 'plytki-na-sciane'
+  | 'liczba-rolek-tapety'
+  | 'kalkulator-fugi'
+  | 'klej-do-plytek'
+  | 'plytki-na-sciane'
+  | 'kalkulator-wylewki'
 >
 
 export const domModule = {
