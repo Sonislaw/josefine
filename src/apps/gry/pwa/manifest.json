@@ -1,0 +1,26 @@
+{
+  "name": "Gry — Zgrana",
+  "short_name": "Gry",
+  "description": "Gry przeglądarkowe. Małe gry, duża frajda.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#101918",
+  "theme_color": "#101918",
+  "lang": "pl-PL",
+  "icons": [
+    { "src": "/pwa/gry-icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    {
+      "src": "/pwa/gry-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/pwa/gry-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

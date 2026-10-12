@@ -13,6 +13,7 @@ import DomTools from '@/apps/dom/components/DomTools.vue'
 import { domModule } from '@/apps/dom/manifest'
 import MotoryzacjaTools from '@/apps/motoryzacja/components/MotoryzacjaTools.vue'
 import { motoryzacjaModule } from '@/apps/motoryzacja/manifest'
+import GameCards from '@/apps/gry/components/GameCards.vue'
 </script>
 
 <template>
@@ -24,5 +25,6 @@ import { motoryzacjaModule } from '@/apps/motoryzacja/manifest'
   <section class="module"><h2>{{ jednostkiModule.name }}</h2><p>{{ jednostkiModule.description }}</p><JednostkiTools /></section>
   <section class="module"><h2>{{ domModule.name }}</h2><p>{{ domModule.description }}</p><DomTools /></section>
   <section class="module"><h2>{{ motoryzacjaModule.name }}</h2><p>{{ motoryzacjaModule.description }}</p><MotoryzacjaTools /></section>
+  <section class="module"><h2>Gry</h2><p>Małe gry. Duża frajda. Zagraj sam lub we dwoje.</p><GameCards /></section>
 </template>
 <style scoped>.module { margin-top: 2.5rem; }</style>

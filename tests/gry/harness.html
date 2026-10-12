@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="pl">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Test kontrolera Areny</title>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module">
+      // Test-only harness. Not an application route, not part of production output.
+      import { createApp, h } from 'vue'
+      import { useArena } from '/src/apps/gry/games/warcaby/useArena.ts'
+      import * as engine from '/src/apps/gry/games/warcaby/engine.ts'
+      import * as session from '/src/apps/gry/games/warcaby/session.ts'
+      createApp({
+        setup() {
+          window.arenaTest = useArena()
+          window.engineTest = engine
+          window.sessionTest = session
+          return () => h('p', 'Controller ready')
+        },
+      }).mount('#app')
+    </script>
+  </body>
+</html>

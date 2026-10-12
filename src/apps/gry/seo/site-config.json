@@ -1,0 +1,29 @@
+{
+  "siteName": "Gry — Zgrana",
+  "pages": [
+    {
+      "key": "home",
+      "path": "/",
+      "title": "Gry online bez konta — zagraj w przeglądarce | Zgrana",
+      "description": "Małe gry, duża frajda. Odkryj gry przeglądarkowe Zgrana: zagraj z komputerem lub we dwoje na jednym urządzeniu. Zacznij od Warcabów — Areny Mocy.",
+      "socialImage": "/og/gry.png",
+      "socialImageAlt": "Gry Zgrana — Warcaby Arena Mocy, strategia na wyciągnięcie ręki"
+    },
+    {
+      "key": "warcaby-arena-mocy",
+      "path": "/warcaby-arena-mocy",
+      "title": "Warcaby — Arena Mocy: z komputerem lub we dwoje | Zgrana",
+      "description": "Zagraj w warcaby online: klasyczne lub z czterema mocami pionków. Trzy poziomy komputera, gra lokalna dla dwóch osób i pobieranie gry offline.",
+      "socialImage": "/og/gry.png",
+      "socialImageAlt": "Gry Zgrana — Warcaby Arena Mocy, strategia na wyciągnięcie ręki"
+    },
+    {
+      "key": "privacy",
+      "path": "/polityka-prywatnosci",
+      "title": "Polityka prywatności | Gry Zgrana",
+      "description": "Informacje o prywatności, analityce i lokalnym zapisie punktów doświadczenia w grach Zgrana.",
+      "socialImage": "/og/gry.png",
+      "socialImageAlt": "Gry Zgrana — Warcaby Arena Mocy, strategia na wyciągnięcie ręki"
+    }
+  ]
+}

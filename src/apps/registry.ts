@@ -5,6 +5,7 @@ import { createCzasRoutes } from './czas/routes'
 import { createJednostkiRoutes } from './jednostki/routes'
 import { createDomRoutes } from './dom/routes'
 import { createMotoryzacjaRoutes } from './motoryzacja/routes'
+import { createGryRoutes } from './gry/routes'
 import type { JosefineModule } from './types'
 
 // Add a module once here. Domain assignment stays separate in config/domains.ts.
@@ -16,6 +17,7 @@ export const moduleRegistry = {
   jednostki: { id: 'jednostki', createRoutes: createJednostkiRoutes },
   dom: { id: 'dom', createRoutes: createDomRoutes },
   motoryzacja: { id: 'motoryzacja', createRoutes: createMotoryzacjaRoutes },
+  gry: { id: 'gry', createRoutes: createGryRoutes },
 } satisfies Record<string, JosefineModule>
 
 export type ModuleId = keyof typeof moduleRegistry

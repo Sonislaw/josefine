@@ -34,6 +34,11 @@
     "type": "image/svg+xml",
     "appleTouchIcon": "/pwa/dom-icon.svg"
   },
+  "gry": {
+    "favicon": "/pwa/gry-icon.svg",
+    "type": "image/svg+xml",
+    "appleTouchIcon": "/pwa/gry-192.png"
+  },
   "motoryzacja": {
     "favicon": "/pwa/motoryzacja-icon.svg",
     "type": "image/svg+xml",
