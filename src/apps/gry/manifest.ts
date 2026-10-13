@@ -15,6 +15,17 @@ export interface GameDefinition {
  * Future games own a folder under games/; never import their engines into this catalog. */
 export const games = [
   {
+    id: 'ostatnia-latarnia',
+    title: 'Ostatnia latarnia',
+    description:
+      'Jedno światło pośród mroku. Przetrwaj napór przeciwników, łącz moce i ewoluuj broń. Po dziesięciu minutach czeka Cię spotkanie ze Strażnikiem Otchłani.',
+    category: 'Survival',
+    players: '1 gracz',
+    symbol: 'ϟ',
+    cover: '/games/last-lighthouse-cover.svg',
+    loadPage: () => import('./pages/LighthousePage.vue'),
+  },
+  {
     id: 'male-krolestwo',
     title: 'Małe królestwo',
     description:

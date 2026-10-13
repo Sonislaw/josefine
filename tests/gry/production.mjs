@@ -132,6 +132,23 @@ try {
   await page.screenshot({ path: 'test-results/production/kingdom-mobile.png', fullPage: true })
   assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth))
   assert.deepEqual(errors, [])
+  await page.goto(`${base}/ostatnia-latarnia`)
+  assert.equal(
+    await page.locator('link[rel="canonical"]').getAttribute('href'),
+    'https://gry.zgrana.pl/ostatnia-latarnia',
+  )
+  assert.equal(
+    await page.locator('meta[property="og:image"]').getAttribute('content'),
+    'https://gry.zgrana.pl/og/last-lighthouse.png',
+  )
+  await page.locator('.lh-start').click()
+  await page.getByRole('button', { name: 'Ⅱ Pauza' }).click()
+  assert.ok(await page.getByRole('button', { name: 'Wracam do światła' }).isVisible())
+  await page.screenshot({ path: 'test-results/production/lighthouse-mobile.png', fullPage: true })
+  assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth))
+  assert.equal(await page.evaluate(() => window.lighthouseHarness), undefined)
+  assert.equal((await page.request.get(`${base}/tests/gry/lighthouse-harness.html`)).status(), 404)
+  assert.deepEqual(errors, [])
   const noJs = await browser.newContext({ javaScriptEnabled: false })
   const staticPage = await noJs.newPage()
   await staticPage.goto(`${base}/warcaby-arena-mocy`)
@@ -148,9 +165,13 @@ try {
   assert.equal(await staticPage.locator('.kingdom-faq details').count(), 5)
   assert.equal(await staticPage.locator('[data-tile]').count(), 49)
   assert.ok(await staticPage.getByRole('button', { name: 'Zatwierdź turę' }).isDisabled())
+  await staticPage.goto(`${base}/ostatnia-latarnia`)
+  assert.ok((await staticPage.title()).includes('Ostatnia latarnia'))
+  assert.equal(await staticPage.locator('.lh-faq details').count(), 5)
+  assert.ok(await staticPage.locator('.lh-start').isDisabled())
   assert.equal((await staticPage.goto(`${base}/nie-ma-takiej-gry`)).status(), 404)
   console.log(
-    'Production browser OK: four games, catalog desktop/mobile, clean routes, per-game SEO, no hydration errors, AI, Crystal Rush start/pause, Blocks and Kingdom play/restore, prerender without JavaScript, 404.',
+    'Production browser OK: five games, catalog desktop/mobile, clean routes, per-game SEO, no hydration errors, AI, Crystal Rush and Lighthouse start/pause, Blocks and Kingdom play/restore, prerender without JavaScript, test harness excluded, 404.',
   )
 } finally {
   await browser.close()

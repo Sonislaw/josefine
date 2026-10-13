@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="pl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Lighthouse isolated test harness</title>
+    <style>
+      body {
+        margin: 0;
+        background: #101918;
+      }
+      * {
+        box-sizing: border-box;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="mount"></div>
+    <script type="module">
+      import { createApp } from 'vue'
+      import LighthouseGame from '/src/apps/gry/games/last-lighthouse/LighthouseGame.vue'
+      import { lighthouseRuntimeKey } from '/src/apps/gry/games/last-lighthouse/useLighthouse.ts'
+      import * as engine from '/src/apps/gry/games/last-lighthouse/engine.ts'
+      import * as spawner from '/src/apps/gry/games/last-lighthouse/spawner.ts'
+      import { createRenderer } from '/src/apps/gry/games/last-lighthouse/renderer.ts'
+      import { emptyInput } from '/src/apps/gry/games/last-lighthouse/model.ts'
+      let current,
+        seed = 23
+      window.lighthouseHarness = {
+        engine,
+        spawner,
+        createRenderer,
+        emptyInput,
+        game: () => current,
+      }
+      const app = createApp(LighthouseGame)
+      app.provide(lighthouseRuntimeKey, {
+        random: () => {
+          seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0
+          return seed / 2 ** 32
+        },
+        createGame: (hero, mode) => {
+          current = engine.createGame(hero, mode)
+          if (mode === 'playing') {
+            const fixture = window.lighthouseFixture
+            if (fixture === 'upgrade') {
+              current.xp = 12
+              current.player.invulnerable = 999
+            }
+            if (fixture === 'unlock') {
+              current.elapsed = 179.95
+              current.player.invulnerable = 999
+            }
+            if (fixture === 'victory') {
+              current.elapsed = 601
+              current.bossSpawned = true
+              current.eliteFlags = [true, true]
+              const b = spawner.createEnemy(current, 'boss', {
+                x: current.player.x + 95,
+                y: current.player.y,
+              })
+              b.hp = 1
+              current.enemies = [b]
+            }
+            if (fixture === 'loss') {
+              current.player.hp = 1
+              current.enemies = [
+                spawner.createEnemy(current, 'shade', { x: current.player.x, y: current.player.y }),
+              ]
+            }
+          }
+          return current
+        },
+      })
+      window.lighthouseApp = app
+      app.mount('#mount')
+    </script>
+  </body>
+</html>

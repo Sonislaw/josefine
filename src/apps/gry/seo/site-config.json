@@ -5,7 +5,7 @@
       "key": "home",
       "path": "/",
       "title": "Gry online bez konta — zagraj w przeglądarce | Zgrana",
-      "description": "Gry przeglądarkowe bez konta: Małe królestwo, Klocki, Warcaby i Jeszcze jeden kryształ. Wybierz strategię, grę logiczną lub zręcznościówkę na telefon i komputer.",
+      "description": "Gry online bez konta: Ostatnia latarnia, Małe królestwo, Klocki, Warcaby i Jeszcze jeden kryształ. Survival, strategie i gry logiczne na telefon oraz komputer.",
       "socialImage": "/og/gry.png",
       "socialImageAlt": "Gry Zgrana — Warcaby Arena Mocy, strategia na wyciągnięcie ręki"
     },
@@ -40,6 +40,14 @@
       "description": "Rozwijaj osadę, odkrywaj nowe ziemie i przygotuj zapasy na zimę. Małe królestwo to darmowa strategia turowa na telefon i komputer, bez konta, z zapisem postępu.",
       "socialImage": "/og/little-kingdom.png",
       "socialImageAlt": "Małe królestwo — ilustrowana osada z domkami, polami i lasem na kafelkowej mapie"
+    },
+    {
+      "key": "ostatnia-latarnia",
+      "path": "/ostatnia-latarnia",
+      "title": "Ostatnia latarnia — survival z rozwojem postaci online | Zgrana",
+      "description": "Przetrwaj noc, zbieraj doświadczenie i ewoluuj broń. Automatyczne ataki, trzech bohaterów i finałowy boss. Zagraj w Ostatnią latarnię na telefonie lub komputerze.",
+      "socialImage": "/og/last-lighthouse.png",
+      "socialImageAlt": "Ostatnia latarnia — rozświetlona wieża i strażnik z ognistą bronią na mrocznej wyspie"
     },
     {
       "key": "privacy",

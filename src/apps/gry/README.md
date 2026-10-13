@@ -14,6 +14,7 @@ npm run dev
 - Jeszcze jeden kryształ lokalnie: `http://localhost:5173/gry/jeszcze-jeden-krysztal`
 - Klocki lokalnie: `http://localhost:5173/gry/klocki`
 - Małe królestwo lokalnie: `http://localhost:5173/gry/male-krolestwo`
+- Ostatnia latarnia lokalnie: `http://localhost:5173/gry/ostatnia-latarnia`
 - Docelowo: `https://gry.zgrana.pl/` i `/warcaby-arena-mocy`
 - Prywatność: `/polityka-prywatnosci` (lokalnie z prefiksem `/gry`).
 
@@ -75,6 +76,13 @@ Strategia turowa z lokalnym zapisem osady, sezonami i odkrywaniem sektorów. Wł
 ilustracje SVG w `games/little-kingdom/`; [dokumentacja i reguły](games/little-kingdom/README.md).
 Gra ma własny lazy route, SSG, FAQ, sitemapę i grafikę OG PNG. Publikowana w tym samym projekcie CF.
 
+## Ostatnia latarnia
+
+Survival z automatycznymi atakami, rozwojem bohatera i finałem po dziesięciu minutach.
+Własne reguły, Canvas i kontroler w `games/last-lighthouse/`, bez zależności od Kryształu.
+[Dokumentacja gry](games/last-lighthouse/README.md) opisuje zapis, testy i pomiar wydajności.
+Nowa podstrona korzysta z istniejącego wdrożenia Gry — bez nowego Workera ani domeny.
+
 ## Jednoplikowe Warcaby
 
 Link „Pobierz grę · HTML + JS” pobiera `/games/warcaby-arena-mocy.html`.
@@ -104,9 +112,9 @@ Grafika OG oraz PNG instalacyjne są wersjami rastrowymi autorskich, kodowych gr
 
 ### Wynik weryfikacji wdrożenia modułu
 
-- 66 testów silników i sesji: zaliczone (21 Warcabów, 20 gry Jeszcze jeden kryształ, 11 Klocków i 14 Małego królestwa), w tym symulowane rozgrywki i 20-letni rozwój osady.
-- 51 testów przeglądarkowych w systemowym Chrome: zaliczone (12 Warcabów, 15 gry Jeszcze jeden kryształ, 12 Klocków i 12 Małego królestwa), w tym responsywność, gesty dotykowe, zapis rundy/osady, duża mapa, AI oraz jednoplikowe Warcaby bez sieci.
-- Build `npm run build:site -- gry`, kontrola typów, lint nowych plików i kontrola grafik OG: zaliczone.
+- 84 testy silników i sesji: zaliczone (21 Warcabów, 20 gry Jeszcze jeden kryształ, 11 Klocków, 14 Małego królestwa i 18 Ostatniej latarni), w tym pełna symulacja dziesięciu minut survivalu i 20-letni rozwój osady.
+- 65 testów przeglądarkowych w systemowym Chrome: zaliczone (12 Warcabów, 15 gry Jeszcze jeden kryształ, 12 Klocków, 12 Małego królestwa i 14 Ostatniej latarni), w tym responsywność, gesty dotykowe, zapis, odblokowania, duża mapa, AI oraz jednoplikowe Warcaby bez sieci.
+- Build `npm run build:site -- gry`, kontrola typów i kontrola grafik OG: zaliczone.
 - Kontrola artefaktów `check-gry-build.mjs`: zaliczona. HTML katalogu nie ładuje pakietu samej gry.
 - Test zbudowanej strony w przeglądarce: brak błędów hydratacji, działające czyste URL-e i AI, treść dostępna bez JavaScript, odpowiedź 404 dla nieistniejącej strony.
 - Widoki desktop/mobile sprawdzone na zrzutach w przeglądarce. Nie testowano na fizycznym telefonie ani w Safari/Firefox. Publikacja w Cloudflare pozostaje po stronie właściciela.

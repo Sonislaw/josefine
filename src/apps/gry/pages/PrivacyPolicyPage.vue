@@ -13,6 +13,12 @@ useGrySeo('privacy')
     <section class="local-data">
       <h2>Dane rozgrywki</h2>
       <p>
+        Ostatnia latarnia przechowuje lokalnie odblokowanych bohaterów, rekord czasu i pokonanych
+        przeciwników, liczbę zwycięstw oraz preferencję dźwięku pod kluczem
+        „zgrana:gry:ostatnia-latarnia:v1”. Trwającej wyprawy nie zapisujemy. Dane te nie są wysyłane
+        na serwer ani synchronizowane między urządzeniami. Usuniesz je, czyszcząc dane witryny.
+      </p>
+      <p>
         Małe królestwo zapisuje mapę, budynki, zasoby, mieszkańców, turę, ofertę budynków i stan
         wskazówek pod kluczem „zgrana:gry:male-krolestwo:v1” w localStorage tej przeglądarki. Zapis
         nie jest wysyłany na serwer ani synchronizowany między urządzeniami. Możesz go zastąpić nową
