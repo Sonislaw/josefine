@@ -32,7 +32,8 @@ for (const width of [360, 390, 800, 1440]) {
     await page.setViewportSize({ width, height: 950 })
     await open(page)
     const box = await page.locator('canvas').boundingBox()
-    expect(Math.abs(box.width / box.height - 1.5)).toBeLessThan(0.015)
+    if (width > 600) expect(Math.abs(box.width / box.height - 1.5)).toBeLessThan(0.015)
+    else expect(box.height).toBeGreaterThan(box.width)
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
       width,
     )
@@ -85,6 +86,81 @@ test('actual UI: start, level, choose upgrade, pause, loss, record and replay', 
   await page.getByRole('button', { name: 'Jeszcze raz' }).click()
   await expect(page.locator('.hearts')).toHaveAttribute('aria-label', 'Życia: 3 z 3')
   expect(errors).toEqual([])
+})
+
+for (const [width, height] of [
+  [360, 640],
+  [390, 844],
+  [430, 932],
+]) {
+  test(`mobile menu, upgrade and controls fit without inner scroll at ${width}×${height}`, async ({
+    page,
+  }, testInfo) => {
+    await page.setViewportSize({ width, height })
+    await page.addInitScript(() => {
+      Math.random = () => 0.5
+    })
+    await open(page)
+    const noInnerScroll = async () => {
+      expect(
+        await page.locator('.game-overlay').evaluate((el) => el.scrollHeight - el.clientHeight),
+      ).toBeLessThanOrEqual(1)
+      expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
+        width,
+      )
+    }
+    await noInnerScroll()
+    const start = await page.getByRole('button', { name: 'Zaczynamy' }).boundingBox()
+    expect(start.y + start.height).toBeLessThan(height)
+    await page.screenshot({ path: testInfo.outputPath('mobile-menu.png'), fullPage: true })
+    await page.getByRole('button', { name: 'Zaczynamy' }).click()
+    const controls = await page.locator('.arena-controls').boundingBox()
+    const arena = await page.locator('canvas').boundingBox()
+    expect(arena.y).toBeGreaterThanOrEqual(0)
+    expect(controls.y + controls.height).toBeLessThan(height)
+    await page.screenshot({ path: testInfo.outputPath('mobile-playing.png') })
+    await expect(page.getByRole('dialog', { name: 'Wybór ulepszenia' })).toBeVisible()
+    await noInnerScroll()
+    for (const card of await page.locator('.upgrade-card').all()) {
+      const box = await card.boundingBox()
+      expect(box.y).toBeGreaterThanOrEqual(0)
+      expect(box.y + box.height).toBeLessThan(height)
+    }
+    await page.screenshot({ path: testInfo.outputPath('mobile-upgrade.png') })
+    await page.getByRole('button', { name: /Magnes/ }).click()
+    await expect(page.locator('canvas')).toBeFocused()
+  })
+}
+
+test('rotation preserves mobile round geometry and object coordinates', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto('/tests/gry/crystal-harness.html')
+  await page.waitForFunction(() => window.crystalTest)
+  await page.evaluate(() => {
+    window.crystalTest.start()
+    window.crystalTest.togglePause()
+  })
+  const before = await page.evaluate(() => JSON.stringify(window.crystalTest.getGame()))
+  await page.setViewportSize({ width: 844, height: 390 })
+  const after = await page.evaluate(() => JSON.stringify(window.crystalTest.getGame()))
+  expect(after).toBe(before)
+  expect(JSON.parse(after).arena).toEqual({ width: 450, height: 600 })
+})
+
+test('mobile active arena shows the larger ship and incoming meteors', async ({
+  page,
+}, testInfo) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.addInitScript(() => {
+    Math.random = () => 0.9
+  })
+  await open(page)
+  await page.getByRole('button', { name: 'Zaczynamy' }).click()
+  await expect(page.locator('.meteor-count')).toContainText('Meteory: 1')
+  // Allow the first meteor to travel into the world from its off-screen birth point.
+  await page.waitForTimeout(1200)
+  await expect(page.getByRole('dialog')).toHaveCount(0)
+  await page.screenshot({ path: testInfo.outputPath('mobile-active.png') })
 })
 test('touch drag keeps first pointer, second finger dashes; release/cancel and blur clear movement', async ({
   page,

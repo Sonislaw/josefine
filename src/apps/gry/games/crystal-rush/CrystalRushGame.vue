@@ -31,7 +31,11 @@ const format = (n: number) => n.toLocaleString('pl-PL', { maximumFractionDigits:
 </script>
 
 <template>
-  <div ref="root" class="crystal-game">
+  <div
+    ref="root"
+    class="crystal-game"
+    :style="{ '--arena-ratio': `${hud.arena.width} / ${hud.arena.height}` }"
+  >
     <header class="crystal-heading">
       <div>
         <p class="eyebrow">◈ ZGRANA / ARCADE <span>REFLEKS. RYZYKO. JESZCZE JEDEN.</span></p>
@@ -106,9 +110,7 @@ const format = (n: number) => n.toLocaleString('pl-PL', { maximumFractionDigits:
             <div v-else-if="hud.mode === 'upgrade'" class="upgrade-content">
               <p class="eyebrow">POZIOM {{ hud.level }}</p>
               <h2>Twój statek. Twój wybór.</h2>
-              <p class="upgrade-intro">
-                Jedno ulepszenie na tę rundę. Po wyborze dostaniesz chwilę ochrony.
-              </p>
+              <p class="upgrade-intro">Wybierz ulepszenie i wracaj do gry z chwilą ochrony.</p>
               <div class="upgrade-grid">
                 <button type="button" class="upgrade-card" @click="upgrade('speed')">
                   <span aria-hidden="true">↗</span><strong>Silnik</strong
@@ -345,7 +347,7 @@ const format = (n: number) => n.toLocaleString('pl-PL', { maximumFractionDigits:
   overflow: hidden;
   box-shadow: 0 22px 70px #0005;
   background: #101a27;
-  aspect-ratio: 3 / 2;
+  aspect-ratio: var(--arena-ratio, 3 / 2);
 }
 .arena-shell canvas {
   display: block;
@@ -720,20 +722,32 @@ progress::-moz-progress-bar {
     padding: 12px 16px;
   }
 }
-@media (max-width: 560px) {
+@media (max-width: 600px) {
   .crystal-game {
-    padding: 24px 12px 0;
+    padding: 16px 10px 0;
+    --mobile-arena-height: clamp(300px, calc(100svh - 260px), 560px);
   }
   .crystal-heading {
+    position: relative;
     align-items: start;
     gap: 10px;
     flex-wrap: wrap;
-    margin-bottom: 20px;
+    margin-bottom: 12px;
   }
   .crystal-heading h1 {
-    font-size: 31px;
+    font-size: clamp(23px, 6vw, 30px);
+    margin-bottom: 6px;
+  }
+  .crystal-heading .eyebrow {
+    padding-right: 110px;
+  }
+  .crystal-heading p:not(.eyebrow) {
+    font-size: 12px;
   }
   .crystal-heading .sound-button {
+    position: absolute;
+    right: 0;
+    top: -10px;
     min-height: 44px;
     padding: 8px 11px;
   }
@@ -745,13 +759,28 @@ progress::-moz-progress-bar {
   }
   .arena-shell {
     border-radius: 13px;
+    aspect-ratio: auto;
+    min-height: var(--mobile-arena-height);
+  }
+  .arena-shell canvas {
+    position: absolute;
+    inset: 0;
+  }
+  .arena-column {
+    scroll-margin-top: 12px;
   }
   .game-overlay {
+    /* Content owns its height: no nested scroll and no cropped start/upgrade buttons.
+       During play the canvas keeps a viewport-sized box and a uniform world transform. */
+    position: relative;
+    inset: auto;
+    min-height: var(--mobile-arena-height);
+    overflow: visible;
     padding: 15px;
-    align-items: flex-start;
+    align-items: center;
   }
   .overlay-content {
-    margin: 0 auto;
+    margin: auto;
   }
   .crystal-mark {
     display: none;
@@ -772,13 +801,13 @@ progress::-moz-progress-bar {
   .upgrade-grid {
     grid-template-columns: 1fr;
     gap: 8px;
-    margin-top: 14px;
+    margin-top: 10px;
   }
   .upgrade-card {
     display: grid;
     grid-template-columns: 32px 1fr;
     gap: 0 8px;
-    padding: 10px 14px;
+    padding: 8px 12px;
   }
   .upgrade-card > span {
     grid-row: 1 / 4;
@@ -829,6 +858,15 @@ progress::-moz-progress-bar {
   }
   .dash-button {
     flex: 1;
+  }
+  .arena-controls {
+    margin-top: 10px;
+  }
+  .arena-controls button {
+    min-height: 48px;
+  }
+  .pause-button kbd {
+    display: none;
   }
   .dash-button span {
     margin-left: 12px;

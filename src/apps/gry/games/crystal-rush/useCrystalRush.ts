@@ -1,5 +1,6 @@
 import { nextTick, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue'
 import { dashCooldown, magnetRadius, movementSpeed, xpRequired } from './config'
+import { DESKTOP_ARENA, MOBILE_ARENA } from './arena'
 import { createGame, chooseUpgrade, stepGame } from './engine'
 import { createClock } from './clock'
 import { bindInput } from './input'
@@ -29,10 +30,13 @@ export function useCrystalRush() {
     error = ref(''),
     announcement = ref('')
   const debug = ref(false)
+  const preferredArena = () =>
+    window.matchMedia('(max-width: 600px)').matches ? MOBILE_ARENA : DESKTOP_ARENA
   function snapshot() {
     const p = game.player
     return {
       mode: game.mode,
+      arena: game.arena,
       score: game.score,
       best: game.bestScore,
       newRecord: game.newRecord,
@@ -97,12 +101,20 @@ export function useCrystalRush() {
   function start() {
     if (error.value || !renderer) return
     if (sound.value) audio.unlock()
-    game = createGame(game.bestScore, Math.random, 'playing')
+    game = createGame(game.bestScore, Math.random, 'playing', preferredArena())
     binding?.clear()
     clock.reset()
     announcement.value = 'Nowa runda. Powodzenia!'
     synchronize()
     focusArena()
+    // Put the entire mobile play area and its controls within reach after starting.
+    if (window.matchMedia('(max-width: 600px)').matches) {
+      void nextTick(() =>
+        canvas.value
+          ?.closest('.arena-column')
+          ?.scrollIntoView({ block: 'start', behavior: 'instant' }),
+      )
+    }
   }
   function upgrade(value: Upgrade) {
     if (chooseUpgrade(game, value)) {
@@ -164,6 +176,7 @@ export function useCrystalRush() {
     },
   )
   onMounted(() => {
+    game = createGame(0, Math.random, 'menu', preferredArena())
     try {
       const saved = loadPreferences(window.localStorage)
       game.bestScore = saved.best
@@ -180,7 +193,13 @@ export function useCrystalRush() {
       renderer.resize()
       observer = new ResizeObserver(() => renderer?.resize())
       observer.observe(canvas.value!)
-      binding = bindInput(canvas.value!, root.value!, () => game.mode, togglePause)
+      binding = bindInput(
+        canvas.value!,
+        root.value!,
+        () => game.mode,
+        togglePause,
+        () => game.arena,
+      )
       window.addEventListener('blur', lostFocus)
       document.addEventListener('visibilitychange', visibility)
       synchronize()

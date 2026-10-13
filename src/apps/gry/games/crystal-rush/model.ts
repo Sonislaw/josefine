@@ -1,3 +1,5 @@
+import type { Arena } from './arena'
+
 export type Mode = 'menu' | 'playing' | 'paused' | 'upgrade' | 'gameover'
 export type Upgrade = 'speed' | 'magnet' | 'energy'
 export interface Point {
@@ -46,6 +48,7 @@ export interface Particle extends Point {
 }
 export type GameEvent = 'gem' | 'dash' | 'destroy' | 'hurt' | 'upgrade' | 'gameover' | 'choice'
 export interface Game {
+  arena: Arena
   mode: Mode
   elapsed: number
   score: number

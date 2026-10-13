@@ -1,4 +1,5 @@
 import { CONFIG, clamp, dashCooldown, magnetRadius, movementSpeed, xpRequired } from './config'
+import { DESKTOP_ARENA, type Arena } from './arena'
 import { sweptContact } from './collisions'
 import { addGem, updateMeteorSpawner } from './spawner'
 import type { Game, Input, Random, Upgrade } from './model'
@@ -8,8 +9,10 @@ export function createGame(
   bestScore = 0,
   rng: Random = Math.random,
   mode: Game['mode'] = 'menu',
+  arena: Arena = DESKTOP_ARENA,
 ): Game {
   const game: Game = {
+    arena,
     mode,
     elapsed: 0,
     score: 0,
@@ -24,8 +27,8 @@ export function createGame(
     gemSpawnRemaining: CONFIG.gems.interval,
     nextId: 0,
     player: {
-      x: 450,
-      y: 300,
+      x: arena.width / 2,
+      y: arena.height / 2,
       radius: CONFIG.player.radius,
       hp: CONFIG.player.hp,
       directionX: 0,
@@ -169,12 +172,12 @@ function stepSegment(game: Game, input: Input, dt: number, dashing: boolean, rng
   p.x = clamp(
     p.x + (dashing ? p.dashDirectionX : move.x) * step,
     CONFIG.bounds.minX,
-    CONFIG.bounds.maxX,
+    game.arena.width - (CONFIG.width - CONFIG.bounds.maxX),
   )
   p.y = clamp(
     p.y + (dashing ? p.dashDirectionY : move.y) * step,
     CONFIG.bounds.minY,
-    CONFIG.bounds.maxY,
+    game.arena.height - (CONFIG.height - CONFIG.bounds.maxY),
   )
   for (const meteor of game.meteors) {
     if (!meteor.alive) continue

@@ -1,4 +1,4 @@
-import { CONFIG } from './config'
+import { arenaViewport } from './arena'
 import { meteorShapes } from './spawner'
 import type { Game, Input } from './model'
 
@@ -44,39 +44,33 @@ export function createRenderer(canvas: HTMLCanvasElement, reducedMotion = false)
   }
   function render(game: Game, input: Input) {
     if (!ctx) return
-    const scale = Math.min(canvas.width / CONFIG.width, canvas.height / CONFIG.height)
+    const { width, height } = game.arena
+    const view = arenaViewport(canvas.width, canvas.height, game.arena)
     ctx.setTransform(1, 0, 0, 1, 0, 0)
     ctx.fillStyle = '#0b1018'
     ctx.fillRect(0, 0, canvas.width, canvas.height)
-    ctx.setTransform(
-      scale,
-      0,
-      0,
-      scale,
-      (canvas.width - CONFIG.width * scale) / 2,
-      (canvas.height - CONFIG.height * scale) / 2,
-    )
+    ctx.setTransform(view.scale, 0, 0, view.scale, view.x, view.y)
     ctx.save()
     if (game.hitFlash && !reducedMotion)
       ctx.translate(Math.sin(game.elapsed * 95) * 2, Math.cos(game.elapsed * 79) * 2)
     ctx.fillStyle = '#101a27'
-    ctx.fillRect(0, 0, CONFIG.width, CONFIG.height)
+    ctx.fillRect(0, 0, width, height)
     ctx.strokeStyle = '#1a2939'
     ctx.lineWidth = 0.7
     ctx.beginPath()
-    for (let x = 0; x <= CONFIG.width; x += 40) {
+    for (let x = 0; x <= width; x += 40) {
       ctx.moveTo(x, 0)
-      ctx.lineTo(x, CONFIG.height)
+      ctx.lineTo(x, height)
     }
-    for (let y = 0; y <= CONFIG.height; y += 40) {
+    for (let y = 0; y <= height; y += 40) {
       ctx.moveTo(0, y)
-      ctx.lineTo(CONFIG.width, y)
+      ctx.lineTo(width, y)
     }
     ctx.stroke()
     ctx.fillStyle = '#586982'
     for (let i = 0; i < 35; i++) {
       ctx.globalAlpha = 0.2 + (i % 3) * 0.12
-      ctx.fillRect((i * 197 + 73) % 900, (i * 131 + 23) % 600, 1.6, 1.6)
+      ctx.fillRect((i * 197 + 73) % width, (i * 131 + 23) % height, 1.6, 1.6)
     }
     ctx.globalAlpha = 1
     for (const gem of game.gems) {
@@ -95,7 +89,8 @@ export function createRenderer(canvas: HTMLCanvasElement, reducedMotion = false)
     }
     for (const meteor of game.meteors) {
       // Off-screen rendering may be skipped. Simulation never removes/caps these meteors.
-      if (meteor.x < -20 || meteor.x > 920 || meteor.y < -20 || meteor.y > 620) continue
+      if (meteor.x < -20 || meteor.x > width + 20 || meteor.y < -20 || meteor.y > height + 20)
+        continue
       ctx.save()
       ctx.translate(meteor.x, meteor.y)
       ctx.rotate(meteor.angle)
@@ -165,7 +160,7 @@ export function createRenderer(canvas: HTMLCanvasElement, reducedMotion = false)
     }
     if (game.hitFlash) {
       ctx.fillStyle = `rgba(255,113,133,${game.hitFlash * 0.3})`
-      ctx.fillRect(0, 0, 900, 600)
+      ctx.fillRect(0, 0, width, height)
     }
     ctx.restore()
   }

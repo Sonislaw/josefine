@@ -1,4 +1,5 @@
-import { CONFIG, clamp } from './config'
+import { clamp } from './config'
+import { arenaViewport, DESKTOP_ARENA, type Arena } from './arena'
 import { emptyInput } from './model'
 import type { Mode } from './model'
 
@@ -6,19 +7,12 @@ export function worldPoint(
   clientX: number,
   clientY: number,
   rect: { left: number; top: number; width: number; height: number },
+  arena: Arena = DESKTOP_ARENA,
 ) {
-  const scale = Math.min(rect.width / CONFIG.width, rect.height / CONFIG.height)
+  const view = arenaViewport(rect.width, rect.height, arena)
   return {
-    x: clamp(
-      (clientX - rect.left - (rect.width - CONFIG.width * scale) / 2) / scale,
-      0,
-      CONFIG.width,
-    ),
-    y: clamp(
-      (clientY - rect.top - (rect.height - CONFIG.height * scale) / 2) / scale,
-      0,
-      CONFIG.height,
-    ),
+    x: clamp((clientX - rect.left - view.x) / view.scale, 0, arena.width),
+    y: clamp((clientY - rect.top - view.y) / view.scale, 0, arena.height),
   }
 }
 
@@ -28,6 +22,7 @@ export function bindInput(
   root: HTMLElement,
   mode: () => Mode,
   pause: () => void,
+  arena: () => Arena = () => DESKTOP_ARENA,
 ) {
   const input = emptyInput(),
     keys = new Set<string>()
@@ -91,7 +86,12 @@ export function bindInput(
     updateKeys()
   }
   function point(event: PointerEvent) {
-    input.pointer = worldPoint(event.clientX, event.clientY, canvas.getBoundingClientRect())
+    input.pointer = worldPoint(
+      event.clientX,
+      event.clientY,
+      canvas.getBoundingClientRect(),
+      arena(),
+    )
   }
   function pointerDown(event: PointerEvent) {
     if (mode() !== 'playing' || pointerId !== null || event.button !== 0) return

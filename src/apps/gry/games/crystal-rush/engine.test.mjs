@@ -12,6 +12,7 @@ const { sweptContact } = await jiti.import('./collisions.ts')
 const { worldPoint } = await jiti.import('./input.ts')
 const { createClock } = await jiti.import('./clock.ts')
 const { parseBest, loadPreferences, saveBest } = await jiti.import('./storage.ts')
+const { MOBILE_ARENA, DESKTOP_ARENA, arenaViewport } = await jiti.import('./arena.ts')
 const rng = () => 0.9
 const fresh = () => {
   const game = createGame(0, rng, 'playing')
@@ -28,6 +29,47 @@ const meteor = (x, y, speed = 0) => ({
 })
 const gem = (x, y, id = 1) => ({ id, x, y, radius: 7, phase: 0, alive: true })
 const close = (a, b, eps = 1e-6) => assert.ok(Math.abs(a - b) < eps, `${a} != ${b}`)
+
+test('mobile world: centered player, reachable gems and all four spawn edges', () => {
+  const game = createGame(0, rng, 'playing', MOBILE_ARENA)
+  assert.equal(game.player.x, 225)
+  assert.equal(game.player.y, 300)
+  assert.ok(game.gems.every((g) => g.x >= 35 && g.x <= 415 && g.y >= 90 && g.y <= 570))
+  const edges = [0.01, 0.26, 0.51, 0.76].map((value) =>
+    createMeteor(0, 1, () => value, MOBILE_ARENA),
+  )
+  assert.equal(edges[0].x, -25)
+  assert.equal(edges[1].x, 475)
+  assert.equal(edges[2].y, -25)
+  assert.equal(edges[3].y, 625)
+  game.gems = []
+  for (let i = 0; i < 250; i++) stepGame(game, { ...emptyInput(), x: 1, y: 1 }, CONFIG.step, rng)
+  close(game.player.x, 435)
+  close(game.player.y, 585)
+  game.mode = 'playing'
+  updateMeteorSpawner(game, 60, rng)
+  assert.equal(game.totalMeteorsSpawned, expectedBirths(game.elapsed))
+})
+
+test('mobile render and touch share the same uniform scale, even after rotation', () => {
+  for (const rect of [
+    { left: 10, top: 12, width: 340, height: 407 },
+    { left: 20, top: 30, width: 760, height: 300 },
+  ]) {
+    const view = arenaViewport(rect.width, rect.height, MOBILE_ARENA)
+    const point = worldPoint(
+      rect.left + view.x + 225 * view.scale,
+      rect.top + view.y + 300 * view.scale,
+      rect,
+      MOBILE_ARENA,
+    )
+    close(point.x, 225)
+    close(point.y, 300)
+  }
+  const mobile = arenaViewport(340, 407, MOBILE_ARENA)
+  const oldMobile = arenaViewport(340, 340 / 1.5, DESKTOP_ARENA)
+  assert.ok(mobile.scale / oldMobile.scale > 1.7)
+})
 
 test('initial state, boundaries and 12 crystals', () => {
   const game = createGame(50, rng)

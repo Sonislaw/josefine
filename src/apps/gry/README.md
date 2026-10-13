@@ -92,8 +92,8 @@ Grafika OG oraz PNG instalacyjne są wersjami rastrowymi autorskich, kodowych gr
 
 ### Wynik weryfikacji wdrożenia modułu
 
-- 39 testów silników i sesji: zaliczone (21 Warcabów i 18 gry Jeszcze jeden kryształ), w tym 8 pełnych symulowanych partii Warcabów w obu trybach.
-- 22 testy przeglądarkowe w systemowym Chrome: zaliczone (12 Warcabów i 10 gry Jeszcze jeden kryształ), w tym responsywność, sterowanie dotykowe, pełna runda arcade, cykl życia po restartach, AI, PD oraz jednoplikowe Warcaby przy wyłączonej sieci i niedostępnym localStorage.
+- 41 testów silników i sesji: zaliczone (21 Warcabów i 20 gry Jeszcze jeden kryształ), w tym 8 pełnych symulowanych partii Warcabów w obu trybach.
+- 27 testów przeglądarkowych w systemowym Chrome: zaliczone (12 Warcabów i 15 gry Jeszcze jeden kryształ), w tym responsywność, pionowa arena mobilna, sterowanie dotykowe, pełna runda arcade, cykl życia po restartach, AI, PD oraz jednoplikowe Warcaby przy wyłączonej sieci i niedostępnym localStorage.
 - Build `npm run build:site -- gry`, kontrola typów, lint nowych plików i kontrola grafik OG: zaliczone.
 - Kontrola artefaktów `check-gry-build.mjs`: zaliczona. HTML katalogu nie ładuje pakietu samej gry.
 - Test zbudowanej strony w przeglądarce: brak błędów hydratacji, działające czyste URL-e i AI, treść dostępna bez JavaScript, odpowiedź 404 dla nieistniejącej strony.
