@@ -12,7 +12,7 @@
     "check:og": "node scripts/check-og-images.mjs",
     "type-check": "vue-tsc --build",
     "test:praca": "node --test src/apps/praca/lib/*.test.mjs",
-    "test:gry": "node --test src/apps/gry/games/warcaby/*.test.mjs",
+    "test:gry": "node --test src/apps/gry/games/*/*.test.mjs",
     "test:gry:browser": "playwright test --config playwright.gry.config.ts",
     "lint": "run-s \"lint:*\"",
     "lint:oxlint": "oxlint . --fix",

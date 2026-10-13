@@ -11,6 +11,7 @@ npm run dev
 
 - Katalog lokalnie: `http://localhost:5173/gry`
 - Warcaby lokalnie: `http://localhost:5173/gry/warcaby-arena-mocy`
+- Jeszcze jeden kryształ lokalnie: `http://localhost:5173/gry/jeszcze-jeden-krysztal`
 - Docelowo: `https://gry.zgrana.pl/` i `/warcaby-arena-mocy`
 - Prywatność: `/polityka-prywatnosci` (lokalnie z prefiksem `/gry`).
 
@@ -56,6 +57,12 @@ Plansza ma stałą orientację; jasne zaczynają. To wariant warcabów amerykań
 
 Nie rejestruj każdej gry jako osobnej aplikacji Josefine lub osobnej domeny.
 
+## Jeszcze jeden kryształ
+
+Druga gra ma własny katalog `games/crystal-rush/`: silnik symulacji, renderer Canvas, sterowanie, zegar, zapis rekordu i komponent Vue. Nie korzysta z silnika Warcabów. Kafelek, lazy routing, SSG, sitemap i SEO powstają przez ten sam manifest oraz konfigurację co pozostałe gry.
+
+[Dokumentacja gry](games/crystal-rush/README.md) opisuje architekturę, sterowanie, testy i pomiar dla 100–5000 meteorów. Po wdrożeniu istniejącego projektu Gry podstrona będzie dostępna pod `/jeszcze-jeden-krysztal`; nie wymaga osobnej konfiguracji Cloudflare.
+
 ## Jednoplikowe Warcaby
 
 Link „Pobierz grę · HTML + JS” pobiera `/games/warcaby-arena-mocy.html`.
@@ -85,8 +92,8 @@ Grafika OG oraz PNG instalacyjne są wersjami rastrowymi autorskich, kodowych gr
 
 ### Wynik weryfikacji wdrożenia modułu
 
-- 21 testów silnika i sesji: zaliczone, w tym 8 pełnych symulowanych partii w obu trybach.
-- 12 testów przeglądarkowych w systemowym Chrome: zaliczone, w tym szerokości 320, 390, 768, 1024 i 1440 px, restart i zmiana kontrolera AI, PD, blokada po zakończeniu gry oraz jednoplikowa gra z AI przy wyłączonej sieci i niedostępnym localStorage.
+- 39 testów silników i sesji: zaliczone (21 Warcabów i 18 gry Jeszcze jeden kryształ), w tym 8 pełnych symulowanych partii Warcabów w obu trybach.
+- 22 testy przeglądarkowe w systemowym Chrome: zaliczone (12 Warcabów i 10 gry Jeszcze jeden kryształ), w tym responsywność, sterowanie dotykowe, pełna runda arcade, cykl życia po restartach, AI, PD oraz jednoplikowe Warcaby przy wyłączonej sieci i niedostępnym localStorage.
 - Build `npm run build:site -- gry`, kontrola typów, lint nowych plików i kontrola grafik OG: zaliczone.
 - Kontrola artefaktów `check-gry-build.mjs`: zaliczona. HTML katalogu nie ładuje pakietu samej gry.
 - Test zbudowanej strony w przeglądarce: brak błędów hydratacji, działające czyste URL-e i AI, treść dostępna bez JavaScript, odpowiedź 404 dla nieistniejącej strony.

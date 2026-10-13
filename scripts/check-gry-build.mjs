@@ -7,7 +7,7 @@ for (const page of config.pages) {
   const html = await readFile(`dist/${file}.html`, 'utf8')
   assert.ok(html.includes(`<title>${page.title}</title>`), `Title: ${file}`)
   assert.ok(html.includes(`href="https://gry.zgrana.pl${page.path}"`), `Canonical: ${file}`)
-  assert.ok(html.includes('https://gry.zgrana.pl/og/gry.png'), `OG: ${file}`)
+  assert.ok(html.includes(`https://gry.zgrana.pl${page.socialImage}`), `OG: ${file}`)
   assert.ok(html.includes('<h1'), `SSG content: ${file}`)
   assert.ok(!html.includes('<div id="app"></div>'), `Empty SPA shell: ${file}`)
   assert.ok(sitemap.includes(`https://gry.zgrana.pl${page.path}</loc>`), `Sitemap: ${file}`)
@@ -15,6 +15,8 @@ for (const page of config.pages) {
 const home = await readFile('dist/index.html', 'utf8')
 assert.ok(home.includes('href="/warcaby-arena-mocy"'))
 assert.ok(!home.includes('WarcabyPage-'), 'Catalog must not preload the game bundle')
+assert.ok(home.includes('href="/jeszcze-jeden-krysztal"'))
+assert.ok(!home.includes('CrystalRushPage-'), 'Catalog must not preload the arcade bundle')
 const manifest = JSON.parse(await readFile('dist/manifest.webmanifest', 'utf8'))
 assert.equal(manifest.short_name, 'Gry')
 for (const icon of manifest.icons) await access(`dist${icon.src}`)
@@ -25,5 +27,5 @@ assert.ok(offline.includes('Warcaby — Arena Mocy'))
 assert.ok(!/<script[^>]+src=/.test(offline), 'Export must have no external scripts')
 assert.ok(!offline.includes('googletagmanager.com'), 'Export must not include analytics')
 console.log(
-  'Gry build OK: 3 prerendered pages, clean canonical URLs, lazy game, sitemap, icons, 404 and standalone HTML.',
+  `Gry build OK: ${config.pages.length} prerendered pages, clean canonical URLs, lazy games, sitemap, icons, 404 and standalone HTML.`,
 )

@@ -5,7 +5,7 @@
       "key": "home",
       "path": "/",
       "title": "Gry online bez konta — zagraj w przeglądarce | Zgrana",
-      "description": "Małe gry, duża frajda. Odkryj gry przeglądarkowe Zgrana: zagraj z komputerem lub we dwoje na jednym urządzeniu. Zacznij od Warcabów — Areny Mocy.",
+      "description": "Gry przeglądarkowe bez konta: Warcaby — Arena Mocy oraz Jeszcze jeden kryształ. Wybierz strategię lub zręcznościówkę i zagraj na komputerze lub telefonie.",
       "socialImage": "/og/gry.png",
       "socialImageAlt": "Gry Zgrana — Warcaby Arena Mocy, strategia na wyciągnięcie ręki"
     },
@@ -18,10 +18,18 @@
       "socialImageAlt": "Gry Zgrana — Warcaby Arena Mocy, strategia na wyciągnięcie ręki"
     },
     {
+      "key": "jeszcze-jeden-krysztal",
+      "path": "/jeszcze-jeden-krysztal",
+      "title": "Jeszcze jeden kryształ — gra zręcznościowa online | Zgrana",
+      "description": "Zbieraj kryształy, niszcz meteory zrywem i ulepszaj statek. Niekończący się napływ zagrożeń, serie punktów i lokalny rekord. Zagraj na telefonie lub komputerze.",
+      "socialImage": "/og/crystal-rush.png",
+      "socialImageAlt": "Jeszcze jeden kryształ — statek, zielone kryształy i meteory na kosmicznej arenie"
+    },
+    {
       "key": "privacy",
       "path": "/polityka-prywatnosci",
       "title": "Polityka prywatności | Gry Zgrana",
-      "description": "Informacje o prywatności, analityce i lokalnym zapisie punktów doświadczenia w grach Zgrana.",
+      "description": "Informacje o prywatności, analityce i lokalnym zapisie rekordów oraz punktów doświadczenia w grach Zgrana.",
       "socialImage": "/og/gry.png",
       "socialImageAlt": "Gry Zgrana — Warcaby Arena Mocy, strategia na wyciągnięcie ręki"
     }

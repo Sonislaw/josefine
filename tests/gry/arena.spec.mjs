@@ -28,7 +28,7 @@ test('catalog links to game; metadata and navigation', async ({ page }) => {
   await dismissCookies(page)
   await page.goto('/gry')
   await expect(page).toHaveTitle(/Gry online/)
-  await page.locator('.game-card').click()
+  await page.locator('.game-card').filter({ hasText: 'Warcaby' }).click()
   await expect(page).toHaveURL(new RegExp(`${gameUrl}$`))
   await expect(page).toHaveTitle(/Warcaby — Arena Mocy/)
   await expect(page.locator('.piece')).toHaveCount(24)

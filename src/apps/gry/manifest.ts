@@ -15,6 +15,17 @@ export interface GameDefinition {
  * Future games own a folder under games/; never import their engines into this catalog. */
 export const games = [
   {
+    id: 'jeszcze-jeden-krysztal',
+    title: 'Jeszcze jeden kryształ',
+    description:
+      'Mały statek, wielki apetyt na rekord. Zbieraj kryształy, przebijaj się zrywem przez meteory i ulepszaj statek. Napływ zagrożeń nigdy nie ustaje.',
+    category: 'Zręcznościowa',
+    players: '1 gracz',
+    symbol: '◈',
+    cover: '/games/crystal-rush-cover.svg',
+    loadPage: () => import('./pages/CrystalRushPage.vue'),
+  },
+  {
     id: 'warcaby-arena-mocy',
     title: 'Warcaby — Arena Mocy',
     description:

@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="pl">
+  <head>
+    <meta charset="utf-8" />
+    <title>Crystal Rush test harness</title>
+  </head>
+  <body>
+    <div id="mount"></div>
+    <script type="module">
+      import { createApp, h } from 'vue'
+      import { useCrystalRush } from '/src/apps/gry/games/crystal-rush/useCrystalRush.ts'
+      import * as engine from '/src/apps/gry/games/crystal-rush/engine.ts'
+      import * as spawner from '/src/apps/gry/games/crystal-rush/spawner.ts'
+      import { createRenderer } from '/src/apps/gry/games/crystal-rush/renderer.ts'
+      import { emptyInput } from '/src/apps/gry/games/crystal-rush/model.ts'
+      window.crystalEngine = engine
+      window.crystalSpawner = spawner
+      window.crystalRenderer = createRenderer
+      window.crystalInput = emptyInput
+      window.crystalApp = createApp({
+        setup() {
+          const api = useCrystalRush()
+          window.crystalTest = api
+          return () =>
+            h('div', { ref: api.root }, [
+              h('canvas', { ref: api.canvas, tabindex: 0, style: 'width:900px;height:600px' }),
+            ])
+        },
+      })
+      window.crystalApp.mount('#mount')
+    </script>
+  </body>
+</html>

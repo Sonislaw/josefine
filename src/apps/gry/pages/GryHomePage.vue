@@ -60,8 +60,8 @@ useGrySeo('home', {
         <span>02 / PO SWOJEMU</span>
         <h2>Solo albo razem.</h2>
         <p>
-          W Warcabach sprawdzisz się z komputerem na trzech poziomach lub zaprosisz drugą osobę do
-          wspólnej planszy.
+          Pobij własny rekord w „Jeszcze jeden kryształ”. W Warcabach zmierz się z komputerem lub
+          zaproś drugą osobę do wspólnej planszy.
         </p>
       </div>
       <div>
@@ -83,15 +83,16 @@ useGrySeo('home', {
       <details>
         <summary>Czy mogę zagrać z kimś przez internet?</summary>
         <p>
-          Pierwsza gra obsługuje komputer lub dwie osoby na jednym urządzeniu. Nie ma w niej
-          rozgrywek sieciowych.
+          Warcaby obsługują komputer lub dwie osoby na jednym urządzeniu. „Jeszcze jeden kryształ”
+          to gra jednoosobowa. Nie ma tu rozgrywek sieciowych.
         </p>
       </details>
       <details>
         <summary>Czy mogę wrócić do przerwanej partii?</summary>
         <p>
-          Odświeżenie strony rozpoczyna nową partię. W Warcabach zapisujemy lokalnie tylko punkty
-          doświadczenia, nie bieżącą planszę.
+          Nie zapisujemy trwających rozgrywek. W Warcabach pozostają lokalne punkty doświadczenia, a
+          w „Jeszcze jeden kryształ” — Twój rekord i ustawienie dźwięku. Odświeżenie gry
+          zręcznościowej otwiera menu.
         </p>
       </details>
     </section>

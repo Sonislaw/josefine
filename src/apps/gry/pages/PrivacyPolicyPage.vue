@@ -18,6 +18,12 @@ useGrySeo('privacy')
         przeglądarce. Bieżącej planszy nie zapisujemy ani nie wysyłamy na serwer. Pobrany plik gry
         działa offline i nie zawiera analityki.
       </p>
+      <p>
+        „Jeszcze jeden kryształ” zachowuje lokalnie rekord pod kluczem „crystal-rush-best” oraz
+        preferencję dźwięku pod „crystal-rush-sound”. Bieżąca runda nie jest zapisywana. Rekord nie
+        jest przesyłany na serwer ani synchronizowany między urządzeniami. Czyszczenie danych
+        witryny usuwa również te ustawienia.
+      </p>
     </section>
   </div>
 </template>
