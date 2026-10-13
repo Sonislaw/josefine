@@ -15,6 +15,17 @@ export interface GameDefinition {
  * Future games own a folder under games/; never import their engines into this catalog. */
 export const games = [
   {
+    id: 'nocny-ekspres',
+    title: 'Nocny ekspres',
+    description:
+      'Miasto nie zasypia. Buduj tory, przełączaj zwrotnice i dowoź pasażerów do nowych dzielnic. Trzy szanse, rosnąca sieć i jeszcze jeden dobrze zaplanowany kurs.',
+    category: 'Logistyczna',
+    players: '1 gracz',
+    symbol: '↔',
+    cover: '/games/night-express-cover.svg',
+    loadPage: () => import('./pages/NightExpressPage.vue'),
+  },
+  {
     id: 'ostatnia-latarnia',
     title: 'Ostatnia latarnia',
     description:

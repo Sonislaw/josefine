@@ -55,6 +55,11 @@ try {
     if (/hydration/i.test(message.text())) errors.push(message.text())
   })
   await page.goto(base)
+  assert.equal(await page.locator('.game-card').count(), 6)
+  assert.equal(
+    await page.locator('.game-card').filter({ hasText: 'Nocny ekspres' }).getAttribute('href'),
+    '/nocny-ekspres',
+  )
   assert.equal(
     await page.locator('.game-card').filter({ hasText: 'Klocki' }).getAttribute('href'),
     '/klocki',
@@ -148,6 +153,28 @@ try {
   assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth))
   assert.equal(await page.evaluate(() => window.lighthouseHarness), undefined)
   assert.equal((await page.request.get(`${base}/tests/gry/lighthouse-harness.html`)).status(), 404)
+  await page.goto(`${base}/nocny-ekspres`)
+  assert.equal(
+    await page.locator('link[rel="canonical"]').getAttribute('href'),
+    'https://gry.zgrana.pl/nocny-ekspres',
+  )
+  assert.equal(
+    await page.locator('meta[property="og:image"]').getAttribute('content'),
+    'https://gry.zgrana.pl/og/night-express.png',
+  )
+  await page.getByRole('button', { name: '▶ Wznów ruch', exact: true }).click()
+  await page.getByRole('button', { name: 'Ⅱ Pauza', exact: true }).click()
+  assert.equal(await page.locator('.ne-map').getAttribute('data-mode'), 'paused')
+  const saved = await page.evaluate(() =>
+    JSON.parse(localStorage.getItem('zgrana:gry:nocny-ekspres:v1')),
+  )
+  assert.equal(saved.version, 1)
+  await page.reload()
+  await page.waitForFunction(() => document.querySelector('.ne-map')?.dataset.mode === 'paused')
+  assert.equal(await page.evaluate(() => window.expressHarness), undefined)
+  assert.equal((await page.request.get(`${base}/tests/gry/express-harness.html`)).status(), 404)
+  assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth))
+  await page.screenshot({ path: 'test-results/production/express-mobile.png', fullPage: true })
   assert.deepEqual(errors, [])
   const noJs = await browser.newContext({ javaScriptEnabled: false })
   const staticPage = await noJs.newPage()
@@ -169,9 +196,15 @@ try {
   assert.ok((await staticPage.title()).includes('Ostatnia latarnia'))
   assert.equal(await staticPage.locator('.lh-faq details').count(), 5)
   assert.ok(await staticPage.locator('.lh-start').isDisabled())
+  await staticPage.goto(`${base}/nocny-ekspres`)
+  assert.ok((await staticPage.title()).includes('Nocny ekspres'))
+  assert.equal(await staticPage.locator('.ne-faq details').count(), 5)
+  assert.ok(
+    await staticPage.getByRole('button', { name: '▶ Wznów ruch', exact: true }).isDisabled(),
+  )
   assert.equal((await staticPage.goto(`${base}/nie-ma-takiej-gry`)).status(), 404)
   console.log(
-    'Production browser OK: five games, catalog desktop/mobile, clean routes, per-game SEO, no hydration errors, AI, Crystal Rush and Lighthouse start/pause, Blocks and Kingdom play/restore, prerender without JavaScript, test harness excluded, 404.',
+    'Production browser OK: six games, catalog desktop/mobile, clean routes, per-game SEO, no hydration errors, AI, Crystal Rush and Lighthouse start/pause, Blocks, Kingdom and Express play/restore, prerender without JavaScript, test harness excluded, 404.',
   )
 } finally {
   await browser.close()

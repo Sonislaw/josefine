@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="pl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Express test fixture</title>
+    <style>
+      body {
+        margin: 0;
+        background: #0c191c;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module">
+      import { createApp } from 'vue'
+      import Game from '/src/apps/gry/games/night-express/NightExpressGame.vue'
+      import { expressRuntimeKey } from '/src/apps/gry/games/night-express/useExpress.ts'
+      import * as engine from '/src/apps/gry/games/night-express/engine.ts'
+      import * as world from '/src/apps/gry/games/night-express/world.ts'
+      import * as network from '/src/apps/gry/games/night-express/network.ts'
+      import { createRenderer } from '/src/apps/gry/games/night-express/renderer.ts'
+      let current
+      const factory = (seed) => {
+        current = engine.createGame(seed)
+        if (window.expressFixture === 'upgrade') {
+          current.elapsed = 119.98
+          current.nextExpiry = 120
+        }
+        if (window.expressFixture === 'large') {
+          for (let i = 1; i < 100; i++) world.discoverDistrict(current)
+          while (current.trains.length < 16) current.trains.push(world.createTrain(current))
+        }
+        return current
+      }
+      window.expressHarness = { engine, world, network, createRenderer, game: () => current }
+      window.expressApp = createApp(Game).provide(expressRuntimeKey, { createGame: factory, seed: () => 123 })
+      window.expressApp.mount('#app')
+    </script>
+  </body>
+</html>

@@ -18,7 +18,7 @@ async function open(page) {
 test('crystal catalog entry, metadata and independent lazy route', async ({ page }) => {
   await prepare(page)
   await page.goto('/gry')
-  await expect(page.locator('.game-card')).toHaveCount(5)
+  await expect(page.locator('.game-card')).toHaveCount(6)
   await page.locator('.game-card').filter({ hasText: 'Jeszcze jeden kryształ' }).click()
   await expect(page).toHaveURL(/\/gry\/jeszcze-jeden-krysztal$/)
   await expect(page).toHaveTitle(/Jeszcze jeden kryształ/)

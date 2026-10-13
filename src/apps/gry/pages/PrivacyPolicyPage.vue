@@ -13,6 +13,12 @@ useGrySeo('privacy')
     <section class="local-data">
       <h2>Dane rozgrywki</h2>
       <p>
+        Nocny ekspres zapisuje całą sieć kolejową, pociągi, pasażerów, rozwój miasta, wynik i
+        ustawienia lokalnie pod kluczem „zgrana:gry:nocny-ekspres:v1”. Podczas nieobecności czas gry
+        nie płynie. Zapis nie trafia na serwer ani nie jest synchronizowany między urządzeniami.
+        Możesz zastąpić go nową grą lub usunąć, czyszcząc dane witryny w przeglądarce.
+      </p>
+      <p>
         Ostatnia latarnia przechowuje lokalnie odblokowanych bohaterów, rekord czasu i pokonanych
         przeciwników, liczbę zwycięstw oraz preferencję dźwięku pod kluczem
         „zgrana:gry:ostatnia-latarnia:v1”. Trwającej wyprawy nie zapisujemy. Dane te nie są wysyłane

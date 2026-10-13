@@ -60,9 +60,9 @@ useGrySeo('home', {
         <span>02 / PO SWOJEMU</span>
         <h2>Solo albo razem.</h2>
         <p>
-          Przetrwaj noc w Ostatniej latarni, rozwijaj Małe królestwo, ułóż linię w Klockach lub
-          pobij rekord w „Jeszcze jeden kryształ”. W Warcabach zmierz się z komputerem lub zaproś
-          drugą osobę do wspólnej planszy.
+          Pokieruj koleją w Nocnym ekspresie, przetrwaj noc w Ostatniej latarni, rozwijaj Małe
+          królestwo, ułóż linię w Klockach lub pobij rekord w „Jeszcze jeden kryształ”. W Warcabach
+          zmierz się z komputerem lub zaproś drugą osobę do wspólnej planszy.
         </p>
       </div>
       <div>
@@ -85,18 +85,18 @@ useGrySeo('home', {
         <summary>Czy mogę zagrać z kimś przez internet?</summary>
         <p>
           Warcaby obsługują komputer lub dwie osoby na jednym urządzeniu. „Jeszcze jeden kryształ”,
-          Klocki, Małe królestwo i Ostatnia latarnia to gry jednoosobowe. Nie ma tu rozgrywek
-          sieciowych.
+          Klocki, Małe królestwo, Ostatnia latarnia i Nocny ekspres to gry jednoosobowe. Nie ma tu
+          rozgrywek sieciowych.
         </p>
       </details>
       <details>
         <summary>Czy mogę wrócić do przerwanej partii?</summary>
         <p>
-          W Małym królestwie zapisujemy osadę, a w Klockach całą rundę — wrócisz do swojej planszy w
-          tej samej przeglądarce. W Warcabach pozostają jedynie lokalne punkty doświadczenia, a w
-          „Jeszcze jeden kryształ” — rekord i ustawienie dźwięku, bez zapisu trwającej rozgrywki.
-          Ostatnia latarnia zachowuje rekordy, odblokowanych bohaterów i dźwięk, ale nie bieżącą
-          wyprawę.
+          W Nocnym ekspresie zapisujemy całą sieć i ruch pociągów, w Małym królestwie osadę, a w
+          Klockach całą rundę — wrócisz do swojej planszy w tej samej przeglądarce. W Warcabach
+          pozostają jedynie lokalne punkty doświadczenia, a w „Jeszcze jeden kryształ” — rekord i
+          ustawienie dźwięku, bez zapisu trwającej rozgrywki. Ostatnia latarnia zachowuje rekordy,
+          odblokowanych bohaterów i dźwięk, ale nie bieżącą wyprawę.
         </p>
       </details>
     </section>

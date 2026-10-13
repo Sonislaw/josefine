@@ -15,6 +15,7 @@ npm run dev
 - Klocki lokalnie: `http://localhost:5173/gry/klocki`
 - Małe królestwo lokalnie: `http://localhost:5173/gry/male-krolestwo`
 - Ostatnia latarnia lokalnie: `http://localhost:5173/gry/ostatnia-latarnia`
+- Nocny ekspres lokalnie: `http://localhost:5173/gry/nocny-ekspres`
 - Docelowo: `https://gry.zgrana.pl/` i `/warcaby-arena-mocy`
 - Prywatność: `/polityka-prywatnosci` (lokalnie z prefiksem `/gry`).
 
@@ -83,6 +84,14 @@ Własne reguły, Canvas i kontroler w `games/last-lighthouse/`, bez zależności
 [Dokumentacja gry](games/last-lighthouse/README.md) opisuje zapis, testy i pomiar wydajności.
 Nowa podstrona korzysta z istniejącego wdrożenia Gry — bez nowego Workera ani domeny.
 
+## Nocny ekspres
+
+Logistyka kolejowa z rozrastającym się miastem i zapisem całej sieci. Własny silnik
+grafu torów, pasażerów i kolizji w `games/night-express/`, bez importowania reguł
+pozostałych gier. [Dokumentacja](games/night-express/README.md) zawiera architekturę,
+sterowanie, zasady zapisu i pomiar 100 dzielnic / 16 pociągów. Integracja używa tego
+samego manifestu, SSG, PWA i wdrożenia Cloudflare.
+
 ## Jednoplikowe Warcaby
 
 Link „Pobierz grę · HTML + JS” pobiera `/games/warcaby-arena-mocy.html`.
@@ -112,8 +121,8 @@ Grafika OG oraz PNG instalacyjne są wersjami rastrowymi autorskich, kodowych gr
 
 ### Wynik weryfikacji wdrożenia modułu
 
-- 84 testy silników i sesji: zaliczone (21 Warcabów, 20 gry Jeszcze jeden kryształ, 11 Klocków, 14 Małego królestwa i 18 Ostatniej latarni), w tym pełna symulacja dziesięciu minut survivalu i 20-letni rozwój osady.
-- 65 testów przeglądarkowych w systemowym Chrome: zaliczone (12 Warcabów, 15 gry Jeszcze jeden kryształ, 12 Klocków, 12 Małego królestwa i 14 Ostatniej latarni), w tym responsywność, gesty dotykowe, zapis, odblokowania, duża mapa, AI oraz jednoplikowe Warcaby bez sieci.
+- 101 testów silników i sesji: zaliczone (21 Warcabów, 20 gry Jeszcze jeden kryształ, 11 Klocków, 14 Małego królestwa, 18 Ostatniej latarni i 17 Nocnego ekspresu), w tym symulacja dziesięciu minut survivalu i kolei oraz 20-letni rozwój osady.
+- 79 testów przeglądarkowych w systemowym Chrome: zaliczone (12 Warcabów, 15 gry Jeszcze jeden kryształ, 12 Klocków, 12 Małego królestwa, 14 Ostatniej latarni i 14 Nocnego ekspresu), w tym responsywność, gesty dotykowe, zapis, odblokowania, duża mapa, AI oraz jednoplikowe Warcaby bez sieci.
 - Build `npm run build:site -- gry`, kontrola typów i kontrola grafik OG: zaliczone.
 - Kontrola artefaktów `check-gry-build.mjs`: zaliczona. HTML katalogu nie ładuje pakietu samej gry.
 - Test zbudowanej strony w przeglądarce: brak błędów hydratacji, działające czyste URL-e i AI, treść dostępna bez JavaScript, odpowiedź 404 dla nieistniejącej strony.

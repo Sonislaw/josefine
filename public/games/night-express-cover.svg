@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="720" viewBox="0 0 1000 720">
+<defs>
+  <radialGradient id="sky"><stop stop-color="#243e51"/><stop offset="1" stop-color="#0b1a2b"/></radialGradient>
+  <linearGradient id="gold" x2="0" y2="1"><stop stop-color="#ffe2a9"/><stop offset="1" stop-color="#bc874b"/></linearGradient>
+  <pattern id="windows" width="24" height="27" patternUnits="userSpaceOnUse"><rect x="5" y="6" width="8" height="11" rx="1" fill="#eec27a" opacity=".38"/></pattern>
+  <filter id="glow"><feGaussianBlur stdDeviation="8"/></filter>
+  <g id="block"><path d="M0 10L82 0l22 14v95l-82 10L0 105Z" fill="#172f41" stroke="#365166" stroke-width="2"/><path d="M22 24l82-10v95l-82 10Z" fill="url(#windows)"/><path d="M0 10l22 14 82-10M22 24v95" fill="none" stroke="#4a6474" stroke-width="2"/></g>
+  <g id="station"><circle r="38" fill="#e5bc7233"/><circle r="25" fill="#112739" stroke="#e8c084" stroke-width="3"/><circle r="12" fill="#edc996"/><circle r="5" fill="#1a3448"/></g>
+</defs>
+<rect width="1000" height="720" fill="url(#sky)"/>
+<g opacity=".7"><use href="#block" x="74" y="80"/><use href="#block" x="212" y="60"/><use href="#block" x="670" y="100"/><use href="#block" x="810" y="85"/><use href="#block" x="70" y="410"/><use href="#block" x="230" y="460"/><use href="#block" x="710" y="450"/><use href="#block" x="850" y="420"/></g>
+<g fill="none" stroke-linecap="round"><path d="M-50 580L220 330Q250 302 290 315L570 397Q630 410 670 370L1040 28M430-50L455 204Q459 245 510 267L1050 510" stroke="#5a9fa5" stroke-width="21" opacity=".2" filter="url(#glow)"/><path d="M-50 580L220 330Q250 302 290 315L570 397Q630 410 670 370L1040 28M430-50L455 204Q459 245 510 267L1050 510" stroke="#071827" stroke-width="25"/><path d="M-50 580L220 330Q250 302 290 315L570 397Q630 410 670 370L1040 28M430-50L455 204Q459 245 510 267L1050 510" stroke="#73888e" stroke-width="16" stroke-dasharray="4 12"/><path d="M-50 580L220 330Q250 302 290 315L570 397Q630 410 670 370L1040 28M430-50L455 204Q459 245 510 267L1050 510" stroke="#b4c3c5" stroke-width="7"/><path d="M-50 580L220 330Q250 302 290 315L570 397Q630 410 670 370L1040 28M430-50L455 204Q459 245 510 267L1050 510" stroke="#182f41" stroke-width="4"/></g>
+<use href="#station" x="142" y="402"/><use href="#station" x="456" y="194"/><use href="#station" x="807" y="243"/>
+<g transform="translate(515 375) rotate(16)"><ellipse rx="147" ry="43" fill="#ebc684" opacity=".13" filter="url(#glow)"/><rect x="-123" y="-25" width="77" height="48" rx="10" fill="#b58b59" stroke="#f2d5a2" stroke-width="2"/><rect x="-111" y="-17" width="19" height="13" rx="3" fill="#23495e"/><rect x="-83" y="-17" width="24" height="13" rx="3" fill="#23495e"/><rect x="-39" y="-27" width="115" height="53" rx="15" fill="url(#gold)" stroke="#ffecc8" stroke-width="2"/><path d="M37-20h19q12 0 12 13v15H37Z" fill="#173d52"/><rect x="-26" y="-18" width="44" height="16" rx="3" fill="#31596d"/><path d="M-26 6h50" stroke="#906b49" stroke-width="3"/><circle cx="67" cy="-13" r="4" fill="#fff8d4"/><circle cx="67" cy="17" r="4" fill="#fff8d4"/><path d="M76-17l115-38v106L76 19" fill="#ffe1a9" opacity=".09"/></g>
+<g fill="#bdcfd0" font-family="Arial,sans-serif" font-size="13" letter-spacing="3"><text x="99" y="463">S1 / PORT</text><text x="399" y="138">S2 / CENTRUM</text><text x="764" y="301">S3 / WSCHÓD</text></g>
+<circle cx="628" cy="389" r="10" fill="#f4d194" stroke="#263c4a" stroke-width="4"/>
+<path d="M42 652h110M42 661h60" stroke="#a0bec533" stroke-width="2"/><text x="810" y="667" fill="#91abb9" font-family="Arial,sans-serif" font-size="12" letter-spacing="4">NOCNA ZMIANA</text>
+</svg>

@@ -5,7 +5,7 @@
       "key": "home",
       "path": "/",
       "title": "Gry online bez konta — zagraj w przeglądarce | Zgrana",
-      "description": "Gry online bez konta: Ostatnia latarnia, Małe królestwo, Klocki, Warcaby i Jeszcze jeden kryształ. Survival, strategie i gry logiczne na telefon oraz komputer.",
+      "description": "Gry online bez konta: Nocny ekspres, Ostatnia latarnia, Małe królestwo, Klocki, Warcaby i Jeszcze jeden kryształ. Zagraj na telefonie lub komputerze.",
       "socialImage": "/og/gry.png",
       "socialImageAlt": "Gry Zgrana — Warcaby Arena Mocy, strategia na wyciągnięcie ręki"
     },
@@ -48,6 +48,14 @@
       "description": "Przetrwaj noc, zbieraj doświadczenie i ewoluuj broń. Automatyczne ataki, trzech bohaterów i finałowy boss. Zagraj w Ostatnią latarnię na telefonie lub komputerze.",
       "socialImage": "/og/last-lighthouse.png",
       "socialImageAlt": "Ostatnia latarnia — rozświetlona wieża i strażnik z ognistą bronią na mrocznej wyspie"
+    },
+    {
+      "key": "nocny-ekspres",
+      "path": "/nocny-ekspres",
+      "title": "Nocny ekspres — kolejowa gra logistyczna online | Zgrana",
+      "description": "Zbuduj sieć kolejową w nocnym mieście. Przełączaj zwrotnice, przewoź pasażerów i unikaj kolizji. Nocny ekspres — gra na telefon i komputer z zapisem postępu.",
+      "socialImage": "/og/night-express.png",
+      "socialImageAlt": "Nocny ekspres — złoty pociąg na rozświetlonych torach w nocnym mieście"
     },
     {
       "key": "privacy",

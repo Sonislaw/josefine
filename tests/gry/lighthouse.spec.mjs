@@ -13,7 +13,7 @@ const mode = (page, value) => expect(page.locator('.lh-arena')).toHaveAttribute(
 test('catalog, own route, SEO and no exposed production test state', async ({ page }) => {
   await prepare(page)
   await page.goto('/gry')
-  await expect(page.locator('.game-card')).toHaveCount(5)
+  await expect(page.locator('.game-card')).toHaveCount(6)
   await page.locator('.game-card').filter({ hasText: 'Ostatnia latarnia' }).click()
   await expect(page).toHaveURL(/\/gry\/ostatnia-latarnia$/)
   await expect(page).toHaveTitle(/Ostatnia latarnia/)
@@ -202,7 +202,7 @@ test('unavailable storage, optional audio, help and real route cleanup', async (
   await page.keyboard.press('Escape')
   await mode(page, 'paused')
   await page.getByRole('link', { name: /Wszystkie gry/ }).click()
-  await expect(page.locator('.game-card')).toHaveCount(5)
+  await expect(page.locator('.game-card')).toHaveCount(6)
   expect(errors).toEqual([])
 })
 test('twenty resets retain a single RAF and unmount removes it', async ({ page }) => {
