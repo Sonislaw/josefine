@@ -4,6 +4,12 @@ import GameDialog from '../../components/GameDialog.vue'
 import KingdomBoard from './KingdomBoard.vue'
 import ResourceBar from './ResourceBar.vue'
 import BuildingOffer from './BuildingOffer.vue'
+import DiscoveryJournal from './DiscoveryJournal.vue'
+import DiscoveryArt from './DiscoveryArt.vue'
+import HallArt from './HallArt.vue'
+import ProgressionPanel from './ProgressionPanel.vue'
+import { RANKS } from './progression'
+import { DISCOVERIES, discoveryStatus, discoveryBonus } from './discoveries'
 import {
   BUILDINGS,
   KEYS,
@@ -29,6 +35,9 @@ const {
   unavailable,
   selected,
   selectedBuilding,
+  selectedDiscovery,
+  latestDiscovery,
+  latestPromotion,
   action,
   card,
   error,
@@ -56,13 +65,41 @@ const selectedName = computed(() =>
     ? selectedBuilding.value.kind === 'hall'
       ? 'Ratusz'
       : BUILDINGS[selectedBuilding.value.kind].name
-    : selected.value
-      ? TERRAIN_NAMES[terrain(state.value.seed, selected.value.x, selected.value.y)]
-      : 'Wybierz pole na mapie',
+    : selectedDiscovery.value
+      ? DISCOVERIES[selectedDiscovery.value.kind].name
+      : selected.value
+        ? TERRAIN_NAMES[terrain(state.value.seed, selected.value.x, selected.value.y)]
+        : 'Wybierz pole na mapie',
 )
 const selectedOutput = computed(() =>
   selectedBuilding.value ? buildingProduction(state.value, selectedBuilding.value) : null,
 )
+const selectedBonus = computed(() =>
+  selectedBuilding.value ? discoveryBonus(state.value, selectedBuilding.value) : null,
+)
+const previewBonuses = computed(() => {
+  const a = action.value,
+    p = preview.value
+  if (!a || !p || !['landmark', 'build', 'upgrade'].includes(a.type) || !('x' in a)) return []
+  return Object.values(p.state.buildings).flatMap((b) => {
+    const bonus = discoveryBonus(p.state, b)
+    if (
+      !bonus ||
+      (a.type === 'landmark'
+        ? bonus.source.x !== a.x || bonus.source.y !== a.y
+        : b.x !== a.x || b.y !== a.y)
+    )
+      return []
+    return [
+      { building: b.kind === 'hall' ? 'Ratusz' : BUILDINGS[b.kind].name, x: b.x, y: b.y, ...bonus },
+    ]
+  })
+})
+function locateDiscovery(p: Point) {
+  card.value = null
+  select(p)
+  board.value?.reveal(p)
+}
 function exploreFromList(p: Point) {
   explore(p)
   board.value?.locate({ x: p.x * 7 + 3, y: p.y * 7 + 3 })
@@ -81,7 +118,10 @@ function compass(p: Point) {
       <div>
         <p class="eyebrow">ZGRANA / SPOKOJNA STRATEGIA</p>
         <h1>Małe <em>królestwo.</em></h1>
-        <p>Od pierwszej chaty po ziemie za horyzontem. Twoje tempo, Twoja osada.</p>
+        <p>
+          Od osady do miasteczka. Odkrywaj zapomniane miejsca i rozwijaj własne królestwo bez
+          pośpiechu.
+        </p>
       </div>
       <div class="heading-buttons">
         <button type="button" @click="help = true">Jak grać?</button
@@ -121,6 +161,7 @@ function compass(p: Point) {
         >
       </div>
       <ResourceBar :resources="state.resources" :delta="preview?.delta" />
+      <p class="rank-badge" data-testid="kingdom-rank">♜ {{ RANKS[state.rank]!.name }}</p>
       <div class="economy-line">
         <span>Produkcja / turę: {{ priceText(output) }}</span
         ><span
@@ -139,6 +180,35 @@ function compass(p: Point) {
         Brakuje żywności. Kolejna tura niedoboru spowoduje odejście mieszkańca. Sprawdź prognozę
         przed zatwierdzeniem.
       </p>
+      <div v-if="latestPromotion" class="promotion-announcement" role="status">
+        <svg viewBox="0 0 64 64" aria-hidden="true"><HallArt :rank="latestPromotion.rank" /></svg>
+        <div>
+          <small>NOWY ROZDZIAŁ TWOJEJ OSADY</small>
+          <strong>Awans: {{ RANKS[latestPromotion.rank]!.name }}!</strong>
+          <span
+            >Prezent dodany do zapasów: {{ priceText(RANKS[latestPromotion.rank]!.gift) }}.</span
+          >
+        </div>
+        <button
+          type="button"
+          aria-label="Zamknij komunikat o awansie"
+          @click="latestPromotion = null"
+        >
+          Zamknij
+        </button>
+      </div>
+      <ProgressionPanel :state="state" />
+      <div v-if="latestDiscovery" class="discovery-announcement" role="status">
+        <svg viewBox="0 0 64 64" aria-hidden="true">
+          <DiscoveryArt :discovery="latestDiscovery" />
+        </svg>
+        <div>
+          <small>ZIEMIE PEŁNE TAJEMNIC</small
+          ><strong>Odkryto: {{ DISCOVERIES[latestDiscovery.kind].name }}</strong
+          ><span>Miejsce czeka na Twoją decyzję. Zbadanie zajmie osobną turę.</span>
+        </div>
+        <button type="button" @click="locateDiscovery(latestDiscovery)">Pokaż na mapie ↗</button>
+      </div>
       <div class="kingdom-workspace">
         <div class="map-column">
           <KingdomBoard
@@ -156,14 +226,42 @@ function compass(p: Point) {
               </p>
               <h2>
                 {{ selectedName }}
-                <small v-if="selectedBuilding">· poziom {{ selectedBuilding.level }}</small>
+                <small v-if="selectedBuilding?.kind === 'hall'"
+                  >· {{ RANKS[state.rank]!.name }}</small
+                >
+                <small v-else-if="selectedBuilding">· poziom {{ selectedBuilding.level }}</small>
               </h2>
               <p v-if="selectedBuilding && selectedBuilding.kind !== 'hall'">
                 {{ BUILDINGS[selectedBuilding.kind].description }}
               </p>
+              <p v-if="selectedBuilding?.kind === 'hall'">
+                Ratusz zmienia wygląd wraz z rangą osady. Jego produkcja pozostaje taka sama; nie
+                wymaga osobnego ulepszania.
+              </p>
               <p v-if="selectedOutput && KEYS.some((k) => selectedOutput![k])">
                 Produkcja teraz: <strong>{{ priceText(selectedOutput) }}</strong>
               </p>
+              <p v-if="selectedBonus" class="discovery-bonus">
+                ✧ Premia: {{ DISCOVERIES[selectedBonus.source.kind].name }} ({{
+                  selectedBonus.source.x
+                }}, {{ selectedBonus.source.y }}) ·
+                {{
+                  selectedBonus.resource === 'food'
+                    ? '+1 żywności przed zimowym zmniejszeniem plonów'
+                    : '+1 moneta'
+                }}. Nie mnoży się przez poziom ani liczbę miejsc.
+              </p>
+              <div v-if="selectedDiscovery && !selectedBuilding" class="discovery-description">
+                <span>{{ discoveryStatus(selectedDiscovery) }}</span>
+                <p>{{ DISCOVERIES[selectedDiscovery.kind].description }}</p>
+                <p>{{ DISCOVERIES[selectedDiscovery.kind].benefit }}</p>
+                <p v-if="selectedDiscovery.status === 'available'">
+                  Koszt: {{ priceText(DISCOVERIES[selectedDiscovery.kind].cost) }} · jedna tura.
+                </p>
+                <p v-else-if="!DISCOVERIES[selectedDiscovery.kind].permanent">
+                  Nagroda została już odebrana. To pole jest dostępne pod zabudowę.
+                </p>
+              </div>
               <p v-if="selectedBuilding?.kind === 'house'">
                 Miejsca dla mieszkańców: {{ selectedBuilding.level * 3 }}.
               </p>
@@ -177,6 +275,18 @@ function compass(p: Point) {
                 Zachowujemy naturalny teren. Wykorzystaj go, stawiając odpowiedni budynek na
                 sąsiedniej łące.
               </p>
+            </div>
+            <div
+              v-if="selectedDiscovery?.status === 'available' && !selectedBuilding && selected"
+              class="selected-actions"
+            >
+              <button
+                type="button"
+                :disabled="blocked"
+                @click="choose({ type: 'landmark', ...selected })"
+              >
+                {{ DISCOVERIES[selectedDiscovery.kind].action }}
+              </button>
             </div>
             <div
               v-if="selectedBuilding && selectedBuilding.kind !== 'hall' && selected"
@@ -201,7 +311,10 @@ function compass(p: Point) {
             <summary>
               ✧ Nowe ziemie <span>{{ priceText(explorationCost(state)) }}</span>
             </summary>
-            <p>Wybierz sąsiedni sektor. Każdy odkrywa 49 pól; samo wskazanie nic nie kosztuje.</p>
+            <p>
+              Wybierz sąsiedni sektor. Każdy odkrywa 49 pól i jedno wyjątkowe miejsce; samo
+              wskazanie nic nie kosztuje.
+            </p>
             <div>
               <button
                 v-for="p in edges"
@@ -214,6 +327,7 @@ function compass(p: Point) {
               </button>
             </div>
           </details>
+          <DiscoveryJournal :discoveries="state.discoveries" @locate="locateDiscovery" />
         </div>
         <aside class="kingdom-planning" aria-label="Planowanie tury">
           <div class="offer-panel">
@@ -245,6 +359,27 @@ function compass(p: Point) {
             <p v-if="error" class="preview-error" role="status">{{ error }}</p>
             <template v-if="preview"
               ><p>Koszt: {{ priceText(preview.cost) }}</p>
+              <p v-if="KEYS.some((k) => preview!.reward[k])" class="discovery-reward">
+                Jednorazowa nagroda: <strong>{{ priceText(preview.reward) }}</strong>
+              </p>
+              <p v-if="preview.promotion" class="promotion-preview">
+                <strong>Awans: {{ RANKS[preview.promotion.rank]!.name }}!</strong><br />
+                Prezent: {{ priceText(preview.promotionGift) }}. Trafi do zapasów po wyżywieniu i
+                zmianie populacji. Poniższy bilans już go uwzględnia.
+              </p>
+              <p>Produkcja w tej turze: {{ priceText(preview.produced) }}</p>
+              <p v-if="action?.type === 'explore'">
+                Nowy sektor ujawni wyjątkowe miejsce. Jego zbadanie lub odnowienie będzie osobną
+                decyzją.
+              </p>
+              <p v-for="b in previewBonuses" :key="`${b.x},${b.y}`" class="discovery-bonus">
+                {{ b.building }} ({{ b.x }}, {{ b.y }}): {{ DISCOVERIES[b.source.kind].name }} daje
+                {{
+                  b.resource === 'food'
+                    ? '+1 żywności przed zimowym zmniejszeniem plonów'
+                    : '+1 monetę'
+                }}. Premia jest już ujęta w produkcji.
+              </p>
               <p v-if="action?.type === 'demolish'">
                 Odzyskasz połowę podstawowego kosztu. Ulepszenia nie zwiększają zwrotu.
               </p>
@@ -325,9 +460,9 @@ function compass(p: Point) {
           <span>03 / ZA HORYZONTEM</span>
           <h3>Odkrywaj w swoim tempie.</h3>
           <p>
-            Za granicą czekają kolejne lasy, skały i miejsca pod zabudowę. Nowe sektory zwiększają
-            możliwości, lecz kosztują coraz więcej. Czasem lepiej ulepszyć farmę niż od razu
-            poszerzać granice.
+            Za granicą czekają ruiny strażnic, porzucone wozy, źródła i dawne punkty handlowe. Jedne
+            odkrycia przyniosą zapasy, inne pomogą gospodarstwom i targom w sąsiedztwie. Odkryj
+            ziemię, sprawdź znalezisko i zdecyduj, kiedy warto poświęcić na nie turę.
           </p>
         </article>
       </div>
@@ -348,7 +483,12 @@ function compass(p: Point) {
         <p>
           Zapis odbywa się automatycznie po zatwierdzeniu tury, w pamięci tej przeglądarki. Wróć na
           tę samą stronę na tym samym urządzeniu. Czyszczenie danych witryny usuwa zapis; tryb
-          prywatny może go nie zachować. Nie synchronizujemy osady między urządzeniami.
+          prywatny może go nie zachować. Nie synchronizujemy osady między urządzeniami. Starsze
+          zapisy osad są zachowywane i przenoszone do nowej wersji. Wyjątkowe miejsca pojawią się w
+          nich dopiero w nowo odkrywanych sektorach, bez zmiany starej zabudowy. Po aktualizacji
+          starsza osada zaczyna od rangi „Osada”. Spełnione wymagania pozwolą awansować w kolejnych
+          zatwierdzonych turach, po jednym stopniu na turę. Migracja nie wydaje zasobów ani nie
+          nalicza czasu.
         </p>
       </details>
       <details>
@@ -356,7 +496,9 @@ function compass(p: Point) {
         <p>
           Wybierz kartę z aktualnej oferty, pustą łąkę i sprawdź koszt. Na wodzie, skałach i w lesie
           nie budujemy. Wciąż możesz zebrać zapasy — ta akcja nie wymaga zasobów, lecz zużywa turę i
-          mieszkańcy nadal potrzebują jedzenia.
+          mieszkańcy nadal potrzebują jedzenia. Wyjątkowe miejsca także zajmują pole. Zbadane ruiny
+          i opróżniony wóz je zwalniają, a odnowione źródło i punkt handlowy pozostają częścią
+          krajobrazu.
         </p>
       </details>
       <details>
@@ -375,6 +517,49 @@ function compass(p: Point) {
           przesuwanie mapy nie wydaje zasobów.
         </p>
       </details>
+      <details>
+        <summary>Co mogę znaleźć na nowych ziemiach?</summary>
+        <p>
+          Każdy nowo odkryty sektor kryje jedno miejsce: ruiny strażnicy, porzucony wóz, zarośnięte
+          źródło albo dawny punkt handlowy. Ruiny i wóz dają jednorazowe zasoby. Odnowione źródło
+          wspiera farmy i sady, a punkt handlowy — targi przy wspólnej krawędzi. Zbadanie lub
+          odnowienie zajmuje jedną osobno zatwierdzoną turę. Nie ma terminów, walk ani losowych kar.
+        </p>
+      </details>
+      <details>
+        <summary>Czy premie odkryć sumują się z budynkami i działają zimą?</summary>
+        <p>
+          Źródło dodaje 1 żywność do plonów sąsiedniej farmy lub sadu, już po uwzględnieniu poziomu
+          i premii młynów oraz wody. Zimą całość dzielimy przez dwa, zaokrąglając w dół. Punkt
+          handlowy dodaje 1 monetę do produkcji sąsiedniego targu. Kilka takich samych miejsc nie
+          zwiększa premii dla jednego budynku. Odnowione miejsce działa od razu w turze odnowienia.
+        </p>
+      </details>
+      <details>
+        <summary>Jak awansować od osady do Małego królestwa?</summary>
+        <p>
+          Rozwijaj populację, buduj różne rodzaje budynków i odkrywaj ziemie. Wszystkie wymagania
+          następnej rangi muszą być spełnione jednocześnie na koniec zatwierdzonej tury. Ratusz nie
+          liczy się do zabudowy, a ulepszony budynek nadal liczy się jako jeden.
+        </p>
+        <p v-for="r in RANKS.slice(1)" :key="r.name">
+          <strong>{{ r.name }}.</strong> Mieszkańcy: {{ r.requirements.population }}; budynki:
+          {{ r.requirements.buildings }}; rodzaje budynków: {{ r.requirements.kinds }}; odkryte
+          sektory (ze startowym): {{ r.requirements.sectors }}
+          <template v-if="r.requirements.discoveries"
+            >; wykorzystane odkrycia: {{ r.requirements.discoveries }}</template
+          >. Prezent: {{ priceText(r.gift) }}.
+        </p>
+      </details>
+      <details>
+        <summary>Czy mogę stracić rangę albo skończyć grę po ostatnim awansie?</summary>
+        <p>
+          Nie tracisz osiągniętej rangi po wyburzeniu budynków lub odejściu mieszkańców. Każdy
+          prezent otrzymujesz tylko raz, po wyżywieniu i zmianie populacji — nie zapobiega
+          niedoborowi w tej samej turze. Po zdobyciu rangi „Małe królestwo” możesz dalej odkrywać
+          mapę i rozwijać osadę. Nie ma limitu czasu ani obowiązkowego końca.
+        </p>
+      </details>
     </section>
     <GameDialog v-if="help" title="Twoje małe królestwo" @close="help = false"
       ><p>
@@ -391,7 +576,20 @@ function compass(p: Point) {
           Buduj na łąkach. Sąsiedztwo czterech krawędzi daje premie. Budynki ulepszysz do poziomu 3.
         </li>
         <li>Oferta zmienia się wyłącznie po budowie. Zawsze zawiera farmę.</li>
+        <li>
+          Panel „Rozwój osady” pokazuje wymagania awansu. Po ich spełnieniu na koniec tury otrzymasz
+          nową rangę i jednorazowy prezent. Ranga pozostaje na zawsze, a produkcja ratusza się nie
+          zmienia.
+        </li>
         <li>Zbieranie daje 3 żywności i 2 drewna, ale także zużywa turę.</li>
+        <li>
+          Nowy sektor kryje jedno wyjątkowe miejsce. Wybierz je, sprawdź koszt i osobno zatwierdź
+          zbadanie lub odnowienie. Dziennik odkryć pomoże do niego wrócić.
+        </li>
+        <li>
+          Źródło wspiera sąsiednie farmy i sady, punkt handlowy — targi. Premie nie mnożą się przez
+          poziom ani liczbę miejsc; żywność zimą nadal podlega zmniejszeniu.
+        </li>
         <li>
           Mapa: przeciąganie i gest przybliżania. Klawiatura: strzałki wybierają pola, Home wraca do
           ratusza.
@@ -419,6 +617,152 @@ function compass(p: Point) {
   </div>
 </template>
 <style scoped>
+.rank-badge {
+  display: inline-block;
+  border: 1px solid #bba467;
+  border-radius: 30px;
+  padding: 6px 13px;
+  margin: 12px 0 0;
+  color: #f5dda3;
+  background: #3b4c32;
+  font-size: 12px;
+}
+.promotion-announcement {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px;
+  margin: 16px 0;
+  border: 1px solid #bca363;
+  border-radius: 18px;
+  background: linear-gradient(110deg, #4e5030, #2e4935);
+}
+.promotion-announcement svg {
+  width: 64px;
+  flex-shrink: 0;
+}
+.promotion-announcement div {
+  flex: 1;
+  min-width: 0;
+}
+.promotion-announcement small,
+.promotion-announcement strong,
+.promotion-announcement span {
+  display: block;
+}
+.promotion-announcement small {
+  color: #e9d391;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+}
+.promotion-announcement strong {
+  margin: 6px 0;
+  font:
+    400 24px Georgia,
+    serif;
+  color: #fff1c8;
+}
+.promotion-announcement span {
+  font-size: 12px;
+  line-height: 1.7;
+  color: #e1e5c7;
+}
+.turn-preview .promotion-preview {
+  border: 1px solid #b29b5e;
+  border-radius: 10px;
+  padding: 10px;
+  color: #4b532b;
+  background: #f8efce;
+}
+@media (max-width: 600px) {
+  .promotion-announcement {
+    flex-wrap: wrap;
+  }
+  .promotion-announcement svg {
+    width: 44px;
+  }
+  .promotion-announcement button {
+    margin-left: 58px;
+  }
+}
+.discovery-announcement {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px;
+  margin: 16px 0;
+  border: 1px solid #e3c78970;
+  border-radius: 18px;
+  background: linear-gradient(110deg, #324c39, #213e37);
+  color: #f5ebcf;
+}
+.discovery-announcement svg {
+  width: 56px;
+  flex-shrink: 0;
+}
+.discovery-announcement div {
+  flex: 1;
+  min-width: 0;
+}
+.discovery-announcement small,
+.discovery-announcement strong,
+.discovery-announcement span {
+  display: block;
+}
+.discovery-announcement small {
+  font-size: 0.65rem;
+  letter-spacing: 0.1em;
+  color: #ebce93;
+}
+.discovery-announcement strong {
+  margin: 5px 0;
+}
+.discovery-announcement span {
+  font-size: 0.8rem;
+  line-height: 1.6;
+  color: #c4d1bd;
+}
+.discovery-announcement button {
+  min-height: 44px;
+  border: 1px solid #d4c39170;
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: #213c2e;
+  color: #f5ebcf;
+  font: inherit;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+.discovery-announcement button:focus-visible {
+  outline: 3px solid #f0c985;
+  outline-offset: 3px;
+}
+.discovery-description > span {
+  display: inline-block;
+  padding: 4px 9px;
+  border: 1px solid #b9ce9c50;
+  border-radius: 20px;
+  color: #dfd6ad;
+  font-size: 0.75rem;
+}
+.discovery-bonus {
+  border-left: 3px solid #a1c99b;
+  padding-left: 10px;
+  color: #cfe4b8 !important;
+  font-size: 0.8rem;
+  line-height: 1.6;
+}
+.discovery-reward {
+  color: #f1d193;
+}
+@media (max-width: 600px) {
+  .discovery-announcement {
+    flex-wrap: wrap;
+  }
+  .discovery-announcement button {
+    margin-left: 70px;
+  }
+}
 .kingdom-game {
   --cream: #f5ebcf;
   --sage: #b9ce9c;

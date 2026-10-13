@@ -1,9 +1,23 @@
 <script setup lang="ts">
 import type { Building, Terrain } from './engine'
-withDefaults(defineProps<{ terrain?: Terrain; building?: Building; winter?: boolean }>(), {
-  terrain: 'meadow',
-  winter: false,
-})
+import type { Discovery } from './discoveries'
+import DiscoveryArt from './DiscoveryArt.vue'
+import HallArt from './HallArt.vue'
+import type { SettlementRank } from './progression'
+withDefaults(
+  defineProps<{
+    terrain?: Terrain
+    building?: Building
+    winter?: boolean
+    discovery?: Discovery
+    rank?: SettlementRank
+  }>(),
+  {
+    terrain: 'meadow',
+    winter: false,
+    rank: 0,
+  },
+)
 </script>
 <template>
   <g aria-hidden="true">
@@ -51,6 +65,7 @@ withDefaults(defineProps<{ terrain?: Terrain; building?: Building; winter?: bool
         d="M18 22l11 13 5-18 14 13-10 8 18 11-47-3 20-11"
         fill="#9fb1a0" /><path d="M13 52h39" stroke="#60776e" stroke-width="2"
     /></g>
+    <DiscoveryArt v-if="discovery" :discovery="discovery" />
     <g v-if="building" stroke-linejoin="round">
       <ellipse cx="33" cy="51" rx="23" ry="6" fill="#344e3e" opacity=".18" />
       <g v-if="building.kind === 'farm'"
@@ -111,25 +126,10 @@ withDefaults(defineProps<{ terrain?: Terrain; building?: Building; winter?: bool
           stroke="#edf0d7"
           stroke-width="5"
       /></g>
+      <HallArt v-else-if="building.kind === 'hall'" :rank="rank" />
       <g v-else>
-        <rect
-          x="15"
-          y="27"
-          width="35"
-          height="25"
-          rx="2"
-          :fill="building.kind === 'hall' ? '#f2dfb1' : '#f7ebc9'"
-        />
-        <path
-          d="M9 29L32 9l25 20z"
-          :fill="
-            building.kind === 'sawmill'
-              ? '#66806a'
-              : building.kind === 'hall'
-                ? '#bc6b48'
-                : '#c78754'
-          "
-        />
+        <rect x="15" y="27" width="35" height="25" rx="2" fill="#f7ebc9" />
+        <path d="M9 29L32 9l25 20z" :fill="building.kind === 'sawmill' ? '#66806a' : '#c78754'" />
         <rect x="29" y="38" width="9" height="14" rx="2" fill="#617361" /><rect
           x="19"
           y="33"
@@ -138,11 +138,6 @@ withDefaults(defineProps<{ terrain?: Terrain; building?: Building; winter?: bool
           rx="1"
           fill="#83b8ac"
         /><rect x="41" y="33" width="6" height="7" rx="1" fill="#83b8ac" />
-        <g v-if="building.kind === 'hall'"
-          ><path d="M32 10V1" stroke="#86633d" stroke-width="2" /><path
-            d="M33 1h13l-4 4 4 3H33z"
-            fill="#eccd76" /><path d="M25 53h18" stroke="#b5a382" stroke-width="3"
-        /></g>
         <g v-if="building.kind === 'sawmill'" stroke="#795936" stroke-width="2"
           ><rect x="5" y="43" width="19" height="6" rx="3" fill="#c9a16a" /><rect
             x="8"

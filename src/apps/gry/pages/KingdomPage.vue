@@ -6,7 +6,7 @@ useGrySeo('male-krolestwo', {
   '@type': 'VideoGame',
   name: 'Małe królestwo',
   description:
-    'Turowa strategia bez limitu czasu. Buduj osadę, odkrywaj nowe ziemie i przygotowuj zapasy na zimę. Z lokalnym zapisem postępu.',
+    'Turowa strategia bez limitu czasu. Rozwijaj osadę do rangi Małego królestwa, zdobywaj jednorazowe prezenty i odkrywaj zapomniane miejsca. Przygotuj zapasy na zimę i wróć do zapisanej osady.',
   url: new URL(gryPath('/male-krolestwo'), grySiteUrl).href,
   inLanguage: 'pl',
   gamePlatform: 'Web browser',

@@ -12,6 +12,8 @@ import {
   type Point,
 } from './engine'
 import { load, save } from './storage'
+import { DISCOVERIES, blocksBuilding, type Discovery } from './discoveries'
+import type { Promotion } from './progression'
 export function useKingdom() {
   // Identical SSR/client initial state; browser-only saved state is restored after hydration.
   const state = shallowRef(newKingdom(1)),
@@ -21,6 +23,11 @@ export function useKingdom() {
   const selected = ref<Point | null>(null),
     action = ref<Action | null>(null),
     card = ref<BuildingKind | null>(null)
+  const latestDiscovery = shallowRef<Discovery | null>(null)
+  const latestPromotion = shallowRef<Promotion | null>(null)
+  const selectedDiscovery = computed(() =>
+    selected.value ? state.value.discoveries[key(selected.value.x, selected.value.y)] : undefined,
+  )
   const tutorialDismissed = ref(false),
     help = ref(false),
     restart = ref(false),
@@ -46,7 +53,7 @@ export function useKingdom() {
     try {
       const saved = load(window.localStorage)
       corrupt.value = saved.status === 'corrupt'
-      unavailable.value = saved.status === 'unavailable'
+      unavailable.value = saved.status === 'unavailable' || !!saved.migrationSaveFailed
       tutorialDismissed.value = saved.tutorialDismissed
       state.value = saved.state ?? newKingdom(seed())
       if (saved.state)
@@ -59,16 +66,24 @@ export function useKingdom() {
     ready.value = true
   })
   function select(p: Point) {
-    selected.value = p
+    // Journal entries also carry `kind`. Keep only coordinates, so spreading a selection
+    // into a build action can never replace its BuildingKind with a DiscoveryKind.
+    const point = { x: p.x, y: p.y }
+    selected.value = point
     action.value = null
     const b = state.value.buildings[key(p.x, p.y)]
-    if (!b && card.value && terrain(state.value.seed, p.x, p.y) === 'meadow')
-      action.value = { type: 'build', kind: card.value, ...p }
+    if (
+      !b &&
+      !blocksBuilding(selectedDiscovery.value) &&
+      card.value &&
+      terrain(state.value.seed, p.x, p.y) === 'meadow'
+    )
+      action.value = { type: 'build', kind: card.value, ...point }
   }
   function chooseCard(kind: BuildingKind) {
     card.value = kind
     action.value = null
-    if (selected.value && !selectedBuilding.value)
+    if (selected.value && !selectedBuilding.value && !blocksBuilding(selectedDiscovery.value))
       action.value = { type: 'build', kind, ...selected.value }
   }
   function explore(p: Point) {
@@ -86,6 +101,10 @@ export function useKingdom() {
     if (a.type === 'build') return `Budowa: ${BUILDINGS[a.kind].name}`
     if (a.type === 'gather') return 'Zbieranie zapasów'
     if (a.type === 'explore') return `Odkrycie sektora ${a.x}, ${a.y}`
+    if (a.type === 'landmark') {
+      const d = state.value.discoveries[key(a.x, a.y)]
+      return d ? DISCOVERIES[d.kind].action : 'Zbadanie miejsca'
+    }
     return a.type === 'upgrade' ? 'Ulepszenie budynku' : 'Wyburzenie budynku'
   })
   function commit() {
@@ -94,6 +113,8 @@ export function useKingdom() {
     if (!result) return
     message.value = `${actionName.value}. ${result.shortage ? (result.populationChange < 0 ? 'Brak żywności — jeden mieszkaniec odszedł.' : 'Brak żywności! Kolejna tura niedoboru spowoduje odejście mieszkańca.') : result.populationChange > 0 ? 'Do osady przybył nowy mieszkaniec!' : 'Mieszkańcy otrzymali żywność.'}`
     state.value = result.state
+    latestDiscovery.value = result.discovery
+    if (result.promotion) latestPromotion.value = result.promotion
     action.value = null
     card.value = null
     persist()
@@ -105,6 +126,8 @@ export function useKingdom() {
     action.value = null
     card.value = null
     restart.value = false
+    latestDiscovery.value = null
+    latestPromotion.value = null
     message.value = 'Nowa ziemia, nowy początek. Zadbaj o żywność przed zimą.'
     persist()
   }
@@ -120,6 +143,9 @@ export function useKingdom() {
     unavailable,
     selected,
     selectedBuilding,
+    selectedDiscovery,
+    latestDiscovery,
+    latestPromotion,
     selectedSector,
     action,
     card,

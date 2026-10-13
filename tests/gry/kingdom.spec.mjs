@@ -3,7 +3,7 @@ import { createJiti } from 'jiti'
 const jiti = createJiti(import.meta.url)
 const { newKingdom } = await jiti.import('../../src/apps/gry/games/little-kingdom/engine.ts')
 const url = '/gry/male-krolestwo',
-  key = 'zgrana:gry:male-krolestwo:v1'
+  key = 'zgrana:gry:male-krolestwo:v3'
 async function prepare(page, state = newKingdom(42)) {
   await page.addInitScript(
     ({ state, key }) => {
@@ -13,7 +13,7 @@ async function prepare(page, state = newKingdom(42)) {
           key,
           typeof state === 'string'
             ? state
-            : JSON.stringify({ version: 1, state, tutorialDismissed: true }),
+            : JSON.stringify({ version: 3, state, tutorialDismissed: true }),
         )
         sessionStorage.setItem('kingdom-fixture', '1')
       }
@@ -37,7 +37,7 @@ test('catalog, own lazy route, title, illustration and FAQ', async ({ page }) =>
     'content',
     /\/og\/little-kingdom.png$/,
   )
-  await expect(page.locator('.kingdom-faq details')).toHaveCount(5)
+  await expect(page.locator('.kingdom-faq details')).toHaveCount(9)
   await expect(tile(page, '3,3')).toHaveAttribute('aria-label', /Ratusz/)
 })
 for (const [width, height] of [
@@ -212,11 +212,11 @@ test('corrupt save untouched until explicit restart; denied storage remains play
     const get = Storage.prototype.getItem,
       set = Storage.prototype.setItem
     Storage.prototype.getItem = function (k) {
-      if (k === 'zgrana:gry:male-krolestwo:v1') throw Error('denied')
+      if (k.startsWith('zgrana:gry:male-krolestwo:')) throw Error('denied')
       return get.call(this, k)
     }
     Storage.prototype.setItem = function (k, v) {
-      if (k === 'zgrana:gry:male-krolestwo:v1') throw Error('denied')
+      if (k.startsWith('zgrana:gry:male-krolestwo:')) throw Error('denied')
       return set.call(this, k, v)
     }
   })

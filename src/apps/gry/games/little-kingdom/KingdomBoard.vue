@@ -12,6 +12,8 @@ import {
   type Point,
 } from './engine'
 import TileArt from './TileArt.vue'
+import { RANKS } from './progression'
+import { blocksBuilding, DISCOVERIES, discoveryStatus } from './discoveries'
 const props = defineProps<{ state: Kingdom; selected: Point | null; winter: boolean }>()
 const emit = defineEmits<{ select: [Point]; explore: [Point] }>()
 const host = ref<HTMLElement>(),
@@ -36,12 +38,15 @@ const visible = computed(() => {
       if (!known.value.has(key(s.x, s.y))) continue
       const t = terrain(props.state.seed, x, y),
         b = props.state.buildings[key(x, y)]
+      const found = props.state.discoveries[key(x, y)],
+        d = blocksBuilding(found) ? found : undefined
       result.push({
         x,
         y,
         terrain: t,
         building: b,
-        label: `${x}, ${y}: ${b ? (b.kind === 'hall' ? 'Ratusz' : BUILDINGS[b.kind].name + ', poziom ' + b.level) : TERRAIN_NAMES[t]}`,
+        discovery: d,
+        label: `${x}, ${y}: ${d ? DISCOVERIES[d.kind].name + ', ' + discoveryStatus(d) : b ? (b.kind === 'hall' ? 'Ratusz, ' + RANKS[props.state.rank]!.name : BUILDINGS[b.kind].name + ', poziom ' + b.level) : TERRAIN_NAMES[t]}`,
       })
     }
   return result
@@ -69,7 +74,12 @@ function locate(p: Point) {
   cursor.value = p
   center(p)
 }
-defineExpose({ locate })
+function reveal(p: Point) {
+  locate(p)
+  host.value?.scrollIntoView({ block: 'center', behavior: 'instant' })
+  host.value?.focus({ preventScroll: true })
+}
+defineExpose({ locate, reveal })
 let observer: ResizeObserver | undefined
 onMounted(() => {
   observer = new ResizeObserver(([entry]) => {
@@ -258,7 +268,13 @@ function wheel(e: WheelEvent) {
             :aria-label="p.label"
           >
             <title>{{ p.label }}</title>
-            <TileArt :terrain="p.terrain" :building="p.building" :winter="winter" />
+            <TileArt
+              :rank="state.rank"
+              :terrain="p.terrain"
+              :building="p.building"
+              :winter="winter"
+              :discovery="p.discovery"
+            />
             <rect
               v-if="selected && Math.abs(selected.x - p.x) + Math.abs(selected.y - p.y) === 1"
               x="3"

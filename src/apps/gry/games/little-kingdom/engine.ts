@@ -1,15 +1,27 @@
 /** Pure, deterministic rules. Preview and commit both call resolveTurn; no browser state here. */
+import { SIZE, terrain, type Terrain } from './terrain'
+import { RANKS, earnedPromotion, type Promotion, type SettlementRank } from './progression'
+import {
+  DISCOVERIES,
+  blocksBuilding,
+  discoveryForSector,
+  discoveryBonus,
+  type Discovery,
+} from './discoveries'
+export { SIZE, terrain, type Terrain } from './terrain'
 export type Resource = 'wood' | 'stone' | 'food' | 'gold'
 export type Resources = Record<Resource, number>
-export type Terrain = 'meadow' | 'forest' | 'rock' | 'water'
 export type BuildingKind = 'house' | 'farm' | 'sawmill' | 'quarry' | 'mill' | 'market' | 'orchard'
 export type Point = { x: number; y: number }
 export type Building = Point & { kind: BuildingKind | 'hall'; level: number }
 export interface Kingdom {
+  rank: SettlementRank
+  promotions: Promotion[]
   seed: number
   rng: number
   sectors: Point[]
   buildings: Record<string, Building>
+  discoveries: Record<string, Discovery>
   resources: Resources
   population: number
   hunger: number
@@ -19,9 +31,8 @@ export interface Kingdom {
 }
 export type Action =
   | ({ type: 'build'; kind: BuildingKind } & Point)
-  | ({ type: 'upgrade' | 'demolish' | 'explore' } & Point)
+  | ({ type: 'upgrade' | 'demolish' | 'explore' | 'landmark' } & Point)
   | { type: 'gather' }
-export const SIZE = 7
 export const KEYS: Resource[] = ['wood', 'stone', 'food', 'gold']
 export const RESOURCE_NAMES: Record<Resource, string> = {
   wood: 'Drewno',
@@ -98,22 +109,6 @@ export const capacity = (state: Kingdom) =>
 export const hasSector = (state: Kingdom, p: Point) =>
   state.sectors.some((s) => s.x === p.x && s.y === p.y)
 export const discovered = (state: Kingdom, p: Point) => hasSector(state, sectorOf(p))
-function hash(seed: number, x: number, y: number) {
-  let n = (seed ^ Math.imul(x, 374761393) ^ Math.imul(y, 668265263)) >>> 0
-  n = Math.imul(n ^ (n >>> 13), 1274126177)
-  return (n ^ (n >>> 16)) >>> 0
-}
-/** First three rows guarantee 21 meadows. Fixed landmarks guarantee all resources in every sector. */
-export function terrain(seed: number, x: number, y: number): Terrain {
-  const lx = ((x % SIZE) + SIZE) % SIZE,
-    ly = ((y % SIZE) + SIZE) % SIZE
-  if (ly < 3 || (lx === 3 && ly === 3)) return 'meadow'
-  if (ly === 3 && lx === 2) return 'forest'
-  if (ly === 3 && lx === 4) return 'water'
-  if (ly === 4 && lx === 3) return 'rock'
-  const n = hash(seed, x, y) % 100
-  return n < 45 ? 'meadow' : n < 70 ? 'forest' : n < 86 ? 'rock' : 'water'
-}
 function random(seed: number) {
   return (Math.imul(seed, 1664525) + 1013904223) >>> 0
 }
@@ -127,10 +122,13 @@ export function deal(seed: number) {
 }
 export function newKingdom(seed = 1): Kingdom {
   return {
+    rank: 0,
+    promotions: [],
     seed: seed >>> 0,
     ...deal(seed >>> 0),
     sectors: [{ x: 0, y: 0 }],
     buildings: { '3,3': { x: 3, y: 3, kind: 'hall', level: 1 } },
+    discoveries: {},
     resources: { wood: 20, stone: 12, food: 24, gold: 10 },
     population: 3,
     hunger: 0,
@@ -150,6 +148,10 @@ export function explorationCost(state: Kingdom): Resources {
   return cost(10 + n * 5, 5 + n * 3, 5 + n * 3)
 }
 export function actionCost(state: Kingdom, action: Action): Resources {
+  if (action.type === 'landmark') {
+    const d = state.discoveries[key(action.x, action.y)]
+    return d ? DISCOVERIES[d.kind].cost : zero()
+  }
   if (action.type === 'build') return BUILDINGS[action.kind]?.cost ?? zero()
   if (action.type === 'explore') return explorationCost(state)
   if (action.type === 'upgrade') {
@@ -172,7 +174,12 @@ export function actionError(state: Kingdom, action: Action): string | null {
     } else {
       if (!discovered(state, action)) return 'Najpierw odkryj ten teren.'
       const b = state.buildings[key(action.x, action.y)]
-      if (action.type === 'build') {
+      const d = state.discoveries[key(action.x, action.y)]
+      if (action.type === 'landmark') {
+        if (!d || d.status !== 'available') return 'To miejsce nie czeka na zbadanie.'
+      } else if (action.type === 'build') {
+        if (blocksBuilding(d))
+          return 'To pole zajmuje wyjątkowe miejsce. Wybierz je, aby poznać dostępne działania.'
         if (!state.offer.includes(action.kind) || !BUILDINGS[action.kind])
           return 'Tego budynku nie ma w bieżącej ofercie.'
         if (b || terrain(state.seed, action.x, action.y) !== 'meadow')
@@ -216,6 +223,8 @@ export function buildingProduction(state: Kingdom, b: Building): Resources {
       (2 + adjacent.filter((p) => state.buildings[key(p.x, p.y)]?.kind === 'house').length) *
       b.level
   if (b.kind === 'orchard') r.food = (season(state.turn) === 2 ? 4 : 2) * b.level
+  const bonus = discoveryBonus(state, b)
+  if (bonus) r[bonus.resource]++
   if (season(state.turn) === 3 && (b.kind === 'farm' || b.kind === 'orchard'))
     r.food = Math.floor(r.food / 2)
   return r
@@ -229,20 +238,26 @@ export function production(state: Kingdom): Resources {
   return result
 }
 export interface TurnResult {
+  promotion: Promotion | null
+  promotionGift: Resources
   state: Kingdom
   cost: Resources
   produced: Resources
   delta: Resources
   shortage: boolean
   populationChange: number
+  reward: Resources
+  discovery: Discovery | null
 }
 export function resolveTurn(state: Kingdom, action: Action): TurnResult | null {
   if (actionError(state, action)) return null
   const price = actionCost(state, action)
   const next: Kingdom = {
     ...state,
+    promotions: [...state.promotions],
     resources: { ...state.resources },
     buildings: { ...state.buildings },
+    discoveries: { ...state.discoveries },
     sectors: [...state.sectors],
     offer: [...state.offer],
   }
@@ -267,7 +282,20 @@ export function resolveTurn(state: Kingdom, action: Action): TurnResult | null {
       next.resources[r] += Math.floor(BUILDINGS[b.kind as BuildingKind].cost[r] / 2)
     delete next.buildings[k]
   }
-  if (action.type === 'explore') next.sectors.push({ x: action.x, y: action.y })
+  let discovery: Discovery | null = null
+  const reward = zero()
+  if (action.type === 'explore') {
+    next.sectors.push({ x: action.x, y: action.y })
+    discovery = discoveryForSector(state.seed, action, state.turn + 1)
+    if (discovery) next.discoveries[key(discovery.x, discovery.y)] = discovery
+  }
+  if (action.type === 'landmark') {
+    const k = key(action.x, action.y),
+      d = next.discoveries[k]!
+    next.discoveries[k] = { ...d, status: 'used', usedTurn: state.turn + 1 }
+    Object.assign(reward, DISCOVERIES[d.kind].reward)
+    for (const k of KEYS) next.resources[k] += reward[k]
+  }
   if (action.type === 'gather') {
     next.resources.food += 3
     next.resources.wood += 2
@@ -287,7 +315,17 @@ export function resolveTurn(state: Kingdom, action: Action): TurnResult | null {
     next.population++
   next.turn++
   if (next.population === 0) next.status = 'gameover'
+  // The gift must never rescue this turn's shortage or trigger growth retroactively.
+  const promotion = earnedPromotion(next)
+  const promotionGift = promotion ? { ...RANKS[promotion.rank]!.gift } : zero()
+  if (promotion) {
+    next.rank = promotion.rank
+    next.promotions.push(promotion)
+    for (const k of KEYS) next.resources[k] += promotionGift[k]
+  }
   return {
+    promotion,
+    promotionGift,
     state: next,
     cost: price,
     produced,
@@ -296,5 +334,7 @@ export function resolveTurn(state: Kingdom, action: Action): TurnResult | null {
     ) as Resources,
     shortage,
     populationChange: next.population - state.population,
+    reward,
+    discovery,
   }
 }
