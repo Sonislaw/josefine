@@ -24,6 +24,13 @@ useGrySeo('privacy')
         jest przesyłany na serwer ani synchronizowany między urządzeniami. Czyszczenie danych
         witryny usuwa również te ustawienia.
       </p>
+      <p>
+        Klocki zapisują planszę, pozostałe kształty, wynik, rekord i ustawienie dźwięku lokalnie pod
+        kluczem „zgrana:gry:klocki:v1”. Pozwala to kontynuować rundę po powrocie do tej samej
+        przeglądarki. Zapis nie jest przesyłany na serwer ani synchronizowany między urządzeniami.
+        Możesz go usunąć, czyszcząc dane witryny; nowa runda zastępuje planszę, ale zachowuje
+        rekord.
+      </p>
     </section>
   </div>
 </template>

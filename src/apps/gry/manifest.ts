@@ -15,6 +15,17 @@ export interface GameDefinition {
  * Future games own a folder under games/; never import their engines into this catalog. */
 export const games = [
   {
+    id: 'klocki',
+    title: 'Klocki — jeszcze jeden ruch',
+    description:
+      'Bez pośpiechu, za to z satysfakcją. Układaj kształty, kasuj linie i zrób miejsce na jeszcze jeden dobry ruch. Twoja plansza poczeka, kiedy potrzebujesz przerwy.',
+    category: 'Logiczna',
+    players: '1 gracz',
+    symbol: '▦',
+    cover: '/games/blocks-cover.svg',
+    loadPage: () => import('./pages/BlocksPage.vue'),
+  },
+  {
     id: 'jeszcze-jeden-krysztal',
     title: 'Jeszcze jeden kryształ',
     description:

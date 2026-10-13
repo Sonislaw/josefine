@@ -56,6 +56,10 @@ try {
   })
   await page.goto(base)
   assert.equal(
+    await page.locator('.game-card').filter({ hasText: 'Klocki' }).getAttribute('href'),
+    '/klocki',
+  )
+  assert.equal(
     await page.locator('.game-card').filter({ hasText: 'Warcaby' }).getAttribute('href'),
     '/warcaby-arena-mocy',
   )
@@ -90,6 +94,26 @@ try {
   await page.keyboard.press('p')
   assert.ok(await page.getByRole('button', { name: 'Wracam do gry →' }).isVisible())
   await page.screenshot({ path: 'test-results/production/crystal-mobile.png', fullPage: true })
+  await page.goto(`${base}/klocki`)
+  assert.equal(
+    await page.locator('link[rel="canonical"]').getAttribute('href'),
+    'https://gry.zgrana.pl/klocki',
+  )
+  assert.equal(
+    await page.locator('meta[property="og:image"]').getAttribute('content'),
+    'https://gry.zgrana.pl/og/blocks.png',
+  )
+  await page.locator('.blocks-start').click()
+  await page.locator('[data-slot="0"]').click()
+  await page.locator('[data-cell="0"]').click()
+  assert.ok((await page.locator('.cell-filled').count()) > 0)
+  const blocksScore = await page.locator('[data-testid="blocks-score"]').innerText()
+  await page.reload()
+  await page.waitForFunction(
+    (score) => document.querySelector('[data-testid="blocks-score"]')?.textContent === score,
+    blocksScore,
+  )
+  await page.screenshot({ path: 'test-results/production/blocks-mobile.png', fullPage: true })
   assert.deepEqual(errors, [])
   const noJs = await browser.newContext({ javaScriptEnabled: false })
   const staticPage = await noJs.newPage()
@@ -99,9 +123,12 @@ try {
   await staticPage.goto(`${base}/jeszcze-jeden-krysztal`)
   assert.ok((await staticPage.title()).includes('Jeszcze jeden kryształ'))
   assert.ok(await staticPage.getByRole('button', { name: 'Zaczynamy →' }).isVisible())
+  await staticPage.goto(`${base}/klocki`)
+  assert.ok((await staticPage.title()).includes('Klocki'))
+  assert.equal(await staticPage.locator('.board-cell').count(), 64)
   assert.equal((await staticPage.goto(`${base}/nie-ma-takiej-gry`)).status(), 404)
   console.log(
-    'Production browser OK: both games, catalog desktop/mobile, clean routes, per-game SEO, no hydration errors, AI, Crystal Rush start/pause, prerender without JavaScript, 404.',
+    'Production browser OK: three games, catalog desktop/mobile, clean routes, per-game SEO, no hydration errors, AI, Crystal Rush start/pause, Blocks play/restore, prerender without JavaScript, 404.',
   )
 } finally {
   await browser.close()

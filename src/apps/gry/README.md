@@ -12,6 +12,7 @@ npm run dev
 - Katalog lokalnie: `http://localhost:5173/gry`
 - Warcaby lokalnie: `http://localhost:5173/gry/warcaby-arena-mocy`
 - Jeszcze jeden kryształ lokalnie: `http://localhost:5173/gry/jeszcze-jeden-krysztal`
+- Klocki lokalnie: `http://localhost:5173/gry/klocki`
 - Docelowo: `https://gry.zgrana.pl/` i `/warcaby-arena-mocy`
 - Prywatność: `/polityka-prywatnosci` (lokalnie z prefiksem `/gry`).
 
@@ -63,6 +64,10 @@ Druga gra ma własny katalog `games/crystal-rush/`: silnik symulacji, renderer C
 
 [Dokumentacja gry](games/crystal-rush/README.md) opisuje architekturę, sterowanie, testy i pomiar dla 100–5000 meteorów. Po wdrożeniu istniejącego projektu Gry podstrona będzie dostępna pod `/jeszcze-jeden-krysztal`; nie wymaga osobnej konfiguracji Cloudflare.
 
+## Klocki — jeszcze jeden ruch
+
+Klocki są osobną grą w `games/blocks/` z własnym silnikiem, lokalnym zapisem całej rundy i sterowaniem dotykowym. Szczegóły: [dokumentacja Klocków](games/blocks/README.md). Nie wymagają nowej domeny ani projektu Cloudflare.
+
 ## Jednoplikowe Warcaby
 
 Link „Pobierz grę · HTML + JS” pobiera `/games/warcaby-arena-mocy.html`.
@@ -92,8 +97,8 @@ Grafika OG oraz PNG instalacyjne są wersjami rastrowymi autorskich, kodowych gr
 
 ### Wynik weryfikacji wdrożenia modułu
 
-- 41 testów silników i sesji: zaliczone (21 Warcabów i 20 gry Jeszcze jeden kryształ), w tym 8 pełnych symulowanych partii Warcabów w obu trybach.
-- 27 testów przeglądarkowych w systemowym Chrome: zaliczone (12 Warcabów i 15 gry Jeszcze jeden kryształ), w tym responsywność, pionowa arena mobilna, sterowanie dotykowe, pełna runda arcade, cykl życia po restartach, AI, PD oraz jednoplikowe Warcaby przy wyłączonej sieci i niedostępnym localStorage.
+- 52 testy silników i sesji: zaliczone (21 Warcabów, 20 gry Jeszcze jeden kryształ i 11 Klocków), w tym pełne symulowane rozgrywki Warcabów i Klocków.
+- 39 testów przeglądarkowych w systemowym Chrome: zaliczone (12 Warcabów, 15 gry Jeszcze jeden kryształ i 12 Klocków), w tym responsywność, sterowanie dotykowe, przeciąganie, zapis rundy, pełna runda arcade, cykl życia po restartach, AI, PD oraz jednoplikowe Warcaby przy wyłączonej sieci i niedostępnym localStorage.
 - Build `npm run build:site -- gry`, kontrola typów, lint nowych plików i kontrola grafik OG: zaliczone.
 - Kontrola artefaktów `check-gry-build.mjs`: zaliczona. HTML katalogu nie ładuje pakietu samej gry.
 - Test zbudowanej strony w przeglądarce: brak błędów hydratacji, działające czyste URL-e i AI, treść dostępna bez JavaScript, odpowiedź 404 dla nieistniejącej strony.
