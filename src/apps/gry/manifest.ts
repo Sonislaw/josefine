@@ -15,6 +15,17 @@ export interface GameDefinition {
  * Future games own a folder under games/; never import their engines into this catalog. */
 export const games = [
   {
+    id: 'male-krolestwo',
+    title: 'Małe królestwo',
+    description:
+      'Pierwsza chata to dopiero początek. Buduj osadę, przygotuj zapasy na zimę i odkrywaj ziemie za horyzontem. Spokojna strategia, do której wracasz we własnym tempie.',
+    category: 'Strategia',
+    players: '1 gracz',
+    symbol: '♜',
+    cover: '/games/little-kingdom-cover.svg',
+    loadPage: () => import('./pages/KingdomPage.vue'),
+  },
+  {
     id: 'klocki',
     title: 'Klocki — jeszcze jeden ruch',
     description:

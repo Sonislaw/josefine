@@ -13,6 +13,7 @@ npm run dev
 - Warcaby lokalnie: `http://localhost:5173/gry/warcaby-arena-mocy`
 - Jeszcze jeden kryształ lokalnie: `http://localhost:5173/gry/jeszcze-jeden-krysztal`
 - Klocki lokalnie: `http://localhost:5173/gry/klocki`
+- Małe królestwo lokalnie: `http://localhost:5173/gry/male-krolestwo`
 - Docelowo: `https://gry.zgrana.pl/` i `/warcaby-arena-mocy`
 - Prywatność: `/polityka-prywatnosci` (lokalnie z prefiksem `/gry`).
 
@@ -68,6 +69,12 @@ Druga gra ma własny katalog `games/crystal-rush/`: silnik symulacji, renderer C
 
 Klocki są osobną grą w `games/blocks/` z własnym silnikiem, lokalnym zapisem całej rundy i sterowaniem dotykowym. Szczegóły: [dokumentacja Klocków](games/blocks/README.md). Nie wymagają nowej domeny ani projektu Cloudflare.
 
+## Małe królestwo
+
+Strategia turowa z lokalnym zapisem osady, sezonami i odkrywaniem sektorów. Własny silnik i
+ilustracje SVG w `games/little-kingdom/`; [dokumentacja i reguły](games/little-kingdom/README.md).
+Gra ma własny lazy route, SSG, FAQ, sitemapę i grafikę OG PNG. Publikowana w tym samym projekcie CF.
+
 ## Jednoplikowe Warcaby
 
 Link „Pobierz grę · HTML + JS” pobiera `/games/warcaby-arena-mocy.html`.
@@ -97,8 +104,8 @@ Grafika OG oraz PNG instalacyjne są wersjami rastrowymi autorskich, kodowych gr
 
 ### Wynik weryfikacji wdrożenia modułu
 
-- 52 testy silników i sesji: zaliczone (21 Warcabów, 20 gry Jeszcze jeden kryształ i 11 Klocków), w tym pełne symulowane rozgrywki Warcabów i Klocków.
-- 39 testów przeglądarkowych w systemowym Chrome: zaliczone (12 Warcabów, 15 gry Jeszcze jeden kryształ i 12 Klocków), w tym responsywność, sterowanie dotykowe, przeciąganie, zapis rundy, pełna runda arcade, cykl życia po restartach, AI, PD oraz jednoplikowe Warcaby przy wyłączonej sieci i niedostępnym localStorage.
+- 66 testów silników i sesji: zaliczone (21 Warcabów, 20 gry Jeszcze jeden kryształ, 11 Klocków i 14 Małego królestwa), w tym symulowane rozgrywki i 20-letni rozwój osady.
+- 51 testów przeglądarkowych w systemowym Chrome: zaliczone (12 Warcabów, 15 gry Jeszcze jeden kryształ, 12 Klocków i 12 Małego królestwa), w tym responsywność, gesty dotykowe, zapis rundy/osady, duża mapa, AI oraz jednoplikowe Warcaby bez sieci.
 - Build `npm run build:site -- gry`, kontrola typów, lint nowych plików i kontrola grafik OG: zaliczone.
 - Kontrola artefaktów `check-gry-build.mjs`: zaliczona. HTML katalogu nie ładuje pakietu samej gry.
 - Test zbudowanej strony w przeglądarce: brak błędów hydratacji, działające czyste URL-e i AI, treść dostępna bez JavaScript, odpowiedź 404 dla nieistniejącej strony.

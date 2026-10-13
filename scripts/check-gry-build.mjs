@@ -13,6 +13,8 @@ for (const page of config.pages) {
   assert.ok(sitemap.includes(`https://gry.zgrana.pl${page.path}</loc>`), `Sitemap: ${file}`)
 }
 const home = await readFile('dist/index.html', 'utf8')
+assert.ok(home.includes('href="/male-krolestwo"'))
+assert.ok(!home.includes('KingdomPage-'), 'Catalog must not preload the kingdom game bundle')
 assert.ok(home.includes('href="/klocki"'))
 assert.ok(!home.includes('BlocksPage-'), 'Catalog must not preload the blocks game bundle')
 assert.ok(home.includes('href="/warcaby-arena-mocy"'))

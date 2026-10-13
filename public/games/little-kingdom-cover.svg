@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 500" fill="none">
+  <defs>
+    <radialGradient id="sky"><stop stop-color="#456246"/><stop offset="1" stop-color="#18392f"/></radialGradient>
+    <linearGradient id="land" x2="1" y2="1"><stop stop-color="#c3d79e"/><stop offset="1" stop-color="#8bad79"/></linearGradient>
+    <pattern id="grid" width="70" height="70" patternUnits="userSpaceOnUse"><rect x="2" y="2" width="66" height="66" rx="8" fill="url(#land)"/></pattern>
+    <g id="pine"><path d="M0 8v26" stroke="#775e3d" stroke-width="7"/><path d="M-24 16L0-29l24 45z" fill="#365f44"/><path d="M-18-1L0-36 18-1z" fill="#547d50"/></g>
+    <g id="house"><ellipse cy="27" rx="30" ry="9" fill="#496d45" opacity=".25"/><path d="M-24-7h48v34h-48z" fill="#f3e8c5"/><path d="M-32-6L0-33 32-6z" fill="#bd7950"/><path d="M-5 8H7v19H-5z" fill="#58654b"/><path d="M-17 2h8v9h-8zm27 0h8v9h-8z" fill="#8bb5a1"/></g>
+    <g id="field"><rect x="-27" y="-25" width="54" height="51" rx="6" fill="#9f7748"/><path d="M-21-15h42M-21 0h42m-42 15h42" stroke="#dfbc64" stroke-width="7"/><path d="M-14-20v10M0-20v10m14-10v10M-14-5V5M0-5V5m14-10V5m-28 5v10M0 10v10m14-10v10" stroke="#6d8a40" stroke-width="3"/></g>
+  </defs>
+  <rect width="800" height="500" rx="24" fill="url(#sky)"/>
+  <circle cx="635" cy="93" r="38" fill="#e3c677" opacity=".8"/>
+  <circle cx="635" cy="93" r="53" stroke="#e3c677" opacity=".15"/>
+  <path d="M0 315l98-98 81 29L295 121l105 99 111-109 147 107 142-65v347H0z" fill="#73906a" opacity=".12"/>
+  <g transform="translate(157 97) rotate(-7 245 160)">
+    <rect x="-10" y="14" width="510" height="300" rx="24" fill="#0d291f" opacity=".4"/>
+    <rect width="490" height="280" rx="18" fill="url(#grid)"/>
+    <path d="M282 4h62v62h-62zm0 70h62v62h-62zm0 70h62v62h-62zm70 0h62v62h-62zm0 70h62v62h-62z" fill="#7fbab4"/>
+    <path d="M292 36q10-6 20 0t20 0m-40 70q10-6 20 0t20 0m-40 70q10-6 20 0t20 0m30 0q10-6 20 0t20 0m-40 70q10-6 20 0t20 0" stroke="#d2e9cb" stroke-width="3"/>
+    <use href="#pine" x="35" y="35"/><use href="#pine" x="105" y="35"/><use href="#pine" x="35" y="105"/>
+    <use href="#house" x="175" y="105"/><use href="#house" x="245" y="175"/>
+    <use href="#field" x="105" y="175"/><use href="#field" x="175" y="175"/><use href="#field" x="105" y="245"/>
+    <use href="#pine" x="455" y="35"/><use href="#pine" x="455" y="105"/><use href="#pine" x="455" y="245"/>
+    <g transform="translate(245 65)"><path d="M-27 0h54v58h-54z" fill="#f4e3b2"/><path d="M-34 0L0-31 34 0z" fill="#b66642"/><path d="M-7 31H7v27H-7z" fill="#617354"/><path d="M-18 11h9v10h-9zm27 0h9v10H9z" fill="#94bba3"/><path d="M0-30v-23" stroke="#b99a66" stroke-width="3"/><path d="M2-53h26l-7 6 7 7H2z" fill="#f0d58c"/></g>
+    <g transform="translate(175 245)"><path d="M-12-21h24l8 43h-40z" fill="#f1e4bd"/><path d="M0-7l-25-25m25 25 25 25M0-7l25-25M0-7-25 18" stroke="#6c7951" stroke-width="4"/><path d="M-25-32l-3 12 17 7m36-19-12-3-7 17m19 36 3-12-17-7m-36 19 12 3 7-17" fill="#f8eed0"/><circle cy="-7" r="5" fill="#a77d48"/></g>
+  </g>
+  <g fill="#e7d294"><path d="M102 84l4 12 12 4-12 4-4 12-4-12-12-4 12-4zM697 362l4 12 12 4-12 4-4 12-4-12-12-4 12-4z"/></g>
+  <text x="400" y="448" text-anchor="middle" font-family="Georgia,serif" font-size="33" fill="#f4e5bb">Mały początek. Wielkie plany.</text>
+</svg>

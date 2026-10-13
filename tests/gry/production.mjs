@@ -114,6 +114,23 @@ try {
     blocksScore,
   )
   await page.screenshot({ path: 'test-results/production/blocks-mobile.png', fullPage: true })
+  await page.goto(`${base}/male-krolestwo`)
+  assert.equal(
+    await page.locator('link[rel="canonical"]').getAttribute('href'),
+    'https://gry.zgrana.pl/male-krolestwo',
+  )
+  assert.equal(
+    await page.locator('meta[property="og:image"]').getAttribute('content'),
+    'https://gry.zgrana.pl/og/little-kingdom.png',
+  )
+  await page.getByRole('button', { name: /Zbierz zapasy/ }).click()
+  await page.getByRole('button', { name: 'Zatwierdź turę' }).click()
+  await page.reload()
+  await page.waitForFunction(
+    () => document.querySelector('[data-testid="kingdom-turn"]')?.textContent === '2',
+  )
+  await page.screenshot({ path: 'test-results/production/kingdom-mobile.png', fullPage: true })
+  assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth))
   assert.deepEqual(errors, [])
   const noJs = await browser.newContext({ javaScriptEnabled: false })
   const staticPage = await noJs.newPage()
@@ -126,9 +143,14 @@ try {
   await staticPage.goto(`${base}/klocki`)
   assert.ok((await staticPage.title()).includes('Klocki'))
   assert.equal(await staticPage.locator('.board-cell').count(), 64)
+  await staticPage.goto(`${base}/male-krolestwo`)
+  assert.ok((await staticPage.title()).includes('Małe królestwo'))
+  assert.equal(await staticPage.locator('.kingdom-faq details').count(), 5)
+  assert.equal(await staticPage.locator('[data-tile]').count(), 49)
+  assert.ok(await staticPage.getByRole('button', { name: 'Zatwierdź turę' }).isDisabled())
   assert.equal((await staticPage.goto(`${base}/nie-ma-takiej-gry`)).status(), 404)
   console.log(
-    'Production browser OK: three games, catalog desktop/mobile, clean routes, per-game SEO, no hydration errors, AI, Crystal Rush start/pause, Blocks play/restore, prerender without JavaScript, 404.',
+    'Production browser OK: four games, catalog desktop/mobile, clean routes, per-game SEO, no hydration errors, AI, Crystal Rush start/pause, Blocks and Kingdom play/restore, prerender without JavaScript, 404.',
   )
 } finally {
   await browser.close()

@@ -5,7 +5,7 @@
       "key": "home",
       "path": "/",
       "title": "Gry online bez konta — zagraj w przeglądarce | Zgrana",
-      "description": "Gry przeglądarkowe bez konta: Klocki, Warcaby — Arena Mocy i Jeszcze jeden kryształ. Wybierz grę logiczną, strategię lub zręcznościówkę na telefon i komputer.",
+      "description": "Gry przeglądarkowe bez konta: Małe królestwo, Klocki, Warcaby i Jeszcze jeden kryształ. Wybierz strategię, grę logiczną lub zręcznościówkę na telefon i komputer.",
       "socialImage": "/og/gry.png",
       "socialImageAlt": "Gry Zgrana — Warcaby Arena Mocy, strategia na wyciągnięcie ręki"
     },
@@ -32,6 +32,14 @@
       "description": "Układaj klocki na planszy 8×8, kasuj wiersze i kolumny, buduj serie i pobij rekord. Gra logiczna bez limitu czasu z zapisem rundy. Zagraj na telefonie lub komputerze.",
       "socialImage": "/og/blocks.png",
       "socialImageAlt": "Klocki — jeszcze jeden ruch. Kolorowe kształty na ciemnej planszy gry logicznej Zgrana."
+    },
+    {
+      "key": "male-krolestwo",
+      "path": "/male-krolestwo",
+      "title": "Małe królestwo — buduj osadę. Gra strategiczna online | Zgrana",
+      "description": "Rozwijaj osadę, odkrywaj nowe ziemie i przygotuj zapasy na zimę. Małe królestwo to darmowa strategia turowa na telefon i komputer, bez konta, z zapisem postępu.",
+      "socialImage": "/og/little-kingdom.png",
+      "socialImageAlt": "Małe królestwo — ilustrowana osada z domkami, polami i lasem na kafelkowej mapie"
     },
     {
       "key": "privacy",

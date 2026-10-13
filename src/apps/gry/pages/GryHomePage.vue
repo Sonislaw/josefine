@@ -60,8 +60,9 @@ useGrySeo('home', {
         <span>02 / PO SWOJEMU</span>
         <h2>Solo albo razem.</h2>
         <p>
-          Ułóż jeszcze jedną linię w Klockach lub pobij rekord w „Jeszcze jeden kryształ”. W
-          Warcabach zmierz się z komputerem lub zaproś drugą osobę do wspólnej planszy.
+          Rozwijaj Małe królestwo, ułóż jeszcze jedną linię w Klockach lub pobij rekord w „Jeszcze
+          jeden kryształ”. W Warcabach zmierz się z komputerem lub zaproś drugą osobę do wspólnej
+          planszy.
         </p>
       </div>
       <div>
@@ -83,16 +84,16 @@ useGrySeo('home', {
       <details>
         <summary>Czy mogę zagrać z kimś przez internet?</summary>
         <p>
-          Warcaby obsługują komputer lub dwie osoby na jednym urządzeniu. „Jeszcze jeden kryształ” i
-          Klocki to gry jednoosobowe. Nie ma tu rozgrywek sieciowych.
+          Warcaby obsługują komputer lub dwie osoby na jednym urządzeniu. „Jeszcze jeden kryształ”,
+          Klocki i Małe królestwo to gry jednoosobowe. Nie ma tu rozgrywek sieciowych.
         </p>
       </details>
       <details>
         <summary>Czy mogę wrócić do przerwanej partii?</summary>
         <p>
-          W Klockach zapisujemy całą rundę — wrócisz do swojej planszy w tej samej przeglądarce. W
-          Warcabach pozostają jedynie lokalne punkty doświadczenia, a w „Jeszcze jeden kryształ” —
-          rekord i ustawienie dźwięku, bez zapisu trwającej rozgrywki.
+          W Małym królestwie zapisujemy osadę, a w Klockach całą rundę — wrócisz do swojej planszy w
+          tej samej przeglądarce. W Warcabach pozostają jedynie lokalne punkty doświadczenia, a w
+          „Jeszcze jeden kryształ” — rekord i ustawienie dźwięku, bez zapisu trwającej rozgrywki.
         </p>
       </details>
     </section>
