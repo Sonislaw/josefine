@@ -298,8 +298,11 @@ function compass(p: Point) {
             :state="state"
             :selected="selected"
             :winter="seasonIndex === 3"
+            :disabled="blocked"
+            :upgrade-plan="action?.type === 'upgrade' ? action : null"
             @select="select"
             @explore="explore"
+            @upgrade="choose({ type: 'upgrade', ...$event })"
           />
           <DefencePanel
             :state="state"
@@ -334,17 +337,6 @@ function compass(p: Point) {
                     ? 'Trwałe zgliszcza — ten zamek już się nie odbuduje.'
                     : 'Zwycięskie wyprawy grabią skarbiec i uszkadzają warownię.'
                 }}
-              </p>
-              <p
-                v-if="
-                  selectedBuilding &&
-                  selectedBuilding.kind !== 'hall' &&
-                  !militaryBuilding(selectedBuilding.kind)
-                "
-              >
-                Ulepszenia: poziom 2 wymaga Wioski i kosztuje ×3 ceny budowy; poziom 3 wymaga
-                Miasteczka i kosztuje ×6. Premie sąsiedztwa mają ograniczenia i nie mnożą się przez
-                poziom.
               </p>
               <p v-if="selectedBuilding?.damaged" class="kingdom-notice danger">
                 Uszkodzony budynek: produkcja i premie są wyłączone. Naprawa zachowa jego poziom.
@@ -408,13 +400,6 @@ function compass(p: Point) {
               class="selected-actions"
             >
               <button
-                type="button"
-                v-if="!selectedBuilding.damaged"
-                :disabled="blocked || selectedBuilding.level >= 3"
-                @click="choose({ type: 'upgrade', ...selected })"
-              >
-                Ulepsz do {{ Math.min(3, selectedBuilding.level + 1) }}</button
-              ><button
                 v-if="selectedBuilding.damaged"
                 type="button"
                 :disabled="blocked"

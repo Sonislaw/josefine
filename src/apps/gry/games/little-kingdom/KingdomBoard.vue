@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import {
   BUILDINGS,
   SIZE,
@@ -12,11 +12,19 @@ import {
   type Point,
 } from './engine'
 import TileArt from './TileArt.vue'
+import BuildingUpgradePopover from './BuildingUpgradePopover.vue'
+import { CELL, MIN_ZOOM, MAX_ZOOM, placeBuildingPopover } from './building-popover'
 import { settlementDefinition, RELATIONS } from './neighbours'
 import { RANKS } from './progression'
 import { blocksBuilding, DISCOVERIES, discoveryStatus } from './discoveries'
-const props = defineProps<{ state: Kingdom; selected: Point | null; winter: boolean }>()
-const emit = defineEmits<{ select: [Point]; explore: [Point] }>()
+const props = defineProps<{
+  state: Kingdom
+  selected: Point | null
+  winter: boolean
+  disabled?: boolean
+  upgradePlan?: Point | null
+}>()
+const emit = defineEmits<{ select: [Point]; explore: [Point]; upgrade: [Point] }>()
 const host = ref<HTMLElement>(),
   width = ref(640),
   height = ref(450),
@@ -24,7 +32,81 @@ const host = ref<HTMLElement>(),
   ox = ref(96),
   oy = ref(1)
 const cursor = ref<Point>({ x: 3, y: 3 })
-const CELL = 64
+const popover = ref<HTMLElement>(),
+  popoverHeight = ref(0),
+  dismissed = ref(false)
+const selectedBuilding = computed(() =>
+  props.selected ? props.state.buildings[key(props.selected.x, props.selected.y)] : undefined,
+)
+const showPopover = computed(
+  () => !dismissed.value && selectedBuilding.value && selectedBuilding.value.kind !== 'hall',
+)
+const placement = computed(() =>
+  props.selected
+    ? placeBuildingPopover(
+        { width: width.value, height: height.value, zoom: zoom.value, ox: ox.value, oy: oy.value },
+        props.selected,
+        popoverHeight.value,
+      )
+    : null,
+)
+const popoverStyle = computed(() =>
+  placement.value
+    ? {
+        left: `${placement.value.left}px`,
+        top: `${placement.value.top}px`,
+        width: `${placement.value.width}px`,
+        '--arrow-left': `${placement.value.arrow}px`,
+      }
+    : {},
+)
+function fitPopover() {
+  if (!showPopover.value || !placement.value) return
+  const c = placement.value.camera
+  ox.value = c.ox
+  oy.value = c.oy
+  zoom.value = c.zoom
+}
+function closePopover(focus = false) {
+  dismissed.value = true
+  if (focus) host.value?.focus({ preventScroll: true })
+}
+let popoverObserver: ResizeObserver | undefined
+let popoverFrame: number | undefined, mapFrame: number | undefined
+function revealPopover() {
+  if (showPopover.value)
+    popover.value?.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'instant' })
+}
+watch(popover, (el) => {
+  popoverObserver?.disconnect()
+  if (popoverFrame !== undefined) cancelAnimationFrame(popoverFrame)
+  popoverFrame = undefined
+  if (!el) return
+  const measure = () => {
+    popoverHeight.value = el.offsetHeight
+    fitPopover()
+  }
+  measure()
+  // Layout writes must run outside ResizeObserver delivery to avoid feedback-loop warnings.
+  popoverObserver = new ResizeObserver(() => {
+    if (popoverFrame !== undefined) return
+    popoverFrame = requestAnimationFrame(() => {
+      popoverFrame = undefined
+      if (popover.value === el) measure()
+    })
+  })
+  popoverObserver.observe(el)
+})
+watch(
+  () => props.selected,
+  async () => {
+    dismissed.value = false
+    await nextTick()
+    fitPopover()
+    await nextTick()
+    revealPopover()
+  },
+)
 const known = computed(() => new Set(props.state.sectors.map((p) => key(p.x, p.y))))
 const edges = computed(() => frontier(props.state))
 const contacts = computed(
@@ -72,13 +154,15 @@ function center(p: Point = { x: 3, y: 3 }) {
   oy.value = height.value / 2 - (p.y + 0.5) * CELL * zoom.value
 }
 function zoomAt(value: number, x = width.value / 2, y = height.value / 2) {
-  const z = Math.max(0.45, Math.min(1.8, value)),
+  closePopover()
+  const z = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, value)),
     ratio = z / zoom.value
   ox.value = x - (x - ox.value) * ratio
   oy.value = y - (y - oy.value) * ratio
   zoom.value = z
 }
 function locate(p: Point) {
+  closePopover()
   cursor.value = p
   center(p)
 }
@@ -92,17 +176,25 @@ let observer: ResizeObserver | undefined
 onMounted(() => {
   observer = new ResizeObserver(([entry]) => {
     if (!entry) return
-    const dx = entry.contentRect.width - width.value,
-      dy = entry.contentRect.height - height.value
-    width.value = entry.contentRect.width
-    height.value = entry.contentRect.height
-    ox.value += dx / 2
-    oy.value += dy / 2
+    if (mapFrame !== undefined) cancelAnimationFrame(mapFrame)
+    mapFrame = requestAnimationFrame(() => {
+      mapFrame = undefined
+      const dx = entry.contentRect.width - width.value,
+        dy = entry.contentRect.height - height.value
+      width.value = entry.contentRect.width
+      height.value = entry.contentRect.height
+      ox.value += dx / 2
+      oy.value += dy / 2
+      void nextTick(() => {
+        fitPopover()
+        void nextTick(revealPopover)
+      })
+    })
   })
   if (host.value) {
     width.value = host.value.clientWidth
     height.value = host.value.clientHeight
-    zoom.value = Math.max(0.45, Math.min(1, (width.value - 20) / (7 * CELL)))
+    zoom.value = Math.max(MIN_ZOOM, Math.min(1, (width.value - 20) / (7 * CELL)))
     center()
     observer.observe(host.value)
   }
@@ -110,6 +202,9 @@ onMounted(() => {
 })
 onBeforeUnmount(() => {
   observer?.disconnect()
+  popoverObserver?.disconnect()
+  if (popoverFrame !== undefined) cancelAnimationFrame(popoverFrame)
+  if (mapFrame !== undefined) cancelAnimationFrame(mapFrame)
   window.removeEventListener('blur', cancel)
   cancel()
 })
@@ -128,7 +223,10 @@ function down(e: PointerEvent) {
     moved = false
   }
   pointers.set(e.pointerId, p)
-  if (pointers.size > 1) moved = true
+  if (pointers.size > 1) {
+    moved = true
+    closePopover()
+  }
   ;(e.currentTarget as Element).setPointerCapture(e.pointerId)
 }
 function move(e: PointerEvent) {
@@ -144,7 +242,10 @@ function move(e: PointerEvent) {
     ox.value += (p.x - prev.x) / 2
     oy.value += (p.y - prev.y) / 2
   } else if (pointers.size === 1) {
-    if (Math.hypot(p.x - origin.x, p.y - origin.y) > 6) moved = true
+    if (Math.hypot(p.x - origin.x, p.y - origin.y) > 6) {
+      moved = true
+      closePopover()
+    }
     if (moved) {
       ox.value += p.x - prev.x
       oy.value += p.y - prev.y
@@ -153,6 +254,7 @@ function move(e: PointerEvent) {
   pointers.set(e.pointerId, p)
 }
 function choose(p: Point) {
+  dismissed.value = false
   cursor.value = p
   const s = sectorOf(p)
   if (known.value.has(key(s.x, s.y))) emit('select', p)
@@ -198,7 +300,10 @@ function keyboard(e: KeyboardEvent) {
     locate({ x: 3, y: 3 })
     choose(cursor.value)
   }
-  if (e.key === 'Escape') cancel()
+  if (e.key === 'Escape') {
+    cancel()
+    closePopover()
+  }
 }
 function wheel(e: WheelEvent) {
   if (e.ctrlKey) {
@@ -220,98 +325,116 @@ function wheel(e: WheelEvent) {
         ><button type="button" @click="locate({ x: 3, y: 3 })">⌂ Ratusz</button>
       </div>
     </div>
-    <div
-      ref="host"
-      class="kingdom-map"
-      :class="{ snowy: winter }"
-      tabindex="0"
-      role="group"
-      aria-label="Mapa królestwa. Strzałki wybierają pola. Enter wybiera, Home wraca do ratusza. Przeciągnij, aby przesunąć mapę."
-      @keydown="keyboard"
-      @wheel="wheel"
-    >
-      <svg
-        :viewBox="`0 0 ${width} ${height}`"
-        @pointerdown="down"
-        @pointermove="move"
-        @pointerup="up"
-        @pointercancel="cancel"
-        @lostpointercapture="pointers.size && cancel()"
+    <div class="map-stage">
+      <div
+        ref="host"
+        class="kingdom-map"
+        :class="{ snowy: winter }"
+        tabindex="0"
+        role="group"
+        aria-label="Mapa królestwa. Strzałki wybierają pola. Enter wybiera, Home wraca do ratusza. Przeciągnij, aby przesunąć mapę."
+        @keydown="keyboard"
+        @wheel="wheel"
       >
-        <defs>
-          <pattern id="kingdom-dots" width="24" height="24" patternUnits="userSpaceOnUse">
-            <circle cx="2" cy="2" r="1" fill="#839777" opacity=".22" />
-          </pattern>
-        </defs>
-        <rect :width="width" :height="height" fill="url(#kingdom-dots)" />
-        <g :transform="`translate(${ox} ${oy}) scale(${zoom})`">
-          <g
-            v-for="s in visibleEdges"
-            :key="`sector-${s.x},${s.y}`"
-            :transform="`translate(${s.x * SIZE * 64} ${s.y * SIZE * 64})`"
-          >
-            <rect
-              x="8"
-              y="8"
-              width="432"
-              height="432"
-              rx="24"
-              fill="#264c3b"
-              fill-opacity=".12"
-              stroke="#84997a"
-              stroke-dasharray="8 10"
-              stroke-width="2"
-            />
-            <text x="224" y="217" text-anchor="middle" fill="#c8d6a6" font-size="30">✧</text>
-            <text x="224" y="250" text-anchor="middle" fill="#d7dfc7" font-size="18">
-              Odkryj ziemie
-            </text>
+        <svg
+          :viewBox="`0 0 ${width} ${height}`"
+          @pointerdown="down"
+          @pointermove="move"
+          @pointerup="up"
+          @pointercancel="cancel"
+          @lostpointercapture="pointers.size && cancel()"
+        >
+          <defs>
+            <pattern id="kingdom-dots" width="24" height="24" patternUnits="userSpaceOnUse">
+              <circle cx="2" cy="2" r="1" fill="#839777" opacity=".22" />
+            </pattern>
+          </defs>
+          <rect :width="width" :height="height" fill="url(#kingdom-dots)" />
+          <g :transform="`translate(${ox} ${oy}) scale(${zoom})`">
+            <g
+              v-for="s in visibleEdges"
+              :key="`sector-${s.x},${s.y}`"
+              :transform="`translate(${s.x * SIZE * 64} ${s.y * SIZE * 64})`"
+            >
+              <rect
+                x="8"
+                y="8"
+                width="432"
+                height="432"
+                rx="24"
+                fill="#264c3b"
+                fill-opacity=".12"
+                stroke="#84997a"
+                stroke-dasharray="8 10"
+                stroke-width="2"
+              />
+              <text x="224" y="217" text-anchor="middle" fill="#c8d6a6" font-size="30">✧</text>
+              <text x="224" y="250" text-anchor="middle" fill="#d7dfc7" font-size="18">
+                Odkryj ziemie
+              </text>
+            </g>
+            <g
+              v-for="p in visible"
+              :key="key(p.x, p.y)"
+              :data-tile="key(p.x, p.y)"
+              :transform="`translate(${p.x * 64} ${p.y * 64})`"
+              role="img"
+              :aria-label="p.label"
+            >
+              <title>{{ p.label }}</title>
+              <TileArt
+                :rank="state.rank"
+                :terrain="p.terrain"
+                :building="p.building"
+                :settlement="p.settlement"
+                :enemy="p.enemy"
+                :winter="winter"
+                :discovery="p.discovery"
+              />
+              <rect
+                v-if="selected && Math.abs(selected.x - p.x) + Math.abs(selected.y - p.y) === 1"
+                x="3"
+                y="3"
+                width="58"
+                height="58"
+                rx="8"
+                fill="none"
+                stroke="#fff7c5"
+                stroke-opacity=".8"
+                stroke-dasharray="3 3"
+                stroke-width="2"
+              />
+              <rect
+                v-if="selected?.x === p.x && selected?.y === p.y"
+                x="2"
+                y="2"
+                width="60"
+                height="60"
+                rx="9"
+                fill="none"
+                stroke="#ffe193"
+                stroke-width="4"
+              />
+            </g>
           </g>
-          <g
-            v-for="p in visible"
-            :key="key(p.x, p.y)"
-            :data-tile="key(p.x, p.y)"
-            :transform="`translate(${p.x * 64} ${p.y * 64})`"
-            role="img"
-            :aria-label="p.label"
-          >
-            <title>{{ p.label }}</title>
-            <TileArt
-              :rank="state.rank"
-              :terrain="p.terrain"
-              :building="p.building"
-              :settlement="p.settlement"
-              :enemy="p.enemy"
-              :winter="winter"
-              :discovery="p.discovery"
-            />
-            <rect
-              v-if="selected && Math.abs(selected.x - p.x) + Math.abs(selected.y - p.y) === 1"
-              x="3"
-              y="3"
-              width="58"
-              height="58"
-              rx="8"
-              fill="none"
-              stroke="#fff7c5"
-              stroke-opacity=".8"
-              stroke-dasharray="3 3"
-              stroke-width="2"
-            />
-            <rect
-              v-if="selected?.x === p.x && selected?.y === p.y"
-              x="2"
-              y="2"
-              width="60"
-              height="60"
-              rx="9"
-              fill="none"
-              stroke="#ffe193"
-              stroke-width="4"
-            />
-          </g>
-        </g>
-      </svg>
+        </svg>
+      </div>
+      <!-- HTML sibling of the gesture surface: buttons never pan or select SVG terrain. -->
+      <div
+        v-if="showPopover && selectedBuilding && selected"
+        ref="popover"
+        class="popover-anchor"
+        :style="popoverStyle"
+      >
+        <BuildingUpgradePopover
+          :state="state"
+          :building="selectedBuilding"
+          :disabled="!!disabled"
+          :planned="upgradePlan?.x === selected.x && upgradePlan?.y === selected.y"
+          @upgrade="emit('upgrade', { x: selected.x, y: selected.y })"
+          @close="closePopover(true)"
+        />
+      </div>
     </div>
     <p class="map-hint">
       Dotknij pola · przeciągnij mapę · rozsuń palce, aby przybliżyć. Sąsiadujące pola są
@@ -358,6 +481,25 @@ function wheel(e: WheelEvent) {
   position: relative;
   background: radial-gradient(ellipse at center, #35523d, #18362d);
   cursor: grab;
+}
+.map-stage {
+  position: relative;
+}
+.popover-anchor {
+  position: absolute;
+  z-index: 5;
+  scroll-margin-top: calc(100px + env(safe-area-inset-top, 0px));
+  scroll-margin-bottom: 12px;
+}
+.popover-anchor::after {
+  content: '';
+  position: absolute;
+  left: var(--arrow-left);
+  top: 100%;
+  transform: translateX(-50%);
+  border: 9px solid transparent;
+  border-top-color: #f6eed8;
+  pointer-events: none;
 }
 .kingdom-map:active {
   cursor: grabbing;

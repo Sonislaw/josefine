@@ -162,6 +162,8 @@ Format zapisu to v7. Nie kasujemy istniejących zasobów, budynków, poziomów a
 
 ## Sterowanie i zapis
 
+Kliknięcie budynku otwiera kompaktowy dymek ponad jego polem: poziom, koszt i ranga wymagana do ulepszenia. Przycisk „Ulepsz” tylko przygotowuje akcję; nadal trzeba osobno zatwierdzić turę. Naprawa i wyburzenie pozostają pod mapą. Dymek zamykamy przyciskiem, Escape, przesunięciem lub skalowaniem mapy. Jego HTML nie skaluje się wraz z SVG i nie przechwytuje gestów planszy. Pozycjonowanie w `building-popover.ts` jest czyste i testowane osobno; `BuildingUpgradePopover.vue` korzysta z kosztów oraz walidacji istniejącego silnika.
+
 Dotknięcie wybiera pole. Przeciąganie przesuwa mapę; dwa palce lub przyciski zmieniają skalę. Anulowanie gestu, utrata fokusu i drugi palec nie wykonują akcji. Strzałki wybierają pola, Enter/Spacja potwierdza wybór pola, Home wraca do ratusza; tura wymaga oddzielnego przycisku. Ctrl + kółko zmienia skalę, zwykłe kółko przewija stronę.
 
 Zapis po każdej turze jest synchroniczny; nie zapisujemy zaznaczenia, kamery ani rozpoczętych gestów. Zamknięcie strony nie zmienia gospodarki. Gra działa bez storage, ale bez gwarancji wznowienia. Karty przeglądarki nie są synchronizowane — ostatni zapis wygrywa. Zapis ma ograniczenia pojemności localStorage; błąd zapisu jest widoczny, a rozgrywka trwa w pamięci.
