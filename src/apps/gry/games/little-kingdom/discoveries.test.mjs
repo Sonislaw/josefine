@@ -71,7 +71,7 @@ test('exploration preview matches commit, does not mutate input or spend offer R
   assert.deepEqual(p, resolveTurn(s, a))
   assert.equal(p.state.rng, s.rng)
   assert.deepEqual(p.state.offer, s.offer)
-  assert.deepEqual(p.cost, { wood: 10, stone: 5, food: 0, gold: 5 })
+  assert.deepEqual(p.cost, { wood: 18, stone: 10, food: 0, gold: 8 })
   assert.equal(Object.keys(p.state.discoveries).length, 1)
   assert.equal(p.discovery.discoveredTurn, 1)
   assert.deepEqual(p.reward, { wood: 0, stone: 0, food: 0, gold: 0 })
@@ -131,27 +131,27 @@ test('invalid, undiscovered and unaffordable interactions leave the complete sta
 test('bonuses are cardinal, additive after levels, do not stack and winter halves the full food output', () => {
   const s = rich(7),
     farm = put(s, 'farm', 4, 2)
-  assert.equal(buildingProduction(s, farm).food, 5) // Existing water below the farm.
+  assert.equal(buildingProduction(s, farm).food, 4) // Existing water below the farm.
   mark(s, 'spring', 3, 1)
   assert.equal(discoveryBonus(s, farm), null) // Diagonal.
   mark(s, 'spring', 3, 2)
   mark(s, 'spring', 5, 2)
-  assert.equal(buildingProduction(s, farm).food, 6)
+  assert.equal(buildingProduction(s, farm).food, 5)
   farm.level = 3
-  assert.equal(buildingProduction(s, farm).food, 16)
+  assert.equal(buildingProduction(s, farm).food, 9)
   put(s, 'mill', 4, 1, 2)
-  assert.equal(buildingProduction(s, farm).food, 28) // (4+1+4)*3 +1.
+  assert.equal(buildingProduction(s, farm).food, 11) // 7 base +1 water +2 mill +1 spring.
   s.turn = 9
-  assert.equal(buildingProduction(s, farm).food, 14)
+  assert.equal(buildingProduction(s, farm).food, 5)
   const orchard = put(s, 'orchard', 2, 2, 2)
   assert.equal(buildingProduction(s, orchard).food, 2) // floor((2*2+1)/2).
   s.turn = 6
-  assert.equal(buildingProduction(s, orchard).food, 9)
+  assert.equal(buildingProduction(s, orchard).food, 7)
   const market = put(s, 'market', 0, 0, 3)
   put(s, 'house', 0, 1, 1)
   mark(s, 'tradingPost', 1, 0)
   mark(s, 'tradingPost', -1, 0)
-  assert.equal(buildingProduction(s, market).gold, 10) // (2+1)*3 +1.
+  assert.equal(buildingProduction(s, market).gold, 5) // 3 base +1 house +1 trading post.
   assert.equal(discoveryBonus(s, market).resource, 'gold')
 })
 

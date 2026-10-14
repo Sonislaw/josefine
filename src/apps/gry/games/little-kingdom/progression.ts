@@ -21,18 +21,18 @@ export const RANKS: readonly RankDefinition[] = [
   },
   {
     name: 'Wioska',
-    requirements: { population: 6, buildings: 4, kinds: 3, sectors: 2, discoveries: 0 },
-    gift: { wood: 10, stone: 5, food: 0, gold: 5 },
+    requirements: { population: 8, buildings: 6, kinds: 4, sectors: 2, discoveries: 1 },
+    gift: { wood: 6, stone: 3, food: 0, gold: 3 },
   },
   {
     name: 'Miasteczko',
-    requirements: { population: 12, buildings: 8, kinds: 5, sectors: 4, discoveries: 1 },
-    gift: { wood: 20, stone: 12, food: 10, gold: 12 },
+    requirements: { population: 14, buildings: 10, kinds: 5, sectors: 4, discoveries: 2 },
+    gift: { wood: 12, stone: 6, food: 6, gold: 6 },
   },
   {
     name: 'Małe królestwo',
-    requirements: { population: 20, buildings: 12, kinds: 6, sectors: 7, discoveries: 3 },
-    gift: { wood: 35, stone: 25, food: 20, gold: 25 },
+    requirements: { population: 22, buildings: 16, kinds: 7, sectors: 7, discoveries: 4 },
+    gift: { wood: 20, stone: 12, food: 12, gold: 12 },
   },
 ]
 const METRICS: Record<Metric, { label: string; hint: string }> = {

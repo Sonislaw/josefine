@@ -11,12 +11,12 @@ const { discoveryForSector, blocksBuilding } = await jiti.import(
 export function developedKingdom(rank = 0) {
   const s = newKingdom(42)
   s.turn = 60
-  s.population = 20
+  s.population = 24
   s.rank = rank
   s.promotions = Array.from({ length: rank }, (_, i) => ({ rank: i + 1, turn: i + 30 }))
-  s.resources = { wood: 1000, stone: 1000, food: 1000, gold: 1000 }
+  s.resources = { wood: 100, stone: 100, food: 100, gold: 60 }
   s.sectors = Array.from({ length: 7 }, (_, x) => ({ x, y: 0 }))
-  for (const p of s.sectors.slice(1, 4)) {
+  for (const p of s.sectors.slice(1, 5)) {
     const d = discoveryForSector(s.seed, p, p.x)
     s.discoveries[key(d.x, d.y)] = { ...d, status: 'used', usedTurn: p.x + 10 }
   }
@@ -41,6 +41,10 @@ export function developedKingdom(rank = 0) {
     'mill',
     'market',
     'orchard',
+    'farm',
+    'farm',
+    'farm',
+    'farm',
     'farm',
   ]
   kinds.forEach((kind, i) => {

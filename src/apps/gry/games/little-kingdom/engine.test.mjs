@@ -72,7 +72,7 @@ test('preview/commit deterministic, immutable; build costs precede immediate pro
   const p = resolveTurn(s, a)
   assert.deepEqual(s, before)
   assert.deepEqual(resolveTurn(s, a), p)
-  assert.deepEqual(p.state.resources, { wood: 16, stone: 12, food: 27, gold: 11 })
+  assert.deepEqual(p.state.resources, { wood: 9, stone: 9, food: 26, gold: 9 })
   assert.equal(p.state.turn, 1)
   assert.deepEqual(p.state.offer, deal(s.rng).offer)
   assert.deepEqual(resolveTurn(s, { type: 'gather' }).state.offer, s.offer)
@@ -98,15 +98,15 @@ test('reject occupied, natural, unknown, unaffordable and unavailable offer with
   assert.match(actionError(s, { type: 'build', kind: 'farm', x: 0, y: 0 }), /Brakuje/)
   assert.equal(resolveTurn(s, { type: 'build', kind: 'farm', x: 0, y: 0 }), null)
 })
-test('adjacency is cardinal, water is once, mills stack then farm level multiplies', () => {
+test('adjacency is cardinal, water is once, and mill bonuses are capped without multiplying by farm level', () => {
   const s = newKingdom(7)
   put(s, 'farm', 4, 2, 2)
   put(s, 'mill', 3, 2, 2)
   put(s, 'mill', 5, 2, 1)
   put(s, 'mill', 5, 1, 3)
-  assert.equal(buildingProduction(s, s.buildings['4,2']).food, (4 + 1 + 4 + 2) * 2)
+  assert.equal(buildingProduction(s, s.buildings['4,2']).food, 5 + 1 + 3)
   s.turn = 9
-  assert.equal(buildingProduction(s, s.buildings['4,2']).food, 11)
+  assert.equal(buildingProduction(s, s.buildings['4,2']).food, 4)
   const winter = newKingdom(2)
   winter.turn = 9
   put(winter, 'farm', 4, 2)
@@ -120,32 +120,34 @@ test('tartak, quarry, market, houses and orchard have correct effects', () => {
   put(s, 'house', 0, 1, 3)
   put(s, 'house', 1, 1, 1)
   put(s, 'orchard', 6, 0, 3)
-  assert.equal(buildingProduction(s, s.buildings['2,2']).wood, 6)
+  assert.equal(buildingProduction(s, s.buildings['2,2']).wood, 3)
   const quarryNeighbors = [
     { x: 2, y: 5 },
     { x: 4, y: 5 },
     { x: 3, y: 4 },
     { x: 3, y: 6 },
   ].filter((p) => terrain(1, p.x, p.y) === 'rock').length
-  assert.equal(buildingProduction(s, s.buildings['3,5']).stone, 2 + quarryNeighbors)
-  assert.equal(buildingProduction(s, s.buildings['0,0']).gold, 6)
+  assert.equal(buildingProduction(s, s.buildings['3,5']).stone, 1 + Math.min(2, quarryNeighbors))
+  assert.equal(buildingProduction(s, s.buildings['0,0']).gold, 3)
   assert.equal(capacity(s), 17)
-  assert.equal(buildingProduction(s, s.buildings['6,0']).food, 6)
+  assert.equal(buildingProduction(s, s.buildings['6,0']).food, 4)
   s.turn = 6
-  assert.equal(buildingProduction(s, s.buildings['6,0']).food, 12)
+  assert.equal(buildingProduction(s, s.buildings['6,0']).food, 8)
   s.turn = 9
-  assert.equal(buildingProduction(s, s.buildings['6,0']).food, 3)
+  assert.equal(buildingProduction(s, s.buildings['6,0']).food, 2)
 })
 test('upgrades use target-level price; maximum level and demolition refund', () => {
   let s = put(rich(), 'farm', 0, 0)
-  assert.equal(actionCost(s, { type: 'upgrade', x: 0, y: 0 }).wood, 10)
+  s.rank = 2
+  s.resources = { wood: 200, stone: 100, food: 100, gold: 60 }
+  assert.equal(actionCost(s, { type: 'upgrade', x: 0, y: 0 }).wood, 36)
   s = resolveTurn(s, { type: 'upgrade', x: 0, y: 0 }).state
   assert.equal(s.buildings['0,0'].level, 2)
-  assert.equal(actionCost(s, { type: 'upgrade', x: 0, y: 0 }).wood, 15)
+  assert.equal(actionCost(s, { type: 'upgrade', x: 0, y: 0 }).wood, 72)
   s = resolveTurn(s, { type: 'upgrade', x: 0, y: 0 }).state
   assert.equal(resolveTurn(s, { type: 'upgrade', x: 0, y: 0 }), null)
   const demolished = resolveTurn(s, { type: 'demolish', x: 0, y: 0 })
-  assert.equal(demolished.delta.wood, 3) // floor(5/2) refund + hall production
+  assert.equal(demolished.delta.wood, 7) // floor(12/2) refund + hall production
   assert.equal(demolished.state.buildings['0,0'], undefined)
   s = put(rich(), 'house', 0, 0)
   s.population = 6
@@ -155,20 +157,20 @@ test('exploration must touch known sectors, increases price and keeps offer', ()
   let s = rich()
   assert.equal(frontier(s).length, 4)
   assert.deepEqual(actionCost(s, { type: 'explore', x: -1, y: 0 }), {
-    wood: 10,
-    stone: 5,
+    wood: 18,
+    stone: 10,
     food: 0,
-    gold: 5,
+    gold: 8,
   })
   const originalOffer = s.offer
   s = resolveTurn(s, { type: 'explore', x: -1, y: 0 }).state
   assert.equal(s.sectors.length, 2)
   assert.deepEqual(s.offer, originalOffer)
   assert.deepEqual(actionCost(s, { type: 'explore', x: -2, y: 0 }), {
-    wood: 15,
-    stone: 8,
+    wood: 26,
+    stone: 15,
     food: 0,
-    gold: 8,
+    gold: 13,
   })
   assert.equal(resolveTurn(s, { type: 'explore', x: -1, y: 0 }), null)
   assert.ok(resolveTurn(s, { type: 'build', kind: 'farm', x: -7, y: 0 }))
@@ -181,11 +183,11 @@ test('season boundaries, growth threshold, capacity and food use order', () => {
   )
   let s = newKingdom()
   s.turn = 2
-  s.resources.food = 4
+  s.resources.food = 5
   let r = resolveTurn(s, { type: 'gather' })
   assert.equal(r.state.resources.food, 6)
   assert.equal(r.state.population, 4)
-  s.resources.food = 3
+  s.resources.food = 4
   r = resolveTurn(s, { type: 'gather' })
   assert.equal(r.state.population, 3)
   s.resources.food = 100
@@ -196,7 +198,7 @@ test('gather with zero stock is legal; hunger warns, loses people, resets and en
   let s = newKingdom()
   s.resources = { wood: 0, stone: 0, food: 0, gold: 0 }
   const gathered = resolveTurn(s, { type: 'gather' })
-  assert.deepEqual(gathered.state.resources, { wood: 3, stone: 0, food: 2, gold: 1 })
+  assert.deepEqual(gathered.state.resources, { wood: 2, stone: 1, food: 1, gold: 1 })
   s = put(rich(), 'house', 0, 0, 3)
   s.population = 14
   s.resources.food = 0

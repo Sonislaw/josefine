@@ -45,8 +45,8 @@ for (const [width, height] of [
     await summary.focus()
     await page.keyboard.press('Enter')
     await expect(page.locator('.progression-panel')).toHaveAttribute('open', '')
-    await expect(page.locator('[data-rank-requirement]')).toHaveCount(4)
-    await expect(page.locator('.progression-panel')).toContainText('Mieszkańcy: 20 / 6')
+    await expect(page.locator('[data-rank-requirement]')).toHaveCount(5)
+    await expect(page.locator('.progression-panel')).toContainText('Mieszkańcy: 24 / 8')
     await expect(page.locator('[data-tile="3,3"] [data-hall-rank]')).toHaveAttribute(
       'data-hall-rank',
       '0',
@@ -117,10 +117,10 @@ for (const brokenVersion of [2, 6])
   test(`corrupt v${brokenVersion} stays protected despite an older valid save`, async ({
     page,
   }) => {
-    const brokenKey = brokenVersion === 4 ? key : previous
+    const brokenKey = brokenVersion === 6 ? key : previous
     await prepare(page, [
       ['zgrana:gry:male-krolestwo:v1', encode(developedKingdom(), 1)],
-      ...(brokenVersion === 4 ? [[previous, encode(developedKingdom(), 2)]] : []),
+      ...(brokenVersion === 6 ? [[previous, encode(developedKingdom(), 2)]] : []),
       [brokenKey, '{broken'],
     ])
     await page.goto(url)
@@ -164,7 +164,7 @@ test('insufficient present-day requirements never revoke a saved rank', async ({
   await page.goto(url)
   await expect(page.getByTestId('kingdom-rank')).toContainText('Miasteczko')
   await page.locator('.progression-panel summary').click()
-  await expect(page.locator('[data-rank-requirement="population"]')).toContainText('3 / 20')
+  await expect(page.locator('[data-rank-requirement="population"]')).toContainText('3 / 22')
   await expect(page.locator('[data-rank-requirement="population"]')).toContainText('Do spełnienia')
   await expect(page.locator('[data-rank-requirement="population"]')).toContainText(
     'Zapewnij miejsce',

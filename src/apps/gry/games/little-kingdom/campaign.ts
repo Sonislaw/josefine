@@ -1,4 +1,5 @@
 import type { Kingdom } from './engine'
+import { BALANCE } from './balance'
 import {
   WAR,
   UNIT_IDS,
@@ -33,6 +34,8 @@ export interface EnemyCampaign {
 export const enemyTarget = (rank: number): Army => ({
   ...WAR.targets[Math.max(0, Math.min(2, rank - 1))]!,
 })
+export const enemyDefence = (rank: number) =>
+  BALANCE.combat.garrisonSupport[Math.max(0, Math.min(2, rank - 1))]!
 export function newCampaign(rank: number): EnemyCampaign {
   return {
     garrison: enemyTarget(rank),
@@ -99,7 +102,7 @@ export function advanceCampaign(s: Kingdom): CampaignUpdate {
   const peaceful = e.peaceUntil !== null
   if (!peaceful) e.warTurns++
   e.recovery++
-  if (e.recovery === WAR.recovery) {
+  if (e.recovery >= WAR.recovery) {
     e.recovery = 0
     const total = addArmy(e.garrison, f.raid?.army ?? emptyArmy()),
       target = enemyTarget(s.rank)

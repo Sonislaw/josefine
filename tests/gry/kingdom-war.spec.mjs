@@ -154,7 +154,14 @@ test('gifts, two battles, cooldown and forcePeace pay once, with persistent temp
 }) => {
   let s = warKingdom()
   s = resolveTurn(s, { type: 'build', kind: 'barracks', ...emptyPlot(s) }).state
-  s.affairs.army = { spearman: 6, archer: 0, shieldbearer: 0 }
+  s.rank = 3
+  s.promotions = [
+    { rank: 1, turn: 12 },
+    { rank: 2, turn: 13 },
+    { rank: 3, turn: 14 },
+  ]
+  Object.values(s.buildings).find((b) => b.kind === 'barracks').level = 3
+  s.affairs.army = { spearman: 12, archer: 0, shieldbearer: 0 }
   await prepare(page, s)
   await page.goto(url)
   await openPanel(page, 'Sąsiednie osady')

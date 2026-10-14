@@ -65,7 +65,7 @@ test('barracks and tower have rank-gated levels, exact costs, six/nine/twelve ca
   assert.equal(resolveTurn(s, { type: 'upgrade', ...p }), null)
   s.rank = 2
   s.promotions.push({ rank: 2, turn: 13 })
-  assert.equal(actionCost(s, { type: 'upgrade', ...p }).wood, 24)
+  assert.equal(actionCost(s, { type: 'upgrade', ...p }).wood, 90)
   s = go(s, { type: 'upgrade', ...p })
   assert.equal(armyCapacity(s.buildings[key(p.x, p.y)].level), 9)
   assert.equal(resolveTurn(s, { type: 'upgrade', ...p }), null)
@@ -75,7 +75,7 @@ test('barracks and tower have rank-gated levels, exact costs, six/nine/twelve ca
   assert.equal(armyCapacity(s.buildings[key(p.x, p.y)].level), 12)
   assert.equal(resolveTurn(s, { type: 'upgrade', ...p }), null)
   assert.equal(resolveTurn(s, { type: 'build', kind: 'barracks', ...emptyPlot(s) }), null)
-  assert.deepEqual([1, 2, 3].map(towerStrength), [6, 9, 12])
+  assert.deepEqual([1, 2, 3].map(towerStrength), [4, 6, 8])
   s.affairs.army = { spearman: 10, archer: 1, shieldbearer: 1 }
   assert.equal(resolveTurn(s, { type: 'recruit', unit: 'shieldbearer' }), null)
   assert.equal(resolveTurn(s, { type: 'demolish', ...p }), null)
@@ -84,7 +84,7 @@ test('shield recruitment consumes resources, leaves civilians untouched, upkeep/
   let s = withArmy()
   s.affairs.army = emptyArmy()
   const r = resolveTurn(s, { type: 'recruit', unit: 'shieldbearer' })
-  assert.deepEqual(r.cost, { wood: 2, stone: 3, food: 0, gold: 4 })
+  assert.deepEqual(r.cost, { wood: 5, stone: 7, food: 2, gold: 9 })
   assert.equal(r.state.affairs.army.shieldbearer, 1)
   s = r.state
   s.population = 2
@@ -105,7 +105,7 @@ test('symmetric tactics, defender ties, fifty-percent charge and shield protecti
   const r = battle(a, enemy, 'guard', false, 99, 'volley')
   assert.equal(r.strength, 24)
   assert.equal(r.enemyStrength, 12)
-  assert.equal(armySize(r.losses), 0)
+  assert.equal(armySize(r.losses), 1)
   assert.equal(armySize(r.enemyLosses), 2)
   const tie = battle(a, a, 'guard', true, 0, 'guard')
   assert.equal(tie.victory, true)
@@ -127,7 +127,7 @@ test('raid transfers round-robin troops; total includes dispatched units and nev
     archer: 1,
     shieldbearer: 1,
   })
-  assert.equal(armySize(raidingParty(enemyTarget(3))), 8)
+  assert.equal(armySize(raidingParty(enemyTarget(3))), 10)
   let s = warKingdom(),
     contact = s.affairs.settlements[2].discoveredTurn
   while (s.turn < contact + 12 - 1) {
@@ -142,18 +142,18 @@ test('raid transfers round-robin troops; total includes dispatched units and nev
   for (let i = 0; i < 3; i++) {
     s = go(s, { type: 'gather' })
     assert.deepEqual(s.affairs.raid, snapshot)
-    assert.equal(armySize(addArmy(s.affairs.enemy.garrison, s.affairs.raid.army)), 6)
+    assert.equal(armySize(addArmy(s.affairs.enemy.garrison, s.affairs.raid.army)), 8)
   }
 })
-test('enemy recovery adds at most one troop every third turn, round-robin skips full quotas and rank up never grants army', () => {
+test('enemy recovery adds at most one troop every second turn, round-robin skips full quotas and rank up never grants army', () => {
   let s = warKingdom()
   s.affairs.enemy.garrison = emptyArmy()
   s.affairs.enemy.recovery = 0
   for (let i = 1; i <= 6; i++) {
     s = go(s, { type: 'gather' })
-    assert.equal(armySize(s.affairs.enemy.garrison), Math.floor(i / 3))
+    assert.equal(armySize(s.affairs.enemy.garrison), Math.floor(i / 2))
   }
-  assert.deepEqual(s.affairs.enemy.garrison, { spearman: 1, archer: 1, shieldbearer: 0 })
+  assert.deepEqual(s.affairs.enemy.garrison, { spearman: 1, archer: 1, shieldbearer: 1 })
   const before = armySize(s.affairs.enemy.garrison)
   s.rank = 3
   s.promotions = [
@@ -213,11 +213,12 @@ test('losing interception preserves date, weakens wave, cannot repeat and never 
 test('ordinary expeditions have a six-turn cooldown, actual enemy losses, no loot and no free protection', () => {
   let s = withArmy(),
     initial = s.affairs.protectedUntil
+  s.affairs.enemy.garrison = { spearman: 2, archer: 1, shieldbearer: 0 }
   const r = resolveTurn(s, { type: 'expedition', army: { ...s.affairs.army } })
   assert.ok(r.battle.victory)
   assert.equal(r.state.affairs.enemy.advantage, 1)
   assert.equal(r.state.affairs.protectedUntil, initial)
-  assert.equal(armySize(r.battle.enemyLosses), 3)
+  assert.equal(armySize(r.battle.enemyLosses), 2)
   assert.ok(Object.values(r.battle.loot).every((v) => v === 0))
   s = r.state
   assert.equal(resolveTurn(s, { type: 'expedition', army: { ...s.affairs.army } }), null)
@@ -253,7 +254,7 @@ test('negotiated peace cancels raid, lasts 36 full turns, rebuilds enemy and res
   let s = beforeRaid()
   s.affairs.enemy.advantage = 2
   const r = resolveTurn(s, { type: 'negotiate' })
-  assert.deepEqual(r.cost, { wood: 0, stone: 0, food: 12, gold: 20 })
+  assert.deepEqual(r.cost, { wood: 0, stone: 0, food: 24, gold: 40 })
   s = r.state
   const until = s.affairs.enemy.peaceUntil,
     warTurns = s.affairs.enemy.warTurns
@@ -275,6 +276,7 @@ test('negotiated peace cancels raid, lasts 36 full turns, rebuilds enemy and res
 test('forced peace requires two advantage points, pays once per campaign after feeding and allows next campaign', () => {
   let s = withArmy()
   s.affairs.enemy.advantage = 2
+  s.affairs.enemy.garrison = { spearman: 2, archer: 1, shieldbearer: 0 }
   const r = resolveTurn(s, { type: 'forcePeace', army: { ...s.affairs.army }, tactic: 'guard' })
   assert.ok(r.battle.victory)
   assert.deepEqual(r.battle.loot, WAR.loot)
@@ -287,6 +289,7 @@ test('forced peace requires two advantage points, pays once per campaign after f
   s = structuredClone(withArmy())
   s.affairs.enemy.advantage = 2
   s.affairs.enemy.lootCampaign = 1
+  s.affairs.enemy.garrison = { spearman: 2, archer: 1, shieldbearer: 0 }
   assert.ok(
     Object.values(
       resolveTurn(s, { type: 'forcePeace', army: { ...s.affairs.army } }).battle.loot,
@@ -322,8 +325,8 @@ test('raid damage still precedes harvest, repair preserves levels, new tower/rec
   assert.ok(fixed.produced.food > r.produced.food)
   const armed = beforeRaid({ spearman: 3, archer: 0, shieldbearer: 0 }),
     built = resolveTurn(armed, { type: 'build', kind: 'watchtower', ...emptyPlot(armed) })
-  assert.equal(built.battle.strength, 24)
-  assert.equal(built.battle.victory, true)
+  assert.equal(built.battle.strength, 22)
+  assert.equal(built.battle.victory, false) // A small army plus a new tower no longer guarantees a win.
   const recruited = resolveTurn(armed, { type: 'recruit', unit: 'spearman' })
   assert.equal(recruited.battle.strength, 24)
   const last = beforeRaid()

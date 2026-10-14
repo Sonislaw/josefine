@@ -54,6 +54,9 @@ defineProps<{ report: BattleReport; preview?: boolean }>()
       Straty wroga: {{ report.enemyLosses.spearman }} włóczników,
       {{ report.enemyLosses.archer }} łuczników, {{ report.enemyLosses.shieldbearer }} tarczowników.
     </p>
+    <p v-if="report.enemySupport">
+      Obrona garnizonu wroga: +{{ report.enemySupport }} siły. Premia jest już uwzględniona.
+    </p>
     <p v-if="report.outcome">{{ report.outcome }}</p>
     <p v-if="report.damaged">
       Uszkodzony budynek: {{ report.damaged.x }}, {{ report.damaged.y }}. Produkcja i premie

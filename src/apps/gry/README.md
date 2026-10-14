@@ -77,6 +77,7 @@ Strategia turowa z lokalnym zapisem osady, sezonami, odkryciami i trwałymi rang
 „Głos mieszkańców” dodaje 12 jednorazowych próśb z portretami, postępem i historią pomocy.
 „Za granicą osady” dodaje trzech sąsiadów, koszary, wieżę, dwie jednostki, taktyki bitew, najazdy, rozejm i naprawę uszkodzeń.
 „Wojna na pograniczu” rozwija garnizon wroga, jego odbudowę, tarczowników, ulepszenia wojska, przechwycenia i powtarzalne kampanie z czasowym pokojem.
+Trudniejszy balans ogranicza mnożenie premii i gromadzenie zapasów, podnosi ceny oraz progi awansów, dodaje żołd i wzmacnia obronę garnizonu. Parametry gospodarki są w `balance.ts`; dotychczasowe osady zachowują zasoby, zabudowę i rangi.
 Rangi mają jednorazowe prezenty, historię oraz cztery warianty ratusza; zapis v6 zachowuje kopie v1/v2/v3/v4/v5. Własny silnik i
 ilustracje SVG w `games/little-kingdom/`; [dokumentacja i reguły](games/little-kingdom/README.md).
 Gra ma własny lazy route, SSG, FAQ, sitemapę i grafikę OG PNG. Publikowana w tym samym projekcie CF.
@@ -125,8 +126,8 @@ Grafika OG oraz PNG instalacyjne są wersjami rastrowymi autorskich, kodowych gr
 
 ### Wynik weryfikacji wdrożenia modułu
 
-- 157 testów silników i sesji: zaliczone (21 Warcabów, 20 gry Jeszcze jeden kryształ, 11 Klocków, 70 Małego królestwa, 18 Ostatniej latarni i 17 Nocnego ekspresu). „Wojna na pograniczu” obejmuje wieloletnie kampanie na wszystkich rangach, rozdzielenie wojska wroga, odbudowę, przechwycenia, ulepszenia, straty obu stron, 36 tur pokoju, ponowne kampanie i migracje v1–v5 → v6.
-- 114 testów przeglądarkowych w systemowym Chrome: zaliczone (12 Warcabów, 15 gry Jeszcze jeden kryształ, 12 Klocków, 47 Małego królestwa, 14 Ostatniej latarni i 14 Nocnego ekspresu). Nowe scenariusze obejmują prognozę bitwy, przechwycenie i zakaz ponowienia, tarczownika, ulepszanie, odstęp między wyprawami, czasowy pokój, jego zakończenie, migrację aktywnego najazdu i brak pamięci. Widoki 360/390/1440 px. Mobile jest emulacją, nie pomiarem fizycznego telefonu.
+- 165 testów silników i sesji: zaliczone (21 Warcabów, 20 gry Jeszcze jeden kryształ, 11 Klocków, 78 Małego królestwa, 18 Ostatniej latarni i 17 Nocnego ekspresu). Obejmują kampanie na wszystkich rangach, odbudowę, przechwycenia, straty, pokój i migracje v1–v5 → v6. Nowe testy balansu sprawdzają gospodarkę, koszty, limity, żołd, prognozę i rozwój nowej osady bez dopisywania zasobów na trzech mapach.
+- 117 scenariuszy przeglądarkowych w systemowym Chrome (12 Warcabów, 15 gry Jeszcze jeden kryształ, 12 Klocków, 50 Małego królestwa, 14 Ostatniej latarni i 14 Nocnego ekspresu). Scenariusze balansu obejmują trudniejszy start, blokadę ulepszeń i prognozę nadwyżek magazynu. Widoki 360/390/1440 px. Mobile jest emulacją, nie pomiarem fizycznego telefonu.
 - Build `npm run build:site -- gry`, kontrola typów i kontrola grafik OG: zaliczone.
 - Kontrola artefaktów `check-gry-build.mjs`: zaliczona. HTML katalogu nie ładuje pakietu samej gry.
 - Test zbudowanej strony w przeglądarce: brak błędów hydratacji, działające czyste URL-e i AI, treść dostępna bez JavaScript, odpowiedź 404 dla nieistniejącej strony.

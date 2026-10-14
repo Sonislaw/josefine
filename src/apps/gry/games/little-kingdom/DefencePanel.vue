@@ -8,10 +8,11 @@ import {
   TACTICS,
   armySize,
   upkeep,
+  upkeepGold,
   armyCapacity,
   type Army,
 } from './military'
-import { enemyTactic, enemyTarget } from './campaign'
+import { enemyTactic, enemyTarget, enemyDefence } from './campaign'
 import { SETTLEMENTS, RELATIONS } from './neighbours'
 import { resourceList } from './format'
 import MilitaryArt from './MilitaryArt.vue'
@@ -56,8 +57,9 @@ const armyText = (a: Army) => UNIT_IDS.map((u) => UNITS[u].name + ': ' + a[u]).j
       <p v-if="state.rank < 1">Koszary i wieża odblokują się po osiągnięciu rangi Wioska.</p>
       <template v-else>
         <p>
-          Utrzymanie: {{ upkeep(state.affairs.army) }} żywności / turę, po wyżywieniu mieszkańców.
-          Najemnicy nie zajmują domów.
+          Utrzymanie: {{ upkeep(state.affairs.army) }} żywności i
+          {{ upkeepGold(state.affairs.army) }} monet / turę, po wyżywieniu mieszkańców. Najemnicy
+          nie zajmują domów.
         </p>
         <p v-if="!barracks">Postaw koszary z zakładki „Obrona”, aby rekrutować.</p>
         <p v-else>
@@ -70,7 +72,7 @@ const armyText = (a: Army) => UNIT_IDS.map((u) => UNITS[u].name + ': ' + a[u]).j
             <strong>{{ UNITS[unit].name }} · {{ state.affairs.army[unit] }}</strong>
             <p>Siła {{ UNITS[unit].strength }} · {{ resourceList(UNITS[unit].cost) }}</p>
             <p v-if="unit === 'shieldbearer'">
-              Każdych dwóch tarczowników zmniejsza straty oddziału o jedną jednostkę.
+              Każdych trzech tarczowników zmniejsza straty oddziału o jedną jednostkę.
             </p>
             <button
               type="button"
@@ -89,8 +91,8 @@ const armyText = (a: Army) => UNIT_IDS.map((u) => UNITS[u].name + ': ' + a[u]).j
           </article>
         </div>
         <small
-          >Każda decyzja wymaga zatwierdzenia tury. Brak pełnej racji powoduje odejście jednej
-          jednostki: najpierw włócznik, potem łucznik, na końcu tarczownik.</small
+          >Każda decyzja wymaga zatwierdzenia tury. Brak pełnej racji lub żołdu powoduje odejście
+          jednej jednostki: najpierw włócznik, potem łucznik, na końcu tarczownik.</small
         >
       </template>
     </details>
@@ -139,10 +141,11 @@ const armyText = (a: Army) => UNIT_IDS.map((u) => UNITS[u].name + ': ' + a[u]).j
             <p data-testid="enemy-garrison">Garnizon: {{ armyText(enemy.garrison) }}</p>
             <p>
               Taktyka garnizonu: {{ TACTICS[enemyTactic(enemy)].name }}. Zmiana co 4 tury konfliktu.
+              Obrona garnizonu: +{{ enemyDefence(state.rank) }} siły; poza osadą nie działa.
             </p>
             <p>
-              Odbudowa za {{ WAR.recovery - enemy.recovery }} tur: najwyżej jedna brakująca
-              jednostka. Cel łącznie: {{ armyText(enemyTarget(state.rank)) }}.
+              Odbudowa za {{ Math.max(1, WAR.recovery - enemy.recovery) }} tur: najwyżej jedna
+              brakująca jednostka. Cel łącznie: {{ armyText(enemyTarget(state.rank)) }}.
             </p>
           </div>
           <p v-if="enemy.peaceUntil !== null" data-testid="campaign-peace">
@@ -168,14 +171,14 @@ const armyText = (a: Army) => UNIT_IDS.map((u) => UNITS[u].name + ': ' + a[u]).j
               kampanię.
             </p>
             <button type="button" :disabled="disabled" @click="emit('choose', { type: 'truce' })">
-              Opłać rozejm · 12 monet
+              Opłać rozejm · {{ WAR.truce.gold }} monet
             </button>
             <button
               type="button"
               :disabled="disabled || enemy.advantage < 2"
               @click="emit('choose', { type: 'negotiate' })"
             >
-              Wynegocjuj pokój · 20 monet + 12 żywności
+              Wynegocjuj pokój · {{ WAR.negotiate.gold }} monet + {{ WAR.negotiate.food }} żywności
             </button>
             <details class="expedition">
               <summary>Wyprawy wojenne</summary>

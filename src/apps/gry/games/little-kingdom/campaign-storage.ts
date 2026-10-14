@@ -5,7 +5,9 @@ const object = (v: unknown): v is Record<string, unknown> =>
   typeof v === 'object' && v !== null && !Array.isArray(v)
 const natural = (v: unknown): v is number => Number.isSafeInteger(v) && (v as number) >= 0
 export const validArmy = (v: unknown): v is Army =>
-  object(v) && UNIT_IDS.every((u) => natural(v[u])) && armySize(v as Army) <= 12
+  object(v) &&
+  UNIT_IDS.every((u) => natural(v[u])) &&
+  armySize(v as Army) <= armySize(WAR.targets[2]!)
 /** Called after old-format validation. Never advances a turn or awards resources. */
 export function migrateWarfare(state: Kingdom): Kingdom {
   const f = state.affairs,
@@ -42,7 +44,8 @@ export function validateCampaign(state: Kingdom): boolean {
   if (
     !validArmy(e.garrison) ||
     !natural(e.recovery) ||
-    e.recovery >= WAR.recovery ||
+    // Earlier v6 saves can contain the previous third-turn recovery counter.
+    e.recovery >= Math.max(3, WAR.recovery) ||
     !natural(e.recruitmentCursor) ||
     e.recruitmentCursor >= 3 ||
     !natural(e.warTurns) ||

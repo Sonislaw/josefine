@@ -1,4 +1,5 @@
 import type { Point, Resources } from './engine'
+import { BALANCE } from './balance'
 import {
   armySize,
   baseStrength,
@@ -16,6 +17,7 @@ export interface BattleReport {
   enemy: Army
   strength: number
   enemyStrength: number
+  enemySupport: number
   victory: boolean
   losses: Army
   enemyLosses: Army
@@ -35,9 +37,10 @@ export function battle(
   defending: boolean,
   tower = 0,
   enemyTactic: EnemyTactic = 'none',
+  enemySupport = 0,
 ): BattleReport {
   const strength = tacticalStrength(army, tactic) + (defending ? tower : 0),
-    enemyStrength = tacticalStrength(enemy, enemyTactic)
+    enemyStrength = tacticalStrength(enemy, enemyTactic) + enemySupport
   const victory = defending ? strength >= enemyStrength : strength > enemyStrength
   return {
     defending,
@@ -46,6 +49,7 @@ export function battle(
     enemy: { ...enemy },
     strength,
     enemyStrength,
+    enemySupport,
     victory,
     losses: casualties(army, victory, strength, enemyStrength, tactic),
     enemyLosses: casualties(enemy, !victory, enemyStrength, strength, enemyTactic),
@@ -79,12 +83,17 @@ function casualties(
   tactic: EnemyTactic,
 ) {
   const initial = won
-    ? strength >= opponent * 2
+    ? strength >= opponent * BALANCE.combat.overwhelmingRatio
       ? 0
-      : Math.ceil(armySize(army) / 4)
-    : Math.ceil(armySize(army) / 2)
+      : Math.ceil(
+          armySize(army) *
+            BALANCE.combat.winnerLossRate *
+            Math.min(1, opponent / Math.max(1, strength)),
+        )
+    : Math.ceil(armySize(army) * BALANCE.combat.loserLossRate)
   return removeUnits(
     army,
-    Math.max(0, initial - Math.floor(army.shieldbearer / 2)) + (tactic === 'charge' ? 1 : 0),
+    Math.max(0, initial - Math.floor(army.shieldbearer / BALANCE.combat.shieldsPerProtection)) +
+      (tactic === 'charge' ? 1 : 0),
   )
 }

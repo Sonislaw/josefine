@@ -4,6 +4,7 @@ Samodzielna strategia turowa: `/gry/male-krolestwo` lokalnie, `/male-krolestwo` 
 
 ## Podział odpowiedzialności
 
+- `balance.ts`: koszty budynków i ulepszeń, ograniczenia produkcji, limity zapasów, utrzymanie wojska i parametry strat. Zmiany balansu nie tworzą drugiego silnika ani osobnego poziomu trudności.
 - `engine.ts`: czyste typy i reguły, oferta, gospodarka i sezonowość. `resolveTurn(state, action)` zwraca nowy stan, koszt, produkcję, jednorazową nagrodę, nowe odkrycie, bilans oraz zmianę populacji. Nigdy nie mutuje wejścia. Ten sam wynik służy prognozie i zatwierdzeniu.
 - `terrain.ts`: dotychczasowy, niezmieniony generator terenu. Wspólny dla silnika i odkryć, bez cyklicznych importów reguł.
 - `discoveries.ts`: definicje miejsc, koszty, nagrody, rozmieszczenie i premie. Osobne hashe nie zużywają RNG oferty budynków.
@@ -51,12 +52,12 @@ budowy z poprzednio wybraną kartą. Rysujemy tylko widoczne odkrycia.
 
 ## Od osady do miasteczka
 
-| Ranga | Populacja / budynki / rodzaje / sektory / wykorzystane odkrycia | Prezent: drewno / kamień / żywność / monety |
-| --- | --- | --- |
-| Osada | Ranga początkowa | — |
-| Wioska | 6 / 4 / 3 / 2 / 0 | 10 / 5 / 0 / 5 |
-| Miasteczko | 12 / 8 / 5 / 4 / 1 | 20 / 12 / 10 / 12 |
-| Małe królestwo | 20 / 12 / 6 / 7 / 3 | 35 / 25 / 20 / 25 |
+| Ranga          | Populacja / budynki / rodzaje / sektory / wykorzystane odkrycia | Prezent: drewno / kamień / żywność / monety |
+| -------------- | --------------------------------------------------------------- | ------------------------------------------- |
+| Osada          | Ranga początkowa                                                | —                                           |
+| Wioska         | 8 / 6 / 4 / 2 / 1                                               | 6 / 3 / 0 / 3                               |
+| Miasteczko     | 14 / 10 / 5 / 4 / 2                                             | 12 / 6 / 6 / 6                              |
+| Małe królestwo | 22 / 16 / 7 / 7 / 4                                             | 20 / 12 / 12 / 12                           |
 
 Liczymy aktualną populację i zabudowę bez ratusza. Poziom nie zwiększa liczby budynków.
 Odkrycia muszą mieć status `used`; sektor startowy się liczy. Wszystkie wymagania
@@ -79,19 +80,19 @@ Trzy prośby odblokowują się na każdej randze. Gracz wybiera jedną z maksyma
 widocznych; „Inne prośby” przegląda pozostałe w stałej kolejności, bez RNG i zmiany kart
 budynków. Nie ma terminów, kar ani nowych zasobów. Każde zlecenie można ukończyć raz.
 
-| Ranga | Prośba / cel | Nagroda |
-| --- | --- | --- |
-| Osada | Pole przy strumieniu: farma przy wodzie | 4 drewna, 2 monety |
-| Osada | Drewno z sąsiedztwa: tartak przy lesie | 3 kamienia, 2 monety |
-| Osada | Solidny fundament: kamieniołom przy skałach | 4 drewna, 2 monety |
-| Wioska | Mąka dla sąsiadów: jeden młyn przy dwóch farmach | 6 żywności, 4 monety |
-| Wioska | Targ blisko domu: jeden targ przy dwóch domach | 6 drewna, 4 monety |
-| Wioska | Jesień pachnąca jabłkami: dwa sady | 6 żywności, 4 monety |
-| Miasteczko | Dom na lata: dom poziomu 3 | 6 kamienia, 6 monet |
-| Miasteczko | Gospodarstwo z rozmachem: farma poziomu 3 | 8 żywności, 6 monet |
-| Miasteczko | Przywrócone wspomnienie: odnowione źródło lub punkt handlowy | 6 drewna, 4 kamienia, 6 monet |
-| Małe królestwo | Ogród wokół źródła: farma lub sad przy odnowionym źródle | 10 żywności, 8 monet |
-| Małe królestwo | Ożywiony szlak: targ przy odnowionym punkcie handlowym | 8 drewna, 8 monet |
+| Ranga          | Prośba / cel                                                                 | Nagroda                          |
+| -------------- | ---------------------------------------------------------------------------- | -------------------------------- |
+| Osada          | Pole przy strumieniu: farma przy wodzie                                      | 4 drewna, 2 monety               |
+| Osada          | Drewno z sąsiedztwa: tartak przy lesie                                       | 3 kamienia, 2 monety             |
+| Osada          | Solidny fundament: kamieniołom przy skałach                                  | 4 drewna, 2 monety               |
+| Wioska         | Mąka dla sąsiadów: jeden młyn przy dwóch farmach                             | 6 żywności, 4 monety             |
+| Wioska         | Targ blisko domu: jeden targ przy dwóch domach                               | 6 drewna, 4 monety               |
+| Wioska         | Jesień pachnąca jabłkami: dwa sady                                           | 6 żywności, 4 monety             |
+| Miasteczko     | Dom na lata: dom poziomu 3                                                   | 6 kamienia, 6 monet              |
+| Miasteczko     | Gospodarstwo z rozmachem: farma poziomu 3                                    | 8 żywności, 6 monet              |
+| Miasteczko     | Przywrócone wspomnienie: odnowione źródło lub punkt handlowy                 | 6 drewna, 4 kamienia, 6 monet    |
+| Małe królestwo | Ogród wokół źródła: farma lub sad przy odnowionym źródle                     | 10 żywności, 8 monet             |
+| Małe królestwo | Ożywiony szlak: targ przy odnowionym punkcie handlowym                       | 8 drewna, 8 monet                |
 | Małe królestwo | Dobrze przygotowana spiżarnia: młyn poziomu ≥2 przy dwóch farmach poziomu ≥2 | 6 kamienia, 10 żywności, 8 monet |
 
 Sąsiedztwo to wyłącznie cztery krawędzie; naturalny teren musi być odkryty. Liczymy
@@ -124,11 +125,24 @@ Rok ma 12 tur, każda pora roku 3. Na końcu pory roku przybywa jedna osoba, je�
 
 Ratusz produkuje 2 żywności, więc sam niedobór nie zmniejszy legalnej osady poniżej 2 osób. Najazd może jednak odebrać ostatniego mieszkańca. Stan `gameover` blokuje kolejne akcje i przyrost ludności w końcowej turze.
 
-Sąsiedztwo to 4 krawędzie. Premie młynów (2 × poziom młyna) sumują się, bonus wody to raz +1, całość plonów farmy mnożymy przez jej poziom i zimą dzielimy przez 2, zaokrąglając w dół. Tartak/kamieniołom/targ mnożą przez poziom całość swojej produkcji. Dom daje 3 miejsca na poziom.
+Sąsiedztwo to 4 krawędzie. Farma produkuje 3/5/7 żywności na poziomach 1/2/3. Woda daje raz +1; młyny dodają po 1 za poziom, łącznie najwyżej +3. Premie nie są ponownie mnożone przez poziom farmy. Tartak i kamieniołom dają 1/2/3 surowca oraz najwyżej +2 od terenu. Targ daje 1/2/3 monety oraz najwyżej +2 od domów. Sad daje 2/3/4 żywności, jesienią dwa razy więcej. Premię źródła dodajemy przed zimowym dzieleniem całej produkcji farmy/sadu przez 2, w dół. Dom nadal daje 3 miejsca na poziom.
 
-Koszt ulepszenia to koszt podstawowy × poziom docelowy, maksymalnie poziom 3. Wyburzenie zwraca połowę kosztu podstawowego (nie ulepszeń), w dół. Blokujemy wyburzenie domu, które zmniejszyłoby pojemność poniżej bieżącej populacji.
+Koszt ulepszenia to koszt podstawowy ×3 na poziom 2 oraz ×6 na poziom 3. Budynki gospodarcze wymagają odpowiednio Wioski i Miasteczka; wojskowe Miasteczka i Małego królestwa. Wyburzenie zwraca połowę kosztu podstawowego (nie ulepszeń), w dół. Blokujemy wyburzenie domu, które zmniejszyłoby pojemność poniżej bieżącej populacji. Awaryjne zbieranie daje 1 drewna, 1 kamienia i 2 żywności; kamień zapobiega zablokowaniu nowej osady przed pojawieniem się kamieniołomu w ofercie.
 
-Sektory 7×7 zapisujemy jako współrzędne, nie tablicę nieograniczonego świata. Typ terenu wyliczamy z ziarna i współrzędnych; co najmniej 21 łąk i wszystkie typy terenu są gwarantowane. Pierwsza eksploracja: 10 drewna, 5 kamienia, 5 monet; każda następna +5/+3/+3. Można odkrywać tylko przy wspólnej krawędzi.
+Sektory 7×7 zapisujemy jako współrzędne, nie tablicę nieograniczonego świata. Typ terenu wyliczamy z ziarna i współrzędnych; co najmniej 21 łąk i wszystkie typy terenu są gwarantowane. Pierwsza eksploracja: 18 drewna, 10 kamienia, 8 monet; każda następna +8/+5/+5. Można odkrywać tylko przy wspólnej krawędzi.
+
+### Zapasy i zgodność wcześniejszych osad
+
+| Ranga          | Drewno | Kamień | Żywność | Monety |
+| -------------- | ------ | ------ | ------- | ------ |
+| Osada          | 120    | 120    | 80      | 80     |
+| Wioska         | 200    | 200    | 140     | 140    |
+| Miasteczko     | 320    | 320    | 240     | 220    |
+| Małe królestwo | 480    | 480    | 360     | 320    |
+
+Limit sprawdzamy na końcu tury, po wszystkich nagrodach i awansie, z uwzględnieniem nowej rangi. `TurnResult.storageLoss` pokazuje niezmagazynowaną nadwyżkę, również w prognozie. Produkcja bieżącej tury może wyżywić ludzi i wojsko, zanim ograniczymy magazyn.
+
+Format zapisu pozostaje v6. Nie kasujemy istniejących zasobów, budynków, poziomów ani osiągniętych rang. Gdy zapasy sprzed aktualizacji przekraczają limit, dozwolony stan końcowy to większa z wartości: limit i zapasy na początku tury. Dzięki temu stare bogactwo pozostaje dostępne, ale nie może już rosnąć ponad limit. Wyższe ceny i nowa produkcja obowiązują od następnej akcji. Walidacja dopuszcza dawny licznik odbudowy wroga równy 2; następna tura rozlicza go według nowego okresu, bez cofania zapisu.
 
 ## Sterowanie i zapis
 
@@ -163,37 +177,36 @@ Przyjazne wymiany są jednorazowe i zajmują turę. Położenie osad jest determ
 poza miejscem specjalnym oraz jego sąsiednimi polami; nie zmienia RNG kart.
 
 Wojsko wroga jest rzeczywiste. Docelowa armia zależy od rangi:
-Wioska 3 włóczników/2 łuczników/1 tarczownik; Miasteczko 4/3/2; Małe królestwo 5/4/3.
-Co trzy legalne tury (także podczas pokoju) rekrutuje najwyżej jedną brakującą jednostkę,
+Wioska 4 włóczników/3 łuczników/1 tarczownik; Miasteczko 5/4/2; Małe królestwo 6/5/3.
+Co dwie legalne tury (także podczas pokoju) rekrutuje najwyżej jedną brakującą jednostkę,
 w obrotowej kolejności włócznik/łucznik/tarczownik, pomijając pełne limity typów.
 Limit obejmuje garnizon i wysłany najazd. Awans nie tworzy armii natychmiast.
 Garnizon zmienia taktykę co cztery tury konfliktu, kolejno szyk/ostrzał/szturm.
 Długi pokój zatrzymuje licznik; krótki rozejm daje ochronę, ale kampania trwa dalej.
 
 Po 12 turach od poznania wróg może ogłosić najazd, jeśli ma co najmniej 3 jednostki.
-Na koniec tury N oddzielamy ceil(2/3) armii, maksymalnie 8 żołnierzy, w kolejności
+Na koniec tury N oddzielamy ceil(2/3) armii, maksymalnie 10 żołnierzy, w kolejności
 naprzemiennej między typami. Partia odchodzi z garnizonu, taktyka zostaje zapisana.
 Atak po akcji N+4 daje pełne cztery tury przygotowań. Po zakończeniu najazdu lub
 rozejmie obowiązuje 12 tur ochrony. Ocalali z najazdu wracają do garnizonu; nie są kopiowani.
 Zwykła wyprawa nie wydłuża ochrony.
 
-Koszary kosztują 12 drewna/8 kamienia/6 monet; wieża 10 drewna/12 kamienia.
-Poziomy koszar dają limit 6/9/12, wieży premię obrony 6/9/12.
-Ulepszenie kosztuje podstawowy koszt razy poziom docelowy; poziom 2 wymaga
+Koszary kosztują 30 drewna/20 kamienia/16 monet; wieża 24 drewna/30 kamienia/12 monet.
+Poziomy koszar dają limit 6/9/12, wieży premię obrony 4/6/8.
+Ulepszenie kosztuje podstawowy koszt ×3/×6; poziom 2 wymaga
 Miasteczka, poziom 3 Małego królestwa. Po jednym budynku; bez wpływu na karty
 gospodarcze i wymagania awansów. Koszar nie wyburzamy z armią.
 
-Włócznik: 3 drewna/2 monety, siła 4. Łucznik: 4 drewna/3 monety, siła 3.
-Tarczownik: 2 drewna/3 kamienia/4 monety, siła 2; dwóch zmniejsza straty oddziału o 1.
+Włócznik: 6 drewna/3 kamienia/2 żywności/6 monet, siła 4. Łucznik: 8 drewna/2 kamienia/3 żywności/8 monet, siła 3.
+Tarczownik: 5 drewna/7 kamienia/2 żywności/9 monet, siła 2; trzech zmniejsza straty oddziału o 1.
 Jedna rekrutacja lub rozwiązanie zajmuje turę. Najemnicy nie zajmują domów i populacji.
-Utrzymanie ceil(liczba/3) żywności po cywilach; przy niepełnej racji odchodzi jedna
+Utrzymanie ceil(liczba/2) żywności i ceil(liczba/4) monet po cywilach; przy niepełnej racji lub żołdzie odchodzi jedna
 jednostka w kolejności włócznik/łucznik/tarczownik.
 
 Obie strony walczą według tych samych zasad. Szyk daje +2/włócznik oraz +1/tarczownik,
 ostrzał +2/łucznik, szturm floor(50% siły bazowej). Remis wygrywa obrońca, wieża
-pomaga tylko własnej obronie osady. Zwycięzca traci ceil(25%) jednostek, przy dwukrotnej
-przewadze podstawowe straty wynoszą 0; przegrany traci ceil(50%).
-Najpierw odliczamy floor(tarczownicy/2) od strat (minimum 0), potem dodajemy 1 za szturm,
+pomaga tylko własnej obronie osady. Garnizon wroga ma dodatkowo +4/+6/+8 siły zależnie od rangi gracza; premia nie towarzyszy najazdowi. Zwycięzca traci ceil(liczebność / 3 × min(1, siła przeciwnika / własna siła)); przy trzykrotnej przewadze podstawowe straty wynoszą 0. Przegrany traci ceil(60%). Skalowanie strat zwycięzcy zapobiega osłabianiu dużego garnizonu przez powtarzane wyprawy pojedynczego taniego żołnierza.
+Najpierw odliczamy floor(tarczownicy/3) od strat (minimum 0), potem dodajemy 1 za szturm,
 do liczebności oddziału. Straty obu stron są rzeczywiste, w kolejności typów powyżej.
 Taktyka „none” służy wyłącznie staremu najazdowi w migracji i daje zerowy bonus.
 
@@ -205,8 +218,8 @@ bez najazdu, raz na 6 tur: jeśli pierwsza zakończyła się w turze T, kolejna 
 się w T+6. Brak łupów i automatycznego rozejmu.
 
 Przewaga 0–2: wygrana obrona/przechwycenie/wyprawa +1; porażka -1.
-Krótki rozejm kosztuje 12 monet, zwraca żywy najazd i nie zeruje przewagi.
-Przy przewadze 2 negocjacje za 20 monet/12 żywności zajmują turę i dają 36 tur pokoju,
+Krótki rozejm kosztuje 24 monety, zwraca żywy najazd i nie zeruje przewagi.
+Przy przewadze 2 negocjacje za 40 monet/24 żywności zajmują turę i dają 36 tur pokoju,
 także odwołując najazd. Bez najazdu można wymusić pokój bitwą przeciw garnizonowi.
 Zwycięstwo daje 36 tur pokoju i raz na kampanię 12 kamienia/15 monet; przegrana
 zmniejsza przewagę, bez szkód własnej osady i bez dodatkowej ochrony.
@@ -222,6 +235,7 @@ przed produkcją. Wyburzenie uszkodzonego budynku nie zwraca materiałów.
 
 Kolejność: koszt/akcja → bitwa → produkcja → cywile → utrzymanie wojska → niedobór/przyrost
 → awans/prośba → łupy/dary → odbudowa wroga/zmiana kampanii/nowe ostrzeżenie.
+Na samym końcu ograniczamy magazyn. Późne dary i łupy nie płacą wstecz za wcześniejsze wyżywienie lub żołd.
 Nowy rekrut wroga nie uczestniczy we wcześniejszej bitwie. Nowy własny rekrut lub wieża
 walczą już w turze budowy. Śmierć ostatniego cywila blokuje przyrost i kończy grę.
 
@@ -231,6 +245,10 @@ pomniejszony o najazd, więc nie dublujemy żołnierzy. Dawny trwały pokój zas
 36 turami od zapisanej tury, bez zmiany zasobów i zegara. Starsze kopie pozostają.
 
 ## Weryfikacja aktualizacji
+
+`balance.test.mjs` sprawdza trudniejszy start, ceny, limity premii i magazynów, żołd, dezerterów, obronę garnizonu oraz zgodność wcześniejszych zapisów. `tests/gry/kingdom-balance.spec.mjs` sprawdza te informacje i prognozę nadwyżek w UI na 360/390/1440 px.
+
+`tests/gry/kingdom-balance-simulation.mjs` prowadzi osadę wyłącznie legalnymi akcjami i kartami z oferty, bez dopisywania zasobów. Ziarna 1/42/183 osiągnęły Wioskę po 65/126/67 turach, a Małe królestwo po 138/246/126 turach. To kontrola osiągalności i tempa, nie deklaracja czasu gry człowieka ani wynik dla wszystkich map.
 
 Aktualizacja „Wojna na pograniczu” jest pokryta przez `war.test.mjs` i `kingdom-war.spec.mjs`:
 kontakty, najazdy, taktyki obu stron, odbudowa, przechwycenia, rozejmy, czasowy pokój, migracja v5 → v6, pamięć

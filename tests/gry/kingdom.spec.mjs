@@ -37,7 +37,7 @@ test('catalog, own lazy route, title, illustration and FAQ', async ({ page }) =>
     'content',
     /\/og\/little-kingdom.png$/,
   )
-  await expect(page.locator('.kingdom-faq details')).toHaveCount(15)
+  await expect(page.locator('.kingdom-faq details')).toHaveCount(16)
   await expect(tile(page, '3,3')).toHaveAttribute('aria-label', /Ratusz/)
 })
 for (const [width, height] of [
@@ -74,6 +74,9 @@ for (const [width, height] of [
 }
 test('upgrade, demolition and exploration', async ({ page }) => {
   const s = newKingdom(4)
+  s.rank = 1
+  s.turn = 1
+  s.promotions = [{ rank: 1, turn: 1 }]
   s.resources = { wood: 100, stone: 100, food: 100, gold: 100 }
   await prepare(page, s)
   await page.goto(url)
@@ -108,16 +111,18 @@ test('insufficient funds and natural terrain do not spend turns; gathering resto
   await expect(turn(page)).toHaveText('1')
   await page.getByRole('button', { name: /Zbierz zapasy/ }).click()
   await commit(page).click()
-  await expect(page.locator('[data-resource="wood"]')).toHaveText('3')
-  await page.getByRole('button', { name: /Zbierz zapasy/ }).click()
-  await commit(page).click()
+  await expect(page.locator('[data-resource="wood"]')).toHaveText('2')
+  for (let i = 1; i < 6; i++) {
+    await page.getByRole('button', { name: /Zbierz zapasy/ }).click()
+    await commit(page).click()
+  }
   await page.locator('[data-building-card="farm"]').click()
   await tile(page, '0,1').click()
   await expect(commit(page)).toBeEnabled()
   await tile(page, '2,3').click()
   await expect(commit(page)).toBeDisabled()
   await expect(page.locator('.selected-panel')).toContainText('Zachowujemy naturalny teren')
-  await expect(turn(page)).toHaveText('3')
+  await expect(turn(page)).toHaveText('7')
 })
 test('keyboard controls, help focus, restart cancellation and confirmation', async ({ page }) => {
   await prepare(page)

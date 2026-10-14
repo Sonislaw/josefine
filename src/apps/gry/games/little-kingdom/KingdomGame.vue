@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { BALANCE, inventoryLimit } from './balance'
 import GameDialog from '../../components/GameDialog.vue'
 import KingdomBoard from './KingdomBoard.vue'
 import ResourceBar from './ResourceBar.vue'
@@ -15,6 +16,7 @@ import {
   TACTICS,
   militaryBuilding,
   upkeep,
+  upkeepGold,
   armySize,
   UNITS,
   type Tactic,
@@ -152,7 +154,7 @@ function compass(p: Point) {
   <div class="kingdom-game">
     <header class="kingdom-heading">
       <div>
-        <p class="eyebrow">ZGRANA / SPOKOJNA STRATEGIA</p>
+        <p class="eyebrow">ZGRANA / STRATEGIA TUROWA</p>
         <h1>Małe <em>królestwo.</em></h1>
         <p>
           Odkrywaj sąsiednie osady, dbaj o mieszkańców i przygotuj obronę. Każdą decyzję podejmujesz
@@ -164,6 +166,13 @@ function compass(p: Point) {
         ><button type="button" :disabled="!ready" @click="restart = true">Nowa osada</button>
       </div>
     </header>
+    <!-- Outside the play panel and tutorial so resources remain visible throughout the page. -->
+    <ResourceBar
+      class="resource-dock"
+      :resources="state.resources"
+      :delta="preview?.delta"
+      :limits="inventoryLimit(state.rank)"
+    />
     <div v-if="corrupt" class="kingdom-notice danger" role="alert">
       <strong>Nie możemy odczytać zapisanej osady.</strong>
       <p>Dotychczasowy zapis pozostaje nietknięty. Rozpoczęcie nowej osady go zastąpi.</p>
@@ -196,7 +205,6 @@ function compass(p: Point) {
           <span class="muted">mieszkańców</span></span
         >
       </div>
-      <ResourceBar :resources="state.resources" :delta="preview?.delta" />
       <p v-if="state.affairs.raid" class="kingdom-notice danger" role="status">
         ⚑ Najazd za {{ state.affairs.raid.dueTurn - state.turn }} tur! Wróg:
         {{ armySize(state.affairs.raid.army) }} jednostek. Przechwyć oddział, przygotuj obronę lub
@@ -218,6 +226,9 @@ function compass(p: Point) {
           ></span
         >
       </div>
+      <p v-if="armySize(state.affairs.army)" class="winter-warning">
+        Żołd: {{ upkeepGold(state.affairs.army) }} monet / turę. Zadbaj o targi przed rekrutacją.
+      </p>
       <p v-if="seasonIndex === 2" class="winter-warning">
         ❄ Zima za {{ 9 - (state.turn % 12) }} {{ 9 - (state.turn % 12) === 1 ? 'turę' : 'tury' }}.
         Farmy i sady dadzą połowę plonów — zachowaj zapasy.
@@ -303,6 +314,17 @@ function compass(p: Point) {
                 {{ RELATIONS[selectedSettlement.relation] }}.
                 {{ SETTLEMENTS[selectedSettlement.id]!.description }} Decyzje znajdziesz w panelu
                 „Sąsiednie osady”.
+              </p>
+              <p
+                v-if="
+                  selectedBuilding &&
+                  selectedBuilding.kind !== 'hall' &&
+                  !militaryBuilding(selectedBuilding.kind)
+                "
+              >
+                Ulepszenia: poziom 2 wymaga Wioski i kosztuje ×3 ceny budowy; poziom 3 wymaga
+                Miasteczka i kosztuje ×6. Premie sąsiedztwa mają ograniczenia i nie mnożą się przez
+                poziom.
               </p>
               <p v-if="selectedBuilding?.damaged" class="kingdom-notice danger">
                 Uszkodzony budynek: produkcja i premie są wyłączone. Naprawa zachowa jego poziom.
@@ -446,7 +468,7 @@ function compass(p: Point) {
               :aria-pressed="action?.type === 'gather'"
               @click="choose({ type: 'gather' })"
             >
-              ♧ Zbierz zapasy <small>+3 żywności · +2 drewna · jedna tura</small>
+              ♧ Zbierz zapasy <small>{{ priceText(BALANCE.gather) }} · jedna tura</small>
             </button>
           </div>
           <div class="turn-preview" :class="{ 'has-action': action }">
@@ -473,14 +495,18 @@ function compass(p: Point) {
             <p v-if="error" class="preview-error" role="status">{{ error }}</p>
             <template v-if="preview"
               ><p>Koszt: {{ priceText(preview.cost) }}</p>
+              <p v-if="Object.values(preview.storageLoss).some(Boolean)" class="preview-error">
+                Nadwyżka poza limitem zapasów: {{ priceText(preview.storageLoss) }}. Końcowy bilans
+                już to uwzględnia.
+              </p>
               <BattleSummary v-if="preview.battle" :report="preview.battle" preview />
               <p v-if="preview.state.affairs.raid">
                 Najazd po tej turze: za
                 {{ preview.state.affairs.raid.dueTurn - preview.state.turn }} tur.
               </p>
-              <p v-if="preview.armyFood || armySize(preview.deserters)">
-                Wojsko zużyje {{ preview.armyFood }} żywności. Odejścia z niedoboru:
-                {{ preview.deserters.spearman }} włóczników i
+              <p v-if="preview.armyFood || preview.armyGold || armySize(preview.deserters)">
+                Wojsko zużyje {{ preview.armyFood }} żywności i {{ preview.armyGold }} monet.
+                Odejścia z braku racji lub żołdu: {{ preview.deserters.spearman }} włóczników i
                 {{ preview.deserters.archer }} łuczników i
                 {{ preview.deserters.shieldbearer }} tarczowników.
               </p>
@@ -626,6 +652,23 @@ function compass(p: Point) {
     <section class="kingdom-faq">
       <h2>Pytania przed pierwszą wyprawą</h2>
       <details>
+        <summary>Dlaczego zapasy mają limity i ulepszenia są droższe?</summary>
+        <p>
+          Budowa wymaga materiałów i monet, a ulepszenie do poziomu 2 kosztuje ×3 ceny budowy i
+          wymaga Wioski; poziom 3 kosztuje ×6 i wymaga Miasteczka. Premie sąsiedztwa nie mnożą się
+          przez poziom: farmy dostają najwyżej +3 od młynów, tartaki i kamieniołomy do +2 od terenu,
+          targi do +2 od domów. Zbieranie daje 1 drewno, 1 kamień i 2 żywności, żeby zawsze można
+          było odbudować gospodarkę.
+        </p>
+        <p>
+          Limity zapasów rosną wraz z rangą. Nadwyżkę pokazujemy przed zatwierdzeniem i nie
+          magazynujemy jej; awans podnosi limit już w tej turze. Stare zapasy powyżej limitu
+          pozostają zachowane, ale nie rosną. Najemnicy potrzebują 1 żywności na 2 żołnierzy i 1
+          monety na 4, zaokrąglając w górę. Brak pełnej racji lub żołdu powoduje odejście jednej
+          jednostki.
+        </p>
+      </details>
+      <details>
         <summary>Jak działają przechwycenie i przewaga w kampanii?</summary>
         <p>
           Przechwycenie jest możliwe raz na najazd, do przedostatniej tury ostrzeżenia. Wybierasz
@@ -638,10 +681,10 @@ function compass(p: Point) {
       <details>
         <summary>Czy wróg odbudowuje armię i wraca po pokoju?</summary>
         <p>
-          Tak. Co 3 tury uzupełnia jedną brakującą jednostkę, również podczas pokoju. Jego docelowa
-          armia ma 6, 9 lub 12 żołnierzy zależnie od rangi gracza. Zmienia taktykę co 4 tury
+          Tak. Co 2 tury uzupełnia jedną brakującą jednostkę, również podczas pokoju. Jego docelowa
+          armia ma 8, 11 lub 14 żołnierzy zależnie od rangi gracza. Zmienia taktykę co 4 tury
           konfliktu; taktyka zapowiedzianego najazdu zostaje ustalona. Dwa punkty przewagi pozwalają
-          zapłacić 20 monet i 12 żywności za pokój albo wygrać bitwę o pokój z łupami 12 kamienia i
+          zapłacić 40 monet i 24 żywności za pokój albo wygrać bitwę o pokój z łupami 12 kamienia i
           15 monet, raz na kampanię. Pokój trwa 36 tur, następnie zaczyna się nowa kampania. Każdy
           nowy najazd jest zapowiadany 4 tury wcześniej.
         </p>
@@ -652,9 +695,9 @@ function compass(p: Point) {
           Po osiągnięciu Wioski trzy kolejne eksploracje odkrywają Brzeziny, Kamienny Bród i
           Czerwone Wzgórze. Wróg daje 12 tur spokoju, a potem zapowiada najazd z wyprzedzeniem 4
           tur, jeśli ma co najmniej 3 żołnierzy. Oddział odchodzi z garnizonu i nie broni go
-          jednocześnie. Możesz przechwycić najazd, przygotować wojsko i wieżę albo zapłacić 12 monet
-          za rozejm. Po zakończeniu najazdu lub rozejmie masz 12 tur ochrony. Zwykła wyprawa nie
-          przedłuża ochrony. Zamknięcie strony nie przyspiesza ataku.
+          jednocześnie. Możesz przechwycić najazd, przygotować wojsko i wieżę albo zapłacić 24
+          monety za rozejm. Po zakończeniu najazdu lub rozejmie masz 12 tur ochrony. Zwykła wyprawa
+          nie przedłuża ochrony. Zamknięcie strony nie przyspiesza ataku.
         </p>
       </details>
       <details>
@@ -662,18 +705,18 @@ function compass(p: Point) {
         <p>
           Koszary mieszczą 6, 9 lub 12 najemników. Wybierz szyk obronny (+2 siły na włócznika i +1
           na tarczownika), ostrzał (+2 na łucznika) lub szturm (+50% siły i dodatkowa strata
-          jednostki). Wieża daje +6, +9 lub +12 siły w obronie. Remis wygrywa obrońca. Prognoza
+          jednostki). Wieża daje +4, +6 lub +8 siły w obronie. Remis wygrywa obrońca. Prognoza
           pokazuje dokładny wynik i straty przed zatwierdzeniem.
         </p>
         <p>
-          Zwycięstwo kosztuje 25% oddziału, a porażka 50%, zaokrąglając w górę. Zwycięstwo z
-          dwukrotną przewagą nie powoduje podstawowych strat. Każdych dwóch tarczowników zmniejsza
-          je o jedną jednostkę; potem szturm dodaje jedną stratę. Najpierw tracisz włóczników,
-          następnie łuczników i tarczowników. Wróg też ponosi straty. Przegrany najazd odbiera
-          mieszkańca, grabi do 10 drewna, 6 kamienia, 8 żywności i 6 monet oraz uszkadza jeden
-          budynek gospodarczy. Naprawa kosztuje połowę podstawowych materiałów, w górę, i jedną
-          turę. Ratusz, domy i infrastruktura wojskowa są chronione. Dwa punkty przewagi pozwalają
-          wynegocjować lub wymusić pokój na 36 tur.
+          Wyrównane zwycięstwo kosztuje około jednej trzeciej oddziału, a porażka 60%, zaokrąglając
+          w górę. Straty zwycięzcy maleją z przewagą; trzykrotna przewaga usuwa podstawowe straty.
+          Każdych trzech tarczowników zmniejsza je o jedną jednostkę; potem szturm dodaje jedną
+          stratę. Najpierw tracisz włóczników, następnie łuczników i tarczowników. Wróg też ponosi
+          straty. Przegrany najazd odbiera mieszkańca, grabi do 10 drewna, 6 kamienia, 8 żywności i
+          6 monet oraz uszkadza jeden budynek gospodarczy. Naprawa kosztuje połowę podstawowych
+          materiałów, w górę, i jedną turę. Ratusz, domy i infrastruktura wojskowa są chronione. Dwa
+          punkty przewagi pozwalają wynegocjować lub wymusić pokój na 36 tur.
         </p>
       </details>
       <details>
@@ -821,7 +864,10 @@ function compass(p: Point) {
           nową rangę i jednorazowy prezent. Ranga pozostaje na zawsze, a produkcja ratusza się nie
           zmienia.
         </li>
-        <li>Zbieranie daje 3 żywności i 2 drewna, ale także zużywa turę.</li>
+        <li>
+          Zbieranie daje {{ priceText(BALANCE.gather) }}, ale także zużywa turę. Pozwala odzyskać
+          materiały, gdy nie stać Cię na budowę.
+        </li>
         <li>
           Nowy sektor kryje jedno wyjątkowe miejsce. Wybierz je, sprawdź koszt i osobno zatwierdź
           zbadanie lub odnowienie. Dziennik odkryć pomoże do niego wrócić.
@@ -1071,6 +1117,25 @@ function compass(p: Point) {
   align-items: center;
   gap: 24px;
   margin-bottom: 26px;
+}
+.resource-dock {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  padding: calc(6px + env(safe-area-inset-top, 0px)) 6px 6px;
+  margin-bottom: 12px;
+  border: 1px solid #3d5645;
+  border-radius: 14px;
+  background: #172e25;
+  box-shadow: 0 6px 18px #08130d45;
+}
+/* Leave room for the dock when a control is brought into view, including keyboard navigation. */
+:deep(button),
+:deep(input),
+:deep(select),
+:deep(summary),
+:deep([tabindex]) {
+  scroll-margin-top: calc(100px + env(safe-area-inset-top, 0px));
 }
 .eyebrow {
   font-size: 10px;

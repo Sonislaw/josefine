@@ -1,5 +1,6 @@
 /** Pure, deterministic rules. Preview and commit both call resolveTurn; no browser state here. */
 import { SIZE, terrain, type Terrain } from './terrain'
+import { BALANCE, upgradeMultiplier, inventoryLimit } from './balance'
 import {
   MILITARY,
   UNITS,
@@ -8,6 +9,7 @@ import {
   militaryBuilding,
   armySize,
   upkeep,
+  upkeepGold,
   removeUnits,
   UNIT_IDS,
   armyCapacity,
@@ -32,6 +34,7 @@ import {
   returnRaid,
   makePeace,
   enemyTactic,
+  enemyDefence,
   type CampaignUpdate,
 } from './campaign'
 import { RANKS, earnedPromotion, type Promotion, type SettlementRank } from './progression'
@@ -105,7 +108,6 @@ export const TERRAIN_NAMES: Record<Terrain, string> = {
 }
 export const SEASONS = ['Wiosna', 'Lato', 'Jesień', 'Zima']
 export const zero = (): Resources => ({ wood: 0, stone: 0, food: 0, gold: 0 })
-const cost = (wood = 0, stone = 0, gold = 0): Resources => ({ wood, stone, food: 0, gold })
 export const BUILDINGS: Record<
   BuildingKind,
   { name: string; cost: Resources; description: string }
@@ -113,40 +115,41 @@ export const BUILDINGS: Record<
   ...MILITARY,
   house: {
     name: 'Dom',
-    cost: cost(8, 2),
+    cost: BALANCE.buildings.house,
     description:
       '+3 miejsca na poziom. Mieszkańcy przybywają na koniec pory roku, jeśli masz zapasy.',
   },
   farm: {
     name: 'Farma',
-    cost: cost(5),
+    cost: BALANCE.buildings.farm,
     description:
-      '4 żywności +1 przy wodzie. Sąsiedni młyn daje +2 za swój poziom. Zimą połowa plonów.',
+      '3/5/7 żywności na poziomach 1–3, +1 przy wodzie i do +3 od młynów. Zimą połowa plonów.',
   },
   sawmill: {
     name: 'Tartak',
-    cost: cost(6, 2),
-    description: '2 drewna +1 za każde sąsiadujące pole lasu, razy poziom.',
+    cost: BALANCE.buildings.sawmill,
+    description: '1/2/3 drewna na poziomach 1–3 oraz do +2 od sąsiadujących lasów.',
   },
   quarry: {
     name: 'Kamieniołom',
-    cost: cost(8),
-    description: '2 kamienia +1 za każde sąsiadujące pole skał, razy poziom.',
+    cost: BALANCE.buildings.quarry,
+    description: '1/2/3 kamienia na poziomach 1–3 oraz do +2 od sąsiadujących skał.',
   },
   mill: {
     name: 'Młyn',
-    cost: cost(10, 5),
-    description: '+2 żywności na poziom dla każdej sąsiedniej farmy. Bonusy młynów sumują się.',
+    cost: BALANCE.buildings.mill,
+    description:
+      '+1 żywności na poziom sąsiadującym farmom. Łączna premia młynów: najwyżej +3 na farmę.',
   },
   market: {
     name: 'Targ',
-    cost: cost(8, 4),
-    description: '2 monety +1 za każdy sąsiadujący dom, razy poziom.',
+    cost: BALANCE.buildings.market,
+    description: '1/2/3 monety na poziomach 1–3 oraz do +2 od sąsiadujących domów.',
   },
   orchard: {
     name: 'Sad',
-    cost: cost(6, 0, 3),
-    description: '2 żywności, jesienią 4, razy poziom. Zimą połowa plonów.',
+    cost: BALANCE.buildings.orchard,
+    description: '2/3/4 żywności na poziomach 1–3, jesienią podwójne plony. Zimą połowa.',
   },
 }
 export const key = (x: number, y: number) => `${x},${y}`
@@ -207,7 +210,9 @@ export function frontier(state: Kingdom): Point[] {
 }
 export function explorationCost(state: Kingdom): Resources {
   const n = state.sectors.length - 1
-  return cost(10 + n * 5, 5 + n * 3, 5 + n * 3)
+  return Object.fromEntries(
+    KEYS.map((k) => [k, BALANCE.exploration.base[k] + n * BALANCE.exploration.step[k]]),
+  ) as Resources
 }
 export function actionCost(state: Kingdom, action: Action): Resources {
   if (action.type === 'recruit') return UNITS[action.unit]?.cost ?? zero()
@@ -232,7 +237,10 @@ export function actionCost(state: Kingdom, action: Action): Resources {
     const b = state.buildings[key(action.x, action.y)]
     if (b && b.kind !== 'hall')
       return Object.fromEntries(
-        KEYS.map((k) => [k, BUILDINGS[b.kind as BuildingKind].cost[k] * (b.level + 1)]),
+        KEYS.map((k) => [
+          k,
+          BUILDINGS[b.kind as BuildingKind].cost[k] * upgradeMultiplier(b.level + 1),
+        ]),
       ) as Resources
   }
   return zero()
@@ -349,6 +357,10 @@ export function actionError(state: Kingdom, action: Action): string | null {
         if (!b || b.kind === 'hall') return 'Wybierz budynek inny niż ratusz.'
         if (action.type === 'repair' && !b.damaged) return 'Ten budynek nie wymaga naprawy.'
         if (action.type === 'upgrade' && b.damaged) return 'Tego budynku nie można teraz ulepszyć.'
+        if (action.type === 'upgrade' && !militaryBuilding(b.kind) && state.rank < b.level)
+          return b.level === 1
+            ? 'Ulepszenia do poziomu 2 wymagają Wioski.'
+            : 'Ulepszenia do poziomu 3 wymagają Miasteczka.'
         if (action.type === 'upgrade' && militaryBuilding(b.kind) && state.rank < b.level + 1)
           return b.level === 1 ? 'Poziom 2 wymaga Miasteczka.' : 'Poziom 3 wymaga Małego królestwa.'
         if (action.type === 'demolish' && b.kind === 'barracks' && armySize(state.affairs.army))
@@ -380,17 +392,36 @@ export function buildingProduction(state: Kingdom, b: Building): Resources {
   if (b.kind === 'farm') {
     const mills = adjacent.reduce((n, p) => {
       const a = state.buildings[key(p.x, p.y)]
-      return n + (a?.kind === 'mill' && !a.damaged ? a.level * 2 : 0)
+      return n + (a?.kind === 'mill' && !a.damaged ? a.level * BALANCE.production.millPerLevel : 0)
     }, 0)
-    r.food = (4 + (countTerrain('water') ? 1 : 0) + mills) * b.level
+    r.food =
+      BALANCE.production.farmBase +
+      (b.level - 1) * BALANCE.production.farmPerLevel +
+      (countTerrain('water') ? 1 : 0) +
+      Math.min(BALANCE.production.maxMillBonus, mills)
   }
-  if (b.kind === 'sawmill') r.wood = (2 + countTerrain('forest')) * b.level
-  if (b.kind === 'quarry') r.stone = (2 + countTerrain('rock')) * b.level
+  if (b.kind === 'sawmill')
+    r.wood =
+      BALANCE.production.extractorBase +
+      (b.level - 1) * BALANCE.production.extractorPerLevel +
+      Math.min(BALANCE.production.maxTerrainBonus, countTerrain('forest'))
+  if (b.kind === 'quarry')
+    r.stone =
+      BALANCE.production.extractorBase +
+      (b.level - 1) * BALANCE.production.extractorPerLevel +
+      Math.min(BALANCE.production.maxTerrainBonus, countTerrain('rock'))
   if (b.kind === 'market')
     r.gold =
-      (2 + adjacent.filter((p) => state.buildings[key(p.x, p.y)]?.kind === 'house').length) *
-      b.level
-  if (b.kind === 'orchard') r.food = (season(state.turn) === 2 ? 4 : 2) * b.level
+      BALANCE.production.marketBase +
+      (b.level - 1) * BALANCE.production.marketPerLevel +
+      Math.min(
+        BALANCE.production.maxHouseBonus,
+        adjacent.filter((p) => state.buildings[key(p.x, p.y)]?.kind === 'house').length,
+      )
+  if (b.kind === 'orchard')
+    r.food =
+      (BALANCE.production.orchardBase + (b.level - 1) * BALANCE.production.orchardPerLevel) *
+      (season(state.turn) === 2 ? 2 : 1)
   const bonus = discoveryBonus(state, b)
   if (bonus) r[bonus.resource]++
   if (season(state.turn) === 3 && (b.kind === 'farm' || b.kind === 'orchard'))
@@ -406,9 +437,11 @@ export function production(state: Kingdom): Resources {
   return result
 }
 export interface TurnResult {
+  storageLoss: Resources
   campaignUpdate: CampaignUpdate
   battle: BattleReport | null
   armyFood: number
+  armyGold: number
   deserters: Army
   diplomaticReward: Resources
   completedRequest: CompletedRequest | null
@@ -492,8 +525,7 @@ export function resolveTurn(state: Kingdom, action: Action): TurnResult | null {
     for (const k of KEYS) next.resources[k] += reward[k]
   }
   if (action.type === 'gather') {
-    next.resources.food += 3
-    next.resources.wood += 2
+    for (const k of KEYS) next.resources[k] += BALANCE.gather[k]
   }
   if (action.type === 'recruit') next.affairs.army[action.unit]++
   if (action.type === 'dismiss') next.affairs.army[action.unit]--
@@ -528,6 +560,7 @@ export function resolveTurn(state: Kingdom, action: Action): TurnResult | null {
       defending,
       tower,
       againstRaid ? raid!.tactic : enemyTactic(e),
+      againstRaid ? 0 : enemyDefence(state.rank),
     )
     report.kind = defending
       ? 'defence'
@@ -589,8 +622,13 @@ export function resolveTurn(state: Kingdom, action: Action): TurnResult | null {
   const shortage = next.resources.food < next.population
   next.resources.food = Math.max(0, next.resources.food - next.population)
   const armyFood = Math.min(next.resources.food, upkeep(next.affairs.army))
-  const deserters = removeUnits(next.affairs.army, armyFood < upkeep(next.affairs.army) ? 1 : 0)
+  const armyGold = Math.min(next.resources.gold, upkeepGold(next.affairs.army))
+  const deserters = removeUnits(
+    next.affairs.army,
+    armyFood < upkeep(next.affairs.army) || armyGold < upkeepGold(next.affairs.army) ? 1 : 0,
+  )
   next.resources.food -= armyFood
+  next.resources.gold -= armyGold
   next.affairs.army = subtractArmy(next.affairs.army, deserters)
   next.hunger = shortage ? next.hunger + 1 : 0
   if (next.hunger >= 2) next.population = Math.max(0, next.population - 1)
@@ -623,10 +661,19 @@ export function resolveTurn(state: Kingdom, action: Action): TurnResult | null {
   }
   for (const k of KEYS) next.resources[k] += diplomaticReward[k] + (report?.loot[k] ?? 0)
   const campaignUpdate = advanceCampaign(next)
+  const storageLoss = zero(),
+    limit = inventoryLimit(next.rank)
+  for (const k of KEYS) {
+    // Preserve existing above-limit stocks; only this turn's surplus can be lost.
+    storageLoss[k] = Math.max(0, next.resources[k] - Math.max(limit[k], state.resources[k]))
+    next.resources[k] -= storageLoss[k]
+  }
   return {
+    storageLoss,
     campaignUpdate,
     battle: report,
     armyFood,
+    armyGold,
     deserters,
     diplomaticReward,
     completedRequest: fulfilled,

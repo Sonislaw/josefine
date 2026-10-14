@@ -303,7 +303,7 @@ try {
   assert.equal(await staticPage.locator('.board-cell').count(), 64)
   await staticPage.goto(`${base}/male-krolestwo`)
   assert.ok((await staticPage.title()).includes('Małe królestwo'))
-  assert.equal(await staticPage.locator('.kingdom-faq details').count(), 15)
+  assert.equal(await staticPage.locator('.kingdom-faq details').count(), 16)
   assert.ok(await staticPage.locator('.residents-panel > summary').isVisible())
   assert.ok(await staticPage.locator('.progression-panel summary').isVisible())
   assert.ok((await staticPage.locator('.kingdom-faq').textContent()).includes('Jak awansować'))

@@ -139,6 +139,8 @@ export function useKingdom() {
     latestDiscovery.value = result.discovery
     if (result.promotion) latestPromotion.value = result.promotion
     if (result.completedRequest) latestRequest.value = result.completedRequest
+    if (Object.values(result.storageLoss).some(Boolean))
+      message.value += ' Nadwyżka poza limitem zapasów nie została zmagazynowana.'
     action.value = null
     card.value = null
     persist()

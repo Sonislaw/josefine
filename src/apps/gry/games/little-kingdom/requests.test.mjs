@@ -156,7 +156,7 @@ test('preview/commit matches; reward is separate, once only, after feeding and g
   assert.equal(shortage.state.resources.food, 6)
   s.population = 12
   // End feeding with 23 food: the 6-food reward takes stocks above the growth threshold later.
-  s.resources.food = 2 * s.population - 1 + s.population - production(s).food - 3
+  s.resources.food = 2 * s.population - 1 + s.population - production(s).food - 2
   const below = resolveTurn(s, { type: 'gather' })
   assert.equal(below.state.population, 12)
   assert.equal(below.state.resources.food, 29)
@@ -201,13 +201,13 @@ test('promotion and request can complete together, with independent rewards and 
   s.rank = 0
   s.promotions = []
   s.turn = 62
-  s.population = 5
+  s.population = 7
   const chosen = select(s, 'water-farm'),
     r = resolveTurn(chosen, { type: 'gather' })
   assert.equal(r.state.rank, 1)
   assert.equal(r.completedRequest.id, 'water-farm')
   assert.equal(r.promotion.rank, 1)
-  assert.equal(r.promotionGift.gold, 5)
+  assert.equal(r.promotionGift.gold, 3)
   assert.equal(r.requestReward.gold, 2)
   assert.equal(r.state.rng, s.rng)
   assert.deepEqual(r.state.offer, s.offer)
@@ -226,7 +226,10 @@ test('all requests can be completed once; history and total reward remain bounde
     assert.equal(r.completedRequest.id, id)
     for (const k of Object.keys(sum)) {
       sum[k] += r.requestReward[k]
-      assert.equal(r.state.resources[k], base.state.resources[k] + r.requestReward[k])
+      assert.equal(
+        r.state.resources[k] + r.storageLoss[k],
+        base.state.resources[k] + base.storageLoss[k] + r.requestReward[k],
+      )
     }
     s = r.state
     assert.ok(decode(encode(s)))
