@@ -49,8 +49,9 @@ export function developedKingdom(rank = 0) {
   })
   return s
 }
-export const encode = (state, version = 3) => {
+export const encode = (state, version = 4) => {
   const copy = structuredClone(state)
+  if (version < 4) delete copy.requests
   if (version < 3) {
     delete copy.rank
     delete copy.promotions

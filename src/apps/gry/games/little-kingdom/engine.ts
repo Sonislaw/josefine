@@ -2,6 +2,13 @@
 import { SIZE, terrain, type Terrain } from './terrain'
 import { RANKS, earnedPromotion, type Promotion, type SettlementRank } from './progression'
 import {
+  REQUESTS,
+  emptyRequests,
+  completedRequest,
+  type CompletedRequest,
+  type ResidentRequests,
+} from './requests'
+import {
   DISCOVERIES,
   blocksBuilding,
   discoveryForSector,
@@ -15,6 +22,7 @@ export type BuildingKind = 'house' | 'farm' | 'sawmill' | 'quarry' | 'mill' | 'm
 export type Point = { x: number; y: number }
 export type Building = Point & { kind: BuildingKind | 'hall'; level: number }
 export interface Kingdom {
+  requests: ResidentRequests
   rank: SettlementRank
   promotions: Promotion[]
   seed: number
@@ -122,6 +130,7 @@ export function deal(seed: number) {
 }
 export function newKingdom(seed = 1): Kingdom {
   return {
+    requests: emptyRequests(),
     rank: 0,
     promotions: [],
     seed: seed >>> 0,
@@ -238,6 +247,8 @@ export function production(state: Kingdom): Resources {
   return result
 }
 export interface TurnResult {
+  completedRequest: CompletedRequest | null
+  requestReward: Resources
   promotion: Promotion | null
   promotionGift: Resources
   state: Kingdom
@@ -254,6 +265,7 @@ export function resolveTurn(state: Kingdom, action: Action): TurnResult | null {
   const price = actionCost(state, action)
   const next: Kingdom = {
     ...state,
+    requests: { ...state.requests, completed: [...state.requests.completed] },
     promotions: [...state.promotions],
     resources: { ...state.resources },
     buildings: { ...state.buildings },
@@ -323,7 +335,17 @@ export function resolveTurn(state: Kingdom, action: Action): TurnResult | null {
     next.promotions.push(promotion)
     for (const k of KEYS) next.resources[k] += promotionGift[k]
   }
+  // Optional goals pay after feeding/growth/rank evaluation, never retroactively.
+  const fulfilled = completedRequest(next)
+  const requestReward = fulfilled ? { ...REQUESTS[fulfilled.id].reward } : zero()
+  if (fulfilled) {
+    next.requests.completed.push(fulfilled)
+    next.requests.active = null
+    for (const k of KEYS) next.resources[k] += requestReward[k]
+  }
   return {
+    completedRequest: fulfilled,
+    requestReward,
     promotion,
     promotionGift,
     state: next,

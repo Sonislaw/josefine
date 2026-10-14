@@ -40,7 +40,7 @@ export const games = [
     id: 'male-krolestwo',
     title: 'Małe królestwo',
     description:
-      'Od małej osady do własnego królestwa. Zdobywaj kolejne rangi, odkrywaj ruiny i odnawiaj źródła. Spokojna strategia, do której wracasz we własnym tempie.',
+      'Osada pełna małych historii. Pomagaj mieszkańcom, zdobywaj kolejne rangi i odkrywaj zapomniane miejsca. Spokojna strategia, do której wracasz we własnym tempie.',
     category: 'Strategia',
     players: '1 gracz',
     symbol: '♜',

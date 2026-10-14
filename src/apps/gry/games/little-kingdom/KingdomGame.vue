@@ -8,6 +8,8 @@ import DiscoveryJournal from './DiscoveryJournal.vue'
 import DiscoveryArt from './DiscoveryArt.vue'
 import HallArt from './HallArt.vue'
 import ProgressionPanel from './ProgressionPanel.vue'
+import ResidentsPanel from './ResidentsPanel.vue'
+import { REQUESTS } from './requests'
 import { RANKS } from './progression'
 import { DISCOVERIES, discoveryStatus, discoveryBonus } from './discoveries'
 import {
@@ -38,6 +40,8 @@ const {
   selectedDiscovery,
   latestDiscovery,
   latestPromotion,
+  latestRequest,
+  manageResidents,
   action,
   card,
   error,
@@ -119,8 +123,8 @@ function compass(p: Point) {
         <p class="eyebrow">ZGRANA / SPOKOJNA STRATEGIA</p>
         <h1>Małe <em>królestwo.</em></h1>
         <p>
-          Od osady do miasteczka. Odkrywaj zapomniane miejsca i rozwijaj własne królestwo bez
-          pośpiechu.
+          Każda osada ma swoich mieszkańców. Spełniaj ich prośby, odkrywaj nowe ziemie i rozwijaj
+          własne królestwo bez pośpiechu.
         </p>
       </div>
       <div class="heading-buttons">
@@ -198,6 +202,14 @@ function compass(p: Point) {
         </button>
       </div>
       <ProgressionPanel :state="state" />
+      <ResidentsPanel
+        :state="state"
+        :disabled="blocked"
+        :latest="latestRequest"
+        @command="manageResidents"
+        @locate="locateDiscovery"
+        @dismiss="latestRequest = null"
+      />
       <div v-if="latestDiscovery" class="discovery-announcement" role="status">
         <svg viewBox="0 0 64 64" aria-hidden="true">
           <DiscoveryArt :discovery="latestDiscovery" />
@@ -366,6 +378,12 @@ function compass(p: Point) {
                 <strong>Awans: {{ RANKS[preview.promotion.rank]!.name }}!</strong><br />
                 Prezent: {{ priceText(preview.promotionGift) }}. Trafi do zapasów po wyżywieniu i
                 zmianie populacji. Poniższy bilans już go uwzględnia.
+              </p>
+              <p v-if="preview.completedRequest" class="promotion-preview request-preview">
+                <strong>Prośba wykonana: {{ REQUESTS[preview.completedRequest.id].title }}</strong
+                ><br />
+                Nagroda: {{ priceText(preview.requestReward) }}. Poniższy bilans już ją uwzględnia;
+                otrzymasz ją po wyżywieniu i sprawdzeniu awansu osady.
               </p>
               <p>Produkcja w tej turze: {{ priceText(preview.produced) }}</p>
               <p v-if="action?.type === 'explore'">
@@ -560,6 +578,25 @@ function compass(p: Point) {
           mapę i rozwijać osadę. Nie ma limitu czasu ani obowiązkowego końca.
         </p>
       </details>
+      <details>
+        <summary>Jak działają prośby mieszkańców?</summary>
+        <p>
+          W panelu „Głos mieszkańców” wybierasz jedną z maksymalnie trzech dostępnych próśb. Masz
+          dowolnie dużo czasu; możesz ją odłożyć i wrócić później. Prośby dotyczą sąsiedztwa,
+          ulepszania budynków i odnowionych miejsc. Kolejne odblokowują się wraz z rangą osady.
+          Wyższa ranga daje przycisk „Inne prośby”, jeśli masz więcej celów do wyboru.
+        </p>
+      </details>
+      <details>
+        <summary>Czy muszę budować od nowa i kiedy dostanę nagrodę?</summary>
+        <p>
+          Istniejące budynki też spełniają prośby. Po ich przyjęciu sprawdź cel i zatwierdź dowolną
+          legalną turę — warunek musi być nadal spełniony po tym ruchu. Prognoza pokaże nagrodę i
+          końcowy bilans. Zasoby otrzymujesz po wyżywieniu, zmianie populacji i sprawdzeniu awansu.
+          Każda z 12 próśb daje nagrodę tylko raz; aktywny cel i historia pomocy zapisują się razem
+          z osadą.
+        </p>
+      </details>
     </section>
     <GameDialog v-if="help" title="Twoje małe królestwo" @close="help = false"
       ><p>
@@ -576,6 +613,11 @@ function compass(p: Point) {
           Buduj na łąkach. Sąsiedztwo czterech krawędzi daje premie. Budynki ulepszysz do poziomu 3.
         </li>
         <li>Oferta zmienia się wyłącznie po budowie. Zawsze zawiera farmę.</li>
+        <li>
+          „Głos mieszkańców” daje 12 opcjonalnych próśb, odblokowywanych wraz z rangą. Wybierz
+          jedną; istniejące budynki też się liczą. Cel i jednorazową nagrodę sprawdzamy po
+          zatwierdzeniu tury. Możesz odłożyć prośbę bez kary.
+        </li>
         <li>
           Panel „Rozwój osady” pokazuje wymagania awansu. Po ich spełnieniu na koniec tury otrzymasz
           nową rangę i jednorazowy prezent. Ranga pozostaje na zawsze, a produkcja ratusza się nie

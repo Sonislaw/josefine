@@ -7,8 +7,9 @@ Samodzielna strategia turowa: `/gry/male-krolestwo` lokalnie, `/male-krolestwo` 
 - `engine.ts`: czyste typy i reguły, oferta, gospodarka i sezonowość. `resolveTurn(state, action)` zwraca nowy stan, koszt, produkcję, jednorazową nagrodę, nowe odkrycie, bilans oraz zmianę populacji. Nigdy nie mutuje wejścia. Ten sam wynik służy prognozie i zatwierdzeniu.
 - `terrain.ts`: dotychczasowy, niezmieniony generator terenu. Wspólny dla silnika i odkryć, bez cyklicznych importów reguł.
 - `discoveries.ts`: definicje miejsc, koszty, nagrody, rozmieszczenie i premie. Osobne hashe nie zużywają RNG oferty budynków.
-- `storage.ts`: wersjonowany format `{ version: 3, state, tutorialDismissed }`, walidacja i obsługa braku pamięci. Klucz `zgrana:gry:male-krolestwo:v3`. Uszkodzony zapis jest chroniony do jawnego potwierdzenia nowej osady.
+- `storage.ts`: wersjonowany format `{ version: 4, state, tutorialDismissed }`, walidacja i obsługa braku pamięci. Klucz `zgrana:gry:male-krolestwo:v4`. Uszkodzony zapis jest chroniony do jawnego potwierdzenia nowej osady.
 - `progression.ts`: definicje rang, wymagania, prezenty i czyste sprawdzanie awansu. `ProgressionPanel.vue` pokazuje postęp, a `HallArt.vue` cztery sylwetki ratusza w tym samym polu mapy.
+- `requests.ts`: 12 jednorazowych próśb, postęp i polecenia wyboru/odłożenia/przeglądania. `ResidentsPanel.vue` składa panel, a `ResidentPortrait.vue` rysuje portrety SVG.
 - `useKingdom.ts`: stan Vue, wybór akcji, interakcje z pamięcią dopiero po mount. Stan SSR jest stały; nie korzysta z `window`, losowego ziarna ani zapisu gracza.
 - `KingdomBoard.vue`: kamera, gesty, wybór pola i klawiatura. Renderuje tylko komórki przecinające viewport z marginesem. Nie nalicza zasobów ani nie wykonuje tur.
 - `TileArt.vue`, `BuildingOffer.vue`, `ResourceBar.vue`: ilustracje SVG i prezentacja. `KingdomGame.vue` składa ekran, instrukcję i FAQ.
@@ -70,6 +71,49 @@ Zwijany panel pokazuje wymagania, podpowiedzi, prezent i historię. Po ostatnim 
 gra trwa dalej. Komunikat można zamknąć; nie blokuje mapy i nie pojawia się ponownie
 po odświeżeniu. Ratusz zmienia tylko wygląd, nie produkcję i pojemność.
 
+## Głos mieszkańców
+
+Trzy prośby odblokowują się na każdej randze. Gracz wybiera jedną z maksymalnie trzech
+widocznych; „Inne prośby” przegląda pozostałe w stałej kolejności, bez RNG i zmiany kart
+budynków. Nie ma terminów, kar ani nowych zasobów. Każde zlecenie można ukończyć raz.
+
+| Ranga | Prośba / cel | Nagroda |
+| --- | --- | --- |
+| Osada | Pole przy strumieniu: farma przy wodzie | 4 drewna, 2 monety |
+| Osada | Drewno z sąsiedztwa: tartak przy lesie | 3 kamienia, 2 monety |
+| Osada | Solidny fundament: kamieniołom przy skałach | 4 drewna, 2 monety |
+| Wioska | Mąka dla sąsiadów: jeden młyn przy dwóch farmach | 6 żywności, 4 monety |
+| Wioska | Targ blisko domu: jeden targ przy dwóch domach | 6 drewna, 4 monety |
+| Wioska | Jesień pachnąca jabłkami: dwa sady | 6 żywności, 4 monety |
+| Miasteczko | Dom na lata: dom poziomu 3 | 6 kamienia, 6 monet |
+| Miasteczko | Gospodarstwo z rozmachem: farma poziomu 3 | 8 żywności, 6 monet |
+| Miasteczko | Przywrócone wspomnienie: odnowione źródło lub punkt handlowy | 6 drewna, 4 kamienia, 6 monet |
+| Małe królestwo | Ogród wokół źródła: farma lub sad przy odnowionym źródle | 10 żywności, 8 monet |
+| Małe królestwo | Ożywiony szlak: targ przy odnowionym punkcie handlowym | 8 drewna, 8 monet |
+| Małe królestwo | Dobrze przygotowana spiżarnia: młyn poziomu ≥2 przy dwóch farmach poziomu ≥2 | 6 kamienia, 10 żywności, 8 monet |
+
+Sąsiedztwo to wyłącznie cztery krawędzie; naturalny teren musi być odkryty. Liczymy
+obecną zabudowę, również istniejącą przed przyjęciem prośby. Dwie farmy/domki muszą
+sąsiadować z tym samym młynem/targiem. Nie sumujemy kilku osobnych układów.
+
+`Kingdom.requests` zawiera `active` (`id`, `acceptedTurn`), `completed` (`id`,
+`acceptedTurn`, `turn`) i kursor przeglądania. `manageRequest` to czyste polecenia
+bez tury i bez zasobów; kontroler zapisuje wynik od razu. Odłożenie pozwala wybrać
+inną prośbę, a gotowy cel czeka na następną zatwierdzoną legalną turę. Wyburzenie
+budynku w tej turze może usunąć spełniony warunek. Żadna nagroda nie jest przyznawana
+podczas wyboru, migracji, lokalizacji na mapie ani samego odświeżenia.
+
+`resolveTurn` sprawdza cel po wyżywieniu, zmianie populacji i awansie osady. Zwraca
+`completedRequest` i `requestReward` osobno od produkcji, znaleziska i prezentu za
+rangę. Bilans obejmuje wszystkie nagrody; zasoby prośby nie ratują wcześniejszego
+niedoboru ani nie uruchamiają przyrostu w tej samej turze. Jedna aktywna prośba daje
+maksymalnie jedno wykonanie na turę. Cała kolekcja daje łącznie 28 drewna, 19 kamienia,
+40 żywności i 60 monet. Po 12 wykonaniach gra trwa dalej.
+
+Panel jest zwijany, ma portrety, cytaty mieszkańców, cel, wskazówki, postęp, nagrodę,
+lokalizację istniejącego budynku/miejsca i historię. Komunikat podziękowania można
+zamknąć. Nowe prośby po odświeżeniu nie zastępują aktywnego celu.
+
 ## Reguły
 
 Jedna zatwierdzona akcja = jedna tura. Koszt → akcja → produkcja (również nowego budynku) → wyżywienie → niedobór → przyrost ludności → następna tura. Oferta zawiera farmę i dwa różne inne budynki; zmienia się tylko po budowie. Stan generatora i oferta są zapisywane.
@@ -90,18 +134,22 @@ Dotknięcie wybiera pole. Przeciąganie przesuwa mapę; dwa palce lub przyciski 
 
 Zapis po każdej turze jest synchroniczny; nie zapisujemy zaznaczenia, kamery ani rozpoczętych gestów. Zamknięcie strony nie zmienia gospodarki. Gra działa bez storage, ale bez gwarancji wznowienia. Karty przeglądarki nie są synchronizowane — ostatni zapis wygrywa. Zapis ma ograniczenia pojemności localStorage; błąd zapisu jest widoczny, a rozgrywka trwa w pamięci.
 
-Odczytujemy kolejno v3 → v2 → v1, wyłącznie przy braku nowszego klucza. Poprawny
-starszy zapis migrujemy do v3, zachowując oryginalne bajty kopii. Migracja ustawia
-rangę Osada i pustą historię, nie zmieniając zasobów, tury, budynków, terenu ani oferty.
-Z v1 dodatkowo tworzymy pustą kolekcję odkryć — stare sektory nie dostają miejsc wstecz.
-Duża istniejąca osada może zdobywać kolejne rangi w następnych zatwierdzonych turach.
-Uszkodzony nowszy zapis zawsze blokuje cofnięcie do starszej kopii. Błąd zapisu migracji
-pozwala grać w pamięci z ostrzeżeniem. Potwierdzony restart zastępuje v3; stare kopie pozostają.
+Odczytujemy kolejno v4 → v3 → v2 → v1, wyłącznie przy braku nowszego klucza. Poprawny
+starszy zapis migrujemy do v4, zachowując oryginalne bajty kopii. Dodajemy pusty stan
+próśb, bez nagród ani zmiany zasobów, tury, budynków, terenu i oferty. Z v3 zachowujemy
+rangę i historię awansów. W v1/v2 ustawiamy rangę Osada i pustą historię awansów;
+z v1 dodatkowo tworzymy pustą kolekcję odkryć. Duża istniejąca osada może zdobywać
+kolejne rangi w następnych zatwierdzonych turach. Uszkodzony nowszy zapis zawsze
+blokuje cofnięcie do starszej kopii. Błąd zapisu migracji pozwala grać w pamięci
+z ostrzeżeniem. Potwierdzony restart zastępuje v4; stare kopie pozostają.
 
 Walidacja sprawdza rodzaj, deterministyczne położenie, odkryty sektor, unikalność
 miejsca w sektorze, chronologię tur oraz zakaz zabudowy zajętego miejsca. Historia
 awansów musi zawierać dokładnie kolejne rangi 1…rank z rosnącymi turami, nie z przyszłości.
 Nie sprawdzamy dawnych progów względem obecnej populacji — osiągnięć nie odbieramy.
+Prośby mają znane identyfikatory, jedną aktywną pozycję, unikalną historię najwyżej
+12 wykonań, poprawne rangi i chronologię przyjęcia/wykonania. Brak lub uszkodzenie
+stanu próśb w v4 nie jest cicho naprawiane, aby nie umożliwiać ponownego odbioru nagród.
 
 ## Weryfikacja i publikacja
 
@@ -129,3 +177,8 @@ migracje v1/v2 → v3 oraz osiągnięcie wszystkich rang legalnymi ruchami od no
 dla trzech ziaren. `tests/gry/kingdom-progression.spec.mjs` sprawdza prognozę, zapis,
 cztery warianty ratusza, klawiaturę, mobile, restart i błędy pamięci. Fixture jest
 wyłącznie w katalogu testów; nie dodajemy interfejsu testowego do produkcji.
+
+`requests.test.mjs` sprawdza wszystkie cele, sąsiedztwo, wybór i odłożenie, nagrody,
+wspólne rozliczenie z awansem, komplet 12 wykonań oraz migracje v1/v2/v3 → v4.
+`tests/gry/kingdom-requests.spec.mjs` sprawdza portrety, postęp, prognozę i odbiór,
+mapę, odświeżenie, odłożenie, restart, pamięć i historię na mobile/desktop.

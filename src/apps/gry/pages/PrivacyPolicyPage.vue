@@ -26,9 +26,10 @@ useGrySeo('privacy')
       </p>
       <p>
         Małe królestwo zapisuje mapę, budynki, odkryte miejsca i ich wykorzystanie, zasoby,
-        mieszkańców, turę, ofertę budynków, rangę osady, historię awansów i stan wskazówek pod kluczem
-        „zgrana:gry:male-krolestwo:v3” w localStorage tej przeglądarki. Przy aktualizacji
-        odczytujemy starszy zapis v2 lub v1 i zachowujemy oryginały jako kopie. Zapis
+        mieszkańców, turę, ofertę budynków, rangę osady, historię awansów, aktywną prośbę mieszkańca,
+        historię pomocy i stan wskazówek pod kluczem „zgrana:gry:male-krolestwo:v4” w localStorage
+        tej przeglądarki. Przy aktualizacji odczytujemy starszy zapis v3, v2 lub v1 i zachowujemy
+        oryginały jako kopie. Zapis
         nie jest wysyłany na serwer ani synchronizowany między urządzeniami. Możesz go zastąpić nową
         osadą lub usunąć, czyszcząc dane witryny. Czas gry nie płynie podczas przerwy.
       </p>

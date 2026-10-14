@@ -4,6 +4,7 @@ import { readFile, mkdir } from 'node:fs/promises'
 import { resolve, extname, sep } from 'node:path'
 import { chromium } from '@playwright/test'
 import { developedKingdom, encode as encodeKingdom } from './kingdom-progression-fixture.mjs'
+import { requestsKingdom } from './kingdom-requests-fixture.mjs'
 
 // Local clean-URL static server for testing built HTML, not a production server.
 const root = resolve('dist')
@@ -137,14 +138,15 @@ try {
   )
   // Verify legacy hydration against built HTML, not only the development server.
   const legacyKingdom = await page.evaluate(() => {
-    const data = JSON.parse(localStorage.getItem('zgrana:gry:male-krolestwo:v3'))
+    const data = JSON.parse(localStorage.getItem('zgrana:gry:male-krolestwo:v4'))
     data.version = 1
     delete data.state.discoveries
     delete data.state.rank
     delete data.state.promotions
+    delete data.state.requests
     const raw = JSON.stringify(data)
     localStorage.setItem('zgrana:gry:male-krolestwo:v1', raw)
-    localStorage.removeItem('zgrana:gry:male-krolestwo:v3')
+    localStorage.removeItem('zgrana:gry:male-krolestwo:v4')
     return raw
   })
   await page.reload()
@@ -153,9 +155,9 @@ try {
   )
   assert.equal(
     await page.evaluate(
-      () => JSON.parse(localStorage.getItem('zgrana:gry:male-krolestwo:v3')).version,
+      () => JSON.parse(localStorage.getItem('zgrana:gry:male-krolestwo:v4')).version,
     ),
-    3,
+    4,
   )
   assert.equal(
     await page.evaluate(() => localStorage.getItem('zgrana:gry:male-krolestwo:v1')),
@@ -165,7 +167,7 @@ try {
   const previousKingdom = encodeKingdom(developedKingdom(), 2)
   await page.evaluate((raw) => {
     localStorage.setItem('zgrana:gry:male-krolestwo:v2', raw)
-    localStorage.removeItem('zgrana:gry:male-krolestwo:v3')
+    localStorage.removeItem('zgrana:gry:male-krolestwo:v4')
   }, previousKingdom)
   await page.reload()
   await page.waitForFunction(
@@ -183,6 +185,40 @@ try {
   assert.equal(
     await page.evaluate(() => localStorage.getItem('zgrana:gry:male-krolestwo:v2')),
     previousKingdom,
+  )
+  // Existing v3 ranks survive hydration; choosing a goal itself never pays or advances time.
+  const previousRequests = encodeKingdom(requestsKingdom(), 3)
+  await page.evaluate((raw) => {
+    localStorage.setItem('zgrana:gry:male-krolestwo:v3', raw)
+    localStorage.removeItem('zgrana:gry:male-krolestwo:v4')
+  }, previousRequests)
+  await page.reload()
+  await page.waitForFunction(() =>
+    document.querySelector('[data-testid="kingdom-rank"]')?.textContent.includes('Małe królestwo'),
+  )
+  await page.locator('.residents-panel > summary').click()
+  await page.getByRole('button', { name: 'Przyjmij prośbę: Pole przy strumieniu' }).click()
+  assert.equal(await page.getByTestId('kingdom-turn').textContent(), '61')
+  await page.getByRole('button', { name: /Zbierz zapasy/ }).click()
+  assert.ok((await page.locator('.request-preview').textContent()).includes('Pole przy strumieniu'))
+  await page.getByRole('button', { name: 'Zatwierdź turę' }).click()
+  assert.ok((await page.locator('.request-announcement').textContent()).includes('Zosia'))
+  await page.reload()
+  await page.waitForFunction(
+    () => document.querySelector('[data-testid="kingdom-turn"]')?.textContent === '62',
+  )
+  assert.equal(
+    await page.evaluate(
+      () =>
+        JSON.parse(localStorage.getItem('zgrana:gry:male-krolestwo:v4')).state.requests.completed
+          .length,
+    ),
+    1,
+  )
+  assert.equal(await page.locator('.request-announcement').count(), 0)
+  assert.equal(
+    await page.evaluate(() => localStorage.getItem('zgrana:gry:male-krolestwo:v3')),
+    previousRequests,
   )
   await page.screenshot({ path: 'test-results/production/kingdom-mobile.png', fullPage: true })
   assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth))
@@ -239,7 +275,8 @@ try {
   assert.equal(await staticPage.locator('.board-cell').count(), 64)
   await staticPage.goto(`${base}/male-krolestwo`)
   assert.ok((await staticPage.title()).includes('Małe królestwo'))
-  assert.equal(await staticPage.locator('.kingdom-faq details').count(), 9)
+  assert.equal(await staticPage.locator('.kingdom-faq details').count(), 11)
+  assert.ok(await staticPage.locator('.residents-panel > summary').isVisible())
   assert.ok(await staticPage.locator('.progression-panel summary').isVisible())
   assert.ok((await staticPage.locator('.kingdom-faq').textContent()).includes('Jak awansować'))
   assert.ok(await staticPage.locator('.discovery-journal').isVisible())

@@ -10,7 +10,9 @@ import {
   type Kingdom,
 } from './engine'
 import { DISCOVERIES, blocksBuilding, discoveryForSector, type Discovery } from './discoveries'
-export const SAVE_KEY = 'zgrana:gry:male-krolestwo:v3'
+import { REQUESTS, REQUEST_IDS, emptyRequests } from './requests'
+export const SAVE_KEY = 'zgrana:gry:male-krolestwo:v4'
+export const PROGRESSION_KEY = 'zgrana:gry:male-krolestwo:v3'
 export const PREVIOUS_KEY = 'zgrana:gry:male-krolestwo:v2'
 export const LEGACY_KEY = 'zgrana:gry:male-krolestwo:v1'
 interface StoragePort {
@@ -30,12 +32,13 @@ const coordinate = (v: unknown): v is number =>
   Number.isSafeInteger(v) && Math.abs(v as number) <= Math.floor(Number.MAX_SAFE_INTEGER / 7) - 1
 export function decode(
   raw: string,
-  version: 1 | 2 | 3 = 3,
+  version: 1 | 2 | 3 | 4 = 4,
 ): { state: Kingdom; tutorialDismissed: boolean } | null {
   try {
     const data: unknown = JSON.parse(raw)
     if (!object(data) || data.version !== version || !object(data.state)) return null
     const s = data.state
+    if (version < 4) s.requests = emptyRequests()
     // Migration adds progression only. It neither awards gifts nor advances simulation.
     if (version < 3) {
       s.rank = 0
@@ -70,6 +73,45 @@ export function decode(
         return null
       previousTurn = p.turn
     }
+    if (
+      !object(s.requests) ||
+      !natural(s.requests.cursor) ||
+      s.requests.cursor >= REQUEST_IDS.length ||
+      !Array.isArray(s.requests.completed) ||
+      s.requests.completed.length > REQUEST_IDS.length
+    )
+      return null
+    const isRequestId = (id: unknown): id is keyof typeof REQUESTS =>
+      typeof id === 'string' && Object.hasOwn(REQUESTS, id)
+    const completedIds = new Set<string>()
+    let previousRequestTurn = 0
+    for (const c of s.requests.completed) {
+      if (
+        !object(c) ||
+        !isRequestId(c.id) ||
+        completedIds.has(c.id) ||
+        !natural(c.acceptedTurn) ||
+        !natural(c.turn) ||
+        c.turn <= c.acceptedTurn ||
+        c.turn <= previousRequestTurn ||
+        c.turn > s.turn ||
+        REQUESTS[c.id].minRank > s.rank
+      )
+        return null
+      completedIds.add(c.id)
+      previousRequestTurn = c.turn
+    }
+    const active = s.requests.active
+    if (
+      active !== null &&
+      (!object(active) ||
+        !isRequestId(active.id) ||
+        completedIds.has(active.id) ||
+        !natural(active.acceptedTurn) ||
+        active.acceptedTurn > s.turn ||
+        REQUESTS[active.id].minRank > s.rank)
+    )
+      return null
     if (
       !object(s.resources) ||
       !KEYS.every((k) => natural((s.resources as Record<string, unknown>)[k]))
@@ -178,7 +220,8 @@ export function load(storage: StoragePort): LoadResult {
   try {
     // Presence wins over validity: never silently resurrect an older settlement.
     for (const [key, version] of [
-      [SAVE_KEY, 3],
+      [SAVE_KEY, 4],
+      [PROGRESSION_KEY, 3],
       [PREVIOUS_KEY, 2],
       [LEGACY_KEY, 1],
     ] as const) {
@@ -186,7 +229,7 @@ export function load(storage: StoragePort): LoadResult {
       if (raw === null) continue
       const result = decode(raw, version)
       if (!result) return { status: 'corrupt', state: null, tutorialDismissed: false }
-      if (version < 3) {
+      if (version < 4) {
         const written = save(storage, result.state, result.tutorialDismissed)
         return { status: 'saved', ...result, migrationSaveFailed: !written }
       }
@@ -199,7 +242,7 @@ export function load(storage: StoragePort): LoadResult {
 }
 export function save(storage: StoragePort, state: Kingdom, tutorialDismissed: boolean): boolean {
   try {
-    storage.setItem(SAVE_KEY, JSON.stringify({ version: 3, state, tutorialDismissed }))
+    storage.setItem(SAVE_KEY, JSON.stringify({ version: 4, state, tutorialDismissed }))
     return true
   } catch {
     return false

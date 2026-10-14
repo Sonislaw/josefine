@@ -14,6 +14,7 @@ import {
 import { load, save } from './storage'
 import { DISCOVERIES, blocksBuilding, type Discovery } from './discoveries'
 import type { Promotion } from './progression'
+import { REQUESTS, manageRequest, type RequestCommand, type CompletedRequest } from './requests'
 export function useKingdom() {
   // Identical SSR/client initial state; browser-only saved state is restored after hydration.
   const state = shallowRef(newKingdom(1)),
@@ -25,6 +26,7 @@ export function useKingdom() {
     card = ref<BuildingKind | null>(null)
   const latestDiscovery = shallowRef<Discovery | null>(null)
   const latestPromotion = shallowRef<Promotion | null>(null)
+  const latestRequest = shallowRef<CompletedRequest | null>(null)
   const selectedDiscovery = computed(() =>
     selected.value ? state.value.discoveries[key(selected.value.x, selected.value.y)] : undefined,
   )
@@ -115,6 +117,7 @@ export function useKingdom() {
     state.value = result.state
     latestDiscovery.value = result.discovery
     if (result.promotion) latestPromotion.value = result.promotion
+    if (result.completedRequest) latestRequest.value = result.completedRequest
     action.value = null
     card.value = null
     persist()
@@ -128,11 +131,27 @@ export function useKingdom() {
     restart.value = false
     latestDiscovery.value = null
     latestPromotion.value = null
+    latestRequest.value = null
     message.value = 'Nowa ziemia, nowy początek. Zadbaj o żywność przed zimą.'
     persist()
   }
   function dismissTutorial() {
     tutorialDismissed.value = true
+    persist()
+  }
+  function manageResidents(command: RequestCommand) {
+    if (blocked.value) return
+    const next = manageRequest(state.value, command)
+    if (!next) return
+    state.value = next
+    action.value = null
+    card.value = null
+    message.value =
+      command.type === 'accept'
+        ? `Przyjęto prośbę: ${REQUESTS[command.id].title}. Wykonanie sprawdzimy po zatwierdzeniu tury.`
+        : command.type === 'defer'
+          ? 'Prośba odłożona. Możesz wrócić do niej później.'
+          : 'Przeglądasz kolejne prośby mieszkańców.'
     persist()
   }
   const selectedSector = computed(() => (selected.value ? sectorOf(selected.value) : null))
@@ -146,6 +165,8 @@ export function useKingdom() {
     selectedDiscovery,
     latestDiscovery,
     latestPromotion,
+    latestRequest,
+    manageResidents,
     selectedSector,
     action,
     card,

@@ -74,7 +74,8 @@ Klocki są osobną grą w `games/blocks/` z własnym silnikiem, lokalnym zapisem
 ## Małe królestwo
 
 Strategia turowa z lokalnym zapisem osady, sezonami, odkryciami i trwałymi rangami osady.
-Rangi mają jednorazowe prezenty, historię oraz cztery warianty ratusza; zapis v3 zachowuje kopie v1/v2. Własny silnik i
+„Głos mieszkańców” dodaje 12 jednorazowych próśb z portretami, postępem i historią pomocy.
+Rangi mają jednorazowe prezenty, historię oraz cztery warianty ratusza; zapis v4 zachowuje kopie v1/v2/v3. Własny silnik i
 ilustracje SVG w `games/little-kingdom/`; [dokumentacja i reguły](games/little-kingdom/README.md).
 Gra ma własny lazy route, SSG, FAQ, sitemapę i grafikę OG PNG. Publikowana w tym samym projekcie CF.
 
@@ -122,8 +123,8 @@ Grafika OG oraz PNG instalacyjne są wersjami rastrowymi autorskich, kodowych gr
 
 ### Wynik weryfikacji wdrożenia modułu
 
-- 124 testy silników i sesji: zaliczone (21 Warcabów, 20 gry Jeszcze jeden kryształ, 11 Klocków, 37 Małego królestwa, 18 Ostatniej latarni i 17 Nocnego ekspresu), w tym symulacja dziesięciu minut survivalu i kolei, 20-letni rozwój osady, osiągnięcie wszystkich rang legalnymi ruchami oraz migracje v1/v2 → v3.
-- 96 testów przeglądarkowych w systemowym Chrome: zaliczone (12 Warcabów, 15 gry Jeszcze jeden kryształ, 12 Klocków, 29 Małego królestwa, 14 Ostatniej latarni i 14 Nocnego ekspresu), w tym responsywność, gesty dotykowe, zapis, odblokowania, duża mapa, dziennik odkryć, awanse i cztery warianty ratusza, AI oraz jednoplikowe Warcaby bez sieci.
+- 137 testów silników i sesji: zaliczone (21 Warcabów, 20 gry Jeszcze jeden kryształ, 11 Klocków, 50 Małego królestwa, 18 Ostatniej latarni i 17 Nocnego ekspresu), w tym symulacja dziesięciu minut survivalu i kolei, 20-letni rozwój osady, osiągnięcie wszystkich rang legalnymi ruchami, komplet 12 próśb i migracje v1/v2/v3 → v4.
+- 104 testy przeglądarkowe w systemowym Chrome: zaliczone (12 Warcabów, 15 gry Jeszcze jeden kryształ, 12 Klocków, 37 Małego królestwa, 14 Ostatniej latarni i 14 Nocnego ekspresu), w tym responsywność, gesty dotykowe, zapis, odblokowania, duża mapa, dziennik odkryć, awanse i cztery warianty ratusza, prośby mieszkańców, AI oraz jednoplikowe Warcaby bez sieci.
 - Build `npm run build:site -- gry`, kontrola typów i kontrola grafik OG: zaliczone.
 - Kontrola artefaktów `check-gry-build.mjs`: zaliczona. HTML katalogu nie ładuje pakietu samej gry.
 - Test zbudowanej strony w przeglądarce: brak błędów hydratacji, działające czyste URL-e i AI, treść dostępna bez JavaScript, odpowiedź 404 dla nieistniejącej strony.

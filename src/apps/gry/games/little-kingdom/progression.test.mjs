@@ -169,12 +169,12 @@ for (const version of [1, 2])
     assert.deepEqual(result.state.resources, s.resources)
     assert.equal(result.state.turn, s.turn)
     assert.equal(data.get(oldKey), raw)
-    assert.equal(JSON.parse(data.get(SAVE_KEY)).version, 3)
+    assert.equal(JSON.parse(data.get(SAVE_KEY)).version, 4)
     assert.deepEqual(load(port(data)).state, result.state)
     assert.equal(resolveTurn(result.state, { type: 'gather' }).state.rank, 1)
   })
 
-test('v3 then v2 take priority even if corrupt; failed writes preserve old save', () => {
+test('current save then v2 take priority even if corrupt; failed writes preserve old save', () => {
   const data = new Map([
     [LEGACY_KEY, encode(newKingdom(), 1)],
     [PREVIOUS_KEY, encode(developedKingdom(), 2)],
