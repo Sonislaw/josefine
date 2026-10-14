@@ -1,24 +1,57 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import type { Kingdom, Action, Point } from './engine'
-import { UNITS, WAR, armySize, upkeep, type Unit } from './military'
+import { actionError, type Kingdom, type Action, type Point } from './engine'
+import {
+  UNITS,
+  UNIT_IDS,
+  WAR,
+  TACTICS,
+  armySize,
+  upkeep,
+  armyCapacity,
+  type Army,
+} from './military'
+import { enemyTactic, enemyTarget } from './campaign'
 import { SETTLEMENTS, RELATIONS } from './neighbours'
 import { resourceList } from './format'
 import MilitaryArt from './MilitaryArt.vue'
 const props = defineProps<{ state: Kingdom; disabled: boolean }>()
 const emit = defineEmits<{ choose: [Action]; locate: [Point] }>()
-const units: Unit[] = ['spearman', 'archer']
-const spearmen = ref(0),
-  archers = ref(0)
-const hasBarracks = computed(() =>
-  Object.values(props.state.buildings).some((b) => b.kind === 'barracks'),
+const troops = ref<Army>({ spearman: 0, archer: 0, shieldbearer: 0 })
+const barracks = computed(() =>
+  Object.values(props.state.buildings).find((b) => b.kind === 'barracks'),
 )
+const enemy = computed(() => props.state.affairs.enemy)
+const limit = computed(() => armyCapacity(barracks.value?.level ?? 0))
+const missions = [
+  {
+    type: 'intercept' as const,
+    title: 'Przechwyć najazd',
+    description:
+      'Jedna próba na najazd, do przedostatniej tury ostrzeżenia. Walka poza osadą, bez wieży. Zwycięstwo odwołuje najazd; porażka zachowuje termin.',
+  },
+  {
+    type: 'expedition' as const,
+    title: 'Wyprawa na garnizon',
+    description:
+      'Osłab garnizon i zdobywaj przewagę. Raz na 6 tur, bez najazdu w drodze. Brak łupów i dodatkowego okresu ochronnego.',
+  },
+  {
+    type: 'forcePeace' as const,
+    title: 'Wymuś pokój',
+    description:
+      'Wymaga 2 punktów przewagi i braku najazdu. Zwycięstwo daje 36 tur pokoju oraz raz na kampanię 12 kamienia i 15 monet.',
+  },
+]
+const missionError = (type: 'intercept' | 'expedition' | 'forcePeace') =>
+  actionError(props.state, { type, army: troops.value })
+const armyText = (a: Army) => UNIT_IDS.map((u) => UNITS[u].name + ': ' + a[u]).join(' · ')
 </script>
 <template>
   <div class="frontier-panels">
     <details class="defence-panel">
       <summary>
-        Obrona osady <span>{{ armySize(state.affairs.army) }} / {{ WAR.capacity }} jednostek</span>
+        Obrona osady <span>{{ armySize(state.affairs.army) }} / {{ limit }} jednostek</span>
       </summary>
       <p v-if="state.rank < 1">Koszary i wieża odblokują się po osiągnięciu rangi Wioska.</p>
       <template v-else>
@@ -26,17 +59,22 @@ const hasBarracks = computed(() =>
           Utrzymanie: {{ upkeep(state.affairs.army) }} żywności / turę, po wyżywieniu mieszkańców.
           Najemnicy nie zajmują domów.
         </p>
-        <p v-if="!hasBarracks">
-          Postaw koszary z zakładki „Obrona” w ofercie budynków, aby rekrutować.
+        <p v-if="!barracks">Postaw koszary z zakładki „Obrona”, aby rekrutować.</p>
+        <p v-else>
+          Koszary: poziom {{ barracks.level }}. Poziom 2 wymaga Miasteczka, poziom 3 Małego
+          królestwa. Ulepsz budynek na mapie; limit wzrośnie do 9 i 12.
         </p>
         <div class="unit-grid">
-          <article v-for="unit in units" :key="unit">
+          <article v-for="unit in UNIT_IDS" :key="unit">
             <svg viewBox="0 0 64 64"><MilitaryArt :kind="unit" /></svg>
             <strong>{{ UNITS[unit].name }} · {{ state.affairs.army[unit] }}</strong>
             <p>Siła {{ UNITS[unit].strength }} · {{ resourceList(UNITS[unit].cost) }}</p>
+            <p v-if="unit === 'shieldbearer'">
+              Każdych dwóch tarczowników zmniejsza straty oddziału o jedną jednostkę.
+            </p>
             <button
               type="button"
-              :disabled="disabled || !hasBarracks || armySize(state.affairs.army) >= WAR.capacity"
+              :disabled="disabled || !barracks || armySize(state.affairs.army) >= limit"
               @click="emit('choose', { type: 'recruit', unit })"
             >
               Rekrutuj: {{ UNITS[unit].name }}
@@ -51,8 +89,8 @@ const hasBarracks = computed(() =>
           </article>
         </div>
         <small
-          >Każda decyzja zajmuje turę i wymaga zatwierdzenia. Brak żywności dla armii powoduje
-          odejście jednej jednostki; najpierw włócznika.</small
+          >Każda decyzja wymaga zatwierdzenia tury. Brak pełnej racji powoduje odejście jednej
+          jednostki: najpierw włócznik, potem łucznik, na końcu tarczownik.</small
         >
       </template>
     </details>
@@ -73,7 +111,13 @@ const hasBarracks = computed(() =>
             <strong>{{ RELATIONS[s.relation] }}</strong>
           </div>
         </div>
-        <p>{{ SETTLEMENTS[s.id]!.description }}</p>
+        <p>
+          {{
+            s.id === 2
+              ? 'Armia wroga ponosi straty, odbudowuje się i zmienia taktykę. Walcz o przewagę lub opłać rozejm.'
+              : SETTLEMENTS[s.id]!.description
+          }}
+        </p>
         <button type="button" @click="emit('locate', s)">Pokaż na mapie ↗</button>
         <template v-if="s.id < 2 && !s.giftTaken">
           <p>
@@ -89,62 +133,83 @@ const hasBarracks = computed(() =>
           </button>
         </template>
         <p v-else-if="s.id < 2">Wymiana zakończona. Sąsiedzi pozostają przyjaźni.</p>
-        <template v-if="s.relation === 'hostile'">
-          <p v-if="state.affairs.raid">
-            Najazd za {{ state.affairs.raid.dueTurn - state.turn }} tur. Wróg: 3 włóczników i 2
-            łuczników.
-          </p>
-          <p v-else>
-            Ochrona: {{ Math.max(0, state.affairs.protectedUntil - state.turn) }} tur do możliwej
-            zapowiedzi najazdu.
-          </p>
-          <button type="button" :disabled="disabled" @click="emit('choose', { type: 'truce' })">
-            Opłać rozejm · 12 monet
-          </button>
-          <details class="expedition">
-            <summary>Wyprawa przeciw garnizonowi</summary>
+        <template v-if="s.id === 2 && enemy">
+          <div class="campaign-stats">
+            <strong>Kampania {{ enemy.campaign }} · Przewaga {{ enemy.advantage }} / 2</strong>
+            <p data-testid="enemy-garrison">Garnizon: {{ armyText(enemy.garrison) }}</p>
             <p>
-              Wróg: 4 włóczników i 2 łuczników (siła 22). Wybierz oddział; wróci w tej samej turze.
-              Zwycięstwo kończy najazdy i daje 12 kamienia oraz 15 monet.
+              Taktyka garnizonu: {{ TACTICS[enemyTactic(enemy)].name }}. Zmiana co 4 tury konfliktu.
             </p>
-            <label
-              >Włócznicy
-              <input
-                v-model.number="spearmen"
-                type="number"
-                min="0"
-                :max="state.affairs.army.spearman"
-                step="1"
-            /></label>
-            <label
-              >Łucznicy
-              <input
-                v-model.number="archers"
-                type="number"
-                min="0"
-                :max="state.affairs.army.archer"
-                step="1"
-            /></label>
-            <p v-if="state.affairs.raid">
-              Podczas zapowiedzianego najazdu wyprawa jest niedostępna.
+            <p>
+              Odbudowa za {{ WAR.recovery - enemy.recovery }} tur: najwyżej jedna brakująca
+              jednostka. Cel łącznie: {{ armyText(enemyTarget(state.rank)) }}.
             </p>
+          </div>
+          <p v-if="enemy.peaceUntil !== null" data-testid="campaign-peace">
+            Pokój: jeszcze {{ enemy.peaceUntil - state.turn }} tur. Wróg uzupełnia garnizon, ale nie
+            wysyła najazdów. Po pokoju przewaga się zeruje i może nadejść nowe ostrzeżenie.
+          </p>
+          <template v-else>
+            <p v-if="state.affairs.raid" data-testid="enemy-raid">
+              Najazd za {{ state.affairs.raid.dueTurn - state.turn }} tur:
+              {{ armyText(state.affairs.raid.army) }}. Taktyka:
+              {{
+                state.affairs.raid.tactic === 'none'
+                  ? 'bez premii'
+                  : TACTICS[state.affairs.raid.tactic].name
+              }}.
+            </p>
+            <p v-else>
+              Ochrona: {{ Math.max(0, state.affairs.protectedUntil - state.turn) }} tur. Najazd
+              wymaga co najmniej 3 żołnierzy.
+            </p>
+            <p>
+              Wygrana obrona lub wyprawa: +1 przewagi; porażka: −1. Dwa punkty pozwalają zakończyć
+              kampanię.
+            </p>
+            <button type="button" :disabled="disabled" @click="emit('choose', { type: 'truce' })">
+              Opłać rozejm · 12 monet
+            </button>
             <button
               type="button"
-              :disabled="disabled || !!state.affairs.raid"
-              @click="
-                emit('choose', {
-                  type: 'expedition',
-                  army: { spearman: spearmen, archer: archers },
-                })
-              "
+              :disabled="disabled || enemy.advantage < 2"
+              @click="emit('choose', { type: 'negotiate' })"
             >
-              Przygotuj wyprawę
+              Wynegocjuj pokój · 20 monet + 12 żywności
             </button>
-          </details>
+            <details class="expedition">
+              <summary>Wyprawy wojenne</summary>
+              <p>
+                Wybierz oddział. Bitwa i powrót zajmą jedną turę. Reszta armii zostaje w osadzie.
+              </p>
+              <label v-for="unit in UNIT_IDS" :key="unit"
+                >{{ UNITS[unit].name
+                }}<input
+                  v-model.number="troops[unit]"
+                  type="number"
+                  min="0"
+                  :max="state.affairs.army[unit]"
+                  step="1"
+              /></label>
+              <p v-if="enemy.expeditionAvailableTurn > state.turn + 1">
+                Kolejna wyprawa na garnizon: za
+                {{ enemy.expeditionAvailableTurn - state.turn - 1 }} tur.
+              </p>
+              <article v-for="mission in missions" :key="mission.type" class="mission">
+                <strong>{{ mission.title }}</strong>
+                <p>{{ mission.description }}</p>
+                <small v-if="missionError(mission.type)">{{ missionError(mission.type) }}</small>
+                <button
+                  type="button"
+                  :disabled="disabled || !!missionError(mission.type)"
+                  @click="emit('choose', { type: mission.type, army: { ...troops } })"
+                >
+                  {{ mission.title }}
+                </button>
+              </article>
+            </details>
+          </template>
         </template>
-        <p v-if="s.relation === 'subdued'">
-          Pokój został zawarty. Ta osada nie wyśle kolejnych najazdów.
-        </p>
       </article>
     </details>
   </div>
@@ -184,7 +249,7 @@ const hasBarracks = computed(() =>
 }
 .unit-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
   margin: 12px 0;
 }
@@ -262,9 +327,28 @@ const hasBarracks = computed(() =>
   padding: 8px;
   color: #294a39;
 }
-@media (max-width: 480px) {
+@media (max-width: 700px) {
   .unit-grid {
     grid-template-columns: 1fr;
   }
+}
+.campaign-stats {
+  padding: 12px;
+  border: 1px solid #b4bea2;
+  border-radius: 10px;
+  background: #edf0df;
+  margin-top: 12px;
+  overflow-wrap: anywhere;
+}
+.mission {
+  margin: 12px 0;
+  padding: 12px;
+  border: 1px solid #bdc4ac;
+  border-radius: 10px;
+}
+.mission small {
+  display: block;
+  color: #864527;
+  line-height: 1.5;
 }
 </style>

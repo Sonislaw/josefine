@@ -76,7 +76,8 @@ Klocki są osobną grą w `games/blocks/` z własnym silnikiem, lokalnym zapisem
 Strategia turowa z lokalnym zapisem osady, sezonami, odkryciami i trwałymi rangami osady.
 „Głos mieszkańców” dodaje 12 jednorazowych próśb z portretami, postępem i historią pomocy.
 „Za granicą osady” dodaje trzech sąsiadów, koszary, wieżę, dwie jednostki, taktyki bitew, najazdy, rozejm i naprawę uszkodzeń.
-Rangi mają jednorazowe prezenty, historię oraz cztery warianty ratusza; zapis v5 zachowuje kopie v1/v2/v3/v4. Własny silnik i
+„Wojna na pograniczu” rozwija garnizon wroga, jego odbudowę, tarczowników, ulepszenia wojska, przechwycenia i powtarzalne kampanie z czasowym pokojem.
+Rangi mają jednorazowe prezenty, historię oraz cztery warianty ratusza; zapis v6 zachowuje kopie v1/v2/v3/v4/v5. Własny silnik i
 ilustracje SVG w `games/little-kingdom/`; [dokumentacja i reguły](games/little-kingdom/README.md).
 Gra ma własny lazy route, SSG, FAQ, sitemapę i grafikę OG PNG. Publikowana w tym samym projekcie CF.
 
@@ -124,8 +125,8 @@ Grafika OG oraz PNG instalacyjne są wersjami rastrowymi autorskich, kodowych gr
 
 ### Wynik weryfikacji wdrożenia modułu
 
-- 150 testów silników i sesji: zaliczone (21 Warcabów, 20 gry Jeszcze jeden kryształ, 11 Klocków, 63 Małego królestwa, 18 Ostatniej latarni i 17 Nocnego ekspresu), w tym symulacja dziesięciu minut survivalu i kolei, rozwój osady, wszystkie rangi, komplet próśb, migracje v1–v4 → v5 oraz obrona, rozejmy i odbudowa po najeździe.
-- 111 testów przeglądarkowych w systemowym Chrome: zaliczone (12 Warcabów, 15 gry Jeszcze jeden kryształ, 12 Klocków, 44 Małego królestwa, 14 Ostatniej latarni i 14 Nocnego ekspresu). Nowe scenariusze obejmują prognozę bitwy, taktyki, straty, naprawę, dyplomację, wyprawę, migrację i awarię zapisu na ekranach 360/390/1440 px. Mobile jest emulacją, nie pomiarem fizycznego telefonu.
+- 157 testów silników i sesji: zaliczone (21 Warcabów, 20 gry Jeszcze jeden kryształ, 11 Klocków, 70 Małego królestwa, 18 Ostatniej latarni i 17 Nocnego ekspresu). „Wojna na pograniczu” obejmuje wieloletnie kampanie na wszystkich rangach, rozdzielenie wojska wroga, odbudowę, przechwycenia, ulepszenia, straty obu stron, 36 tur pokoju, ponowne kampanie i migracje v1–v5 → v6.
+- 114 testów przeglądarkowych w systemowym Chrome: zaliczone (12 Warcabów, 15 gry Jeszcze jeden kryształ, 12 Klocków, 47 Małego królestwa, 14 Ostatniej latarni i 14 Nocnego ekspresu). Nowe scenariusze obejmują prognozę bitwy, przechwycenie i zakaz ponowienia, tarczownika, ulepszanie, odstęp między wyprawami, czasowy pokój, jego zakończenie, migrację aktywnego najazdu i brak pamięci. Widoki 360/390/1440 px. Mobile jest emulacją, nie pomiarem fizycznego telefonu.
 - Build `npm run build:site -- gry`, kontrola typów i kontrola grafik OG: zaliczone.
 - Kontrola artefaktów `check-gry-build.mjs`: zaliczona. HTML katalogu nie ładuje pakietu samej gry.
 - Test zbudowanej strony w przeglądarce: brak błędów hydratacji, działające czyste URL-e i AI, treść dostępna bez JavaScript, odpowiedź 404 dla nieistniejącej strony.

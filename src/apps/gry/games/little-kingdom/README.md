@@ -7,7 +7,8 @@ Samodzielna strategia turowa: `/gry/male-krolestwo` lokalnie, `/male-krolestwo` 
 - `engine.ts`: czyste typy i reguły, oferta, gospodarka i sezonowość. `resolveTurn(state, action)` zwraca nowy stan, koszt, produkcję, jednorazową nagrodę, nowe odkrycie, bilans oraz zmianę populacji. Nigdy nie mutuje wejścia. Ten sam wynik służy prognozie i zatwierdzeniu.
 - `terrain.ts`: dotychczasowy, niezmieniony generator terenu. Wspólny dla silnika i odkryć, bez cyklicznych importów reguł.
 - `discoveries.ts`: definicje miejsc, koszty, nagrody, rozmieszczenie i premie. Osobne hashe nie zużywają RNG oferty budynków.
-- `storage.ts`: wersjonowany format `{ version: 5, state, tutorialDismissed }`, walidacja i obsługa braku pamięci. Klucz `zgrana:gry:male-krolestwo:v5`. Uszkodzony zapis jest chroniony do jawnego potwierdzenia nowej osady.
+- `storage.ts`: wersjonowany format `{ version: 6, state, tutorialDismissed }`, walidacja i obsługa braku pamięci. Klucz `zgrana:gry:male-krolestwo:v6`. Uszkodzony zapis jest chroniony do jawnego potwierdzenia nowej osady.
+- `campaign.ts`, `campaign-storage.ts`: rzeczywisty garnizon, odbudowa, najazdy, przewaga, pokój i migracja. Cała symulacja pozostaje czysta i bez zegara przeglądarki.
 - `military.ts`, `neighbours.ts`, `battle.ts`: konfiguracja wojska, kontakty i czysta prognoza walki. `DefencePanel.vue`, `BattleSummary.vue`, `MilitaryArt.vue`: panele oraz własne SVG.
 - `progression.ts`: definicje rang, wymagania, prezenty i czyste sprawdzanie awansu. `ProgressionPanel.vue` pokazuje postęp, a `HallArt.vue` cztery sylwetki ratusza w tym samym polu mapy.
 - `requests.ts`: 12 jednorazowych próśb, postęp i polecenia wyboru/odłożenia/przeglądania. `ResidentsPanel.vue` składa panel, a `ResidentPortrait.vue` rysuje portrety SVG.
@@ -135,15 +136,16 @@ Dotknięcie wybiera pole. Przeciąganie przesuwa mapę; dwa palce lub przyciski 
 
 Zapis po każdej turze jest synchroniczny; nie zapisujemy zaznaczenia, kamery ani rozpoczętych gestów. Zamknięcie strony nie zmienia gospodarki. Gra działa bez storage, ale bez gwarancji wznowienia. Karty przeglądarki nie są synchronizowane — ostatni zapis wygrywa. Zapis ma ograniczenia pojemności localStorage; błąd zapisu jest widoczny, a rozgrywka trwa w pamięci.
 
-Odczytujemy kolejno v5 → v4 → v3 → v2 → v1, wyłącznie przy braku nowszego klucza. Poprawny
-starszy zapis migrujemy do v5, zachowując oryginalne bajty kopii. Dodajemy pustą armię,
+Odczytujemy kolejno v6 → v5 → v4 → v3 → v2 → v1, wyłącznie przy braku nowszego klucza. Poprawny
+starszy zapis migrujemy do v6, zachowując oryginalne bajty kopii. Z v5 zachowujemy wojsko, kontakty, uszkodzenia i terminy najazdów;
+dodajemy zero tarczowników i stan kampanii. Starszym zapisom dodajemy pustą armię,
 brak kontaktów i najazdu. Z v4 zachowujemy prośby; starszym wersjom dodajemy pusty stan
 próśb, bez nagród ani zmiany zasobów, tury, budynków, terenu i oferty. Z v3 zachowujemy
 rangę i historię awansów. W v1/v2 ustawiamy rangę Osada i pustą historię awansów;
 z v1 dodatkowo tworzymy pustą kolekcję odkryć. Duża istniejąca osada może zdobywać
 kolejne rangi w następnych zatwierdzonych turach. Uszkodzony nowszy zapis zawsze
 blokuje cofnięcie do starszej kopii. Błąd zapisu migracji pozwala grać w pamięci
-z ostrzeżeniem. Potwierdzony restart zastępuje v5; stare kopie pozostają.
+z ostrzeżeniem. Potwierdzony restart zastępuje v6; stare kopie pozostają.
 
 Walidacja sprawdza rodzaj, deterministyczne położenie, odkryty sektor, unikalność
 miejsca w sektorze, chronologię tur oraz zakaz zabudowy zajętego miejsca. Historia
@@ -151,54 +153,87 @@ awansów musi zawierać dokładnie kolejne rangi 1…rank z rosnącymi turami, n
 Nie sprawdzamy dawnych progów względem obecnej populacji — osiągnięć nie odbieramy.
 Prośby mają znane identyfikatory, jedną aktywną pozycję, unikalną historię najwyżej
 12 wykonań, poprawne rangi i chronologię przyjęcia/wykonania. Brak lub uszkodzenie
-stanu próśb w v4/v5 nie jest cicho naprawiane, aby nie umożliwiać ponownego odbioru nagród.
+stanu próśb w v4/v5/v6 nie jest cicho naprawiane, aby nie umożliwiać ponownego odbioru nagród.
 
-## Za granicą osady — reguły
+## Wojna na pograniczu — reguły
 
 Po Wiosce trzy kolejne eksploracje poznają Brzeziny (dar 8 żywności/4 monety),
-Kamienny Bród (10 drewna/5 kamienia za przyjaźń i 12 monet) oraz Czerwone Wzgórze.
-Wymiana zajmuje turę i jest jednorazowa. Sąsiad zajmuje deterministyczną łąkę poza
-miejscem specjalnym i jego bezpośrednim sąsiedztwem; nie zużywa RNG kart. Maksymalnie trzy kontakty.
+Kamienny Bród (10 drewna/5 kamienia za przyjaźń i 12 monet) i Czerwone Wzgórze.
+Przyjazne wymiany są jednorazowe i zajmują turę. Położenie osad jest deterministyczne,
+poza miejscem specjalnym oraz jego sąsiednimi polami; nie zmienia RNG kart.
 
-Wróg po 12 turach od poznania zapowiada najazd 3 włóczników i 2 łuczników (siła 18).
-Zapowiedź na końcu tury N oznacza bitwę po akcji N+4. Rozejm kosztuje 12 monet i turę,
-odwołuje nawet najazd przypadający na tę turę. Bitwa lub rozejm daje 12 tur ochrony;
-kolejna zapowiedź następuje dopiero na końcu tego okresu. Nie ma czasu offline.
+Wojsko wroga jest rzeczywiste. Docelowa armia zależy od rangi:
+Wioska 3 włóczników/2 łuczników/1 tarczownik; Miasteczko 4/3/2; Małe królestwo 5/4/3.
+Co trzy legalne tury (także podczas pokoju) rekrutuje najwyżej jedną brakującą jednostkę,
+w obrotowej kolejności włócznik/łucznik/tarczownik, pomijając pełne limity typów.
+Limit obejmuje garnizon i wysłany najazd. Awans nie tworzy armii natychmiast.
+Garnizon zmienia taktykę co cztery tury konfliktu, kolejno szyk/ostrzał/szturm.
+Długi pokój zatrzymuje licznik; krótki rozejm daje ochronę, ale kampania trwa dalej.
 
-Zakładka Obrona: jedne koszary (12 drewna/8 kamienia/6 monet) i jedna wieża
-(10 drewna/12 kamienia, +6 siły obrony). Jeden poziom; nie wliczają się do awansów
-i nie zmieniają gospodarczej oferty. Koszary mieszczą 6 najemników. Włócznik kosztuje
-3 drewna/2 monety (siła 4), łucznik 4 drewna/3 monety (siła 3). Rekrutacja lub rozwiązanie
-jednostki to tura; brak zwrotu kosztów. Wojsko nie zajmuje populacji ani domów.
-Utrzymanie: ceil(liczba/3) żywności po cywilach; płacimy dostępne jedzenie, a przy braku
-pełnej racji odchodzi jedna jednostka (najpierw włócznik). Koszar nie wyburzamy z armią.
+Po 12 turach od poznania wróg może ogłosić najazd, jeśli ma co najmniej 3 jednostki.
+Na koniec tury N oddzielamy ceil(2/3) armii, maksymalnie 8 żołnierzy, w kolejności
+naprzemiennej między typami. Partia odchodzi z garnizonu, taktyka zostaje zapisana.
+Atak po akcji N+4 daje pełne cztery tury przygotowań. Po zakończeniu najazdu lub
+rozejmie obowiązuje 12 tur ochrony. Ocalali z najazdu wracają do garnizonu; nie są kopiowani.
+Zwykła wyprawa nie wydłuża ochrony.
 
-Szyk obronny daje +2 na włócznika; ostrzał +2 na łucznika; szturm floor(siła bazowa/4)
-i dodatkową stratę. Wieża dolicza się po taktyce tylko w obronie. Remis wygrywa obrońca.
-Zwycięzca traci ceil(25% oddziału), przy dwukrotnej przewadze 0; przegrany ceil(50%).
-Szturm dodaje jedną stratę, do liczebności oddziału. Giną najpierw włócznicy.
-Wróg ma stały jednorazowy oddział; nie modelujemy jego rannych ani gospodarki.
+Koszary kosztują 12 drewna/8 kamienia/6 monet; wieża 10 drewna/12 kamienia.
+Poziomy koszar dają limit 6/9/12, wieży premię obrony 6/9/12.
+Ulepszenie kosztuje podstawowy koszt razy poziom docelowy; poziom 2 wymaga
+Miasteczka, poziom 3 Małego królestwa. Po jednym budynku; bez wpływu na karty
+gospodarcze i wymagania awansów. Koszar nie wyburzamy z armią.
+
+Włócznik: 3 drewna/2 monety, siła 4. Łucznik: 4 drewna/3 monety, siła 3.
+Tarczownik: 2 drewna/3 kamienia/4 monety, siła 2; dwóch zmniejsza straty oddziału o 1.
+Jedna rekrutacja lub rozwiązanie zajmuje turę. Najemnicy nie zajmują domów i populacji.
+Utrzymanie ceil(liczba/3) żywności po cywilach; przy niepełnej racji odchodzi jedna
+jednostka w kolejności włócznik/łucznik/tarczownik.
+
+Obie strony walczą według tych samych zasad. Szyk daje +2/włócznik oraz +1/tarczownik,
+ostrzał +2/łucznik, szturm floor(50% siły bazowej). Remis wygrywa obrońca, wieża
+pomaga tylko własnej obronie osady. Zwycięzca traci ceil(25%) jednostek, przy dwukrotnej
+przewadze podstawowe straty wynoszą 0; przegrany traci ceil(50%).
+Najpierw odliczamy floor(tarczownicy/2) od strat (minimum 0), potem dodajemy 1 za szturm,
+do liczebności oddziału. Straty obu stron są rzeczywiste, w kolejności typów powyżej.
+Taktyka „none” służy wyłącznie staremu najazdowi w migracji i daje zerowy bonus.
+
+Przechwycenie to jednorazowa wyprawa przeciw nadchodzącemu oddziałowi, bez wieży.
+Zwycięstwo odwołuje najazd; porażka zachowuje jego datę i osłabia partię, bez szkód cywilnych.
+Dostępne do przedostatniej tury ostrzeżenia: w ostatniej wróg jest już pod osadą.
+To zapobiega drugiej bitwie w tej samej turze. Zwykła wyprawa na garnizon jest dostępna
+bez najazdu, raz na 6 tur: jeśli pierwsza zakończyła się w turze T, kolejna może zakończyć
+się w T+6. Brak łupów i automatycznego rozejmu.
+
+Przewaga 0–2: wygrana obrona/przechwycenie/wyprawa +1; porażka -1.
+Krótki rozejm kosztuje 12 monet, zwraca żywy najazd i nie zeruje przewagi.
+Przy przewadze 2 negocjacje za 20 monet/12 żywności zajmują turę i dają 36 tur pokoju,
+także odwołując najazd. Bez najazdu można wymusić pokój bitwą przeciw garnizonowi.
+Zwycięstwo daje 36 tur pokoju i raz na kampanię 12 kamienia/15 monet; przegrana
+zmniejsza przewagę, bez szkód własnej osady i bez dodatkowej ochrony.
+Podczas pokoju wojsko wraca i wróg rekrutuje do limitu. Po zakończeniu tury T+36
+zaczyna się kolejna kampania (numer +1, przewaga i licznik taktyki 0), a nowy najazd
+może być ogłoszony z czteroturowym ostrzeżeniem. Gra nie tworzy przy tym nowych żołnierzy.
 
 Przegrany najazd odbiera cywila, grabi do 10 drewna/6 kamienia/8 żywności/6 monet
 i wyłącza pierwszy działający budynek gospodarczy w porządku y,x. Ratusz, domy i wojsko
-są chronione. Uszkodzenie wyłącza produkcję, premie, cele próśb i nowe awanse.
-Naprawa zachowuje poziom, kosztuje ceil(połowa podstawowego kosztu) i turę; działa przed
-produkcją. Nie można ulepszać uszkodzenia; wyburzenie nie daje materiałów.
-
-Wyprawa przeciw garnizonowi 4 włóczników/2 łuczników (siła 22) zajmuje turę.
-Gracz wybiera oddział, reszta pozostaje w osadzie. Przy zapowiedzi najazdu wyprawa jest
-zablokowana. Zwycięstwo daje raz 12 kamienia/15 monet i trwały pokój. Porażka wyprawy
-nie uszkadza własnej osady; po każdej bitwie obowiązuje okres ochronny.
+są chronione. Uszkodzenie wyłącza produkcję, premie, prośby i nowe awanse.
+Naprawa zachowuje poziom, kosztuje ceil(połowa podstawowego kosztu) i turę; działa
+przed produkcją. Wyburzenie uszkodzonego budynku nie zwraca materiałów.
 
 Kolejność: koszt/akcja → bitwa → produkcja → cywile → utrzymanie wojska → niedobór/przyrost
-→ awans/prośba → łupy i dary dyplomacji. Znaleziska nadal działają przed produkcją.
-Nowa wieża lub rekrut walczą już w turze budowy/rekrutacji. Utrata ostatniego cywila
-nie pozwala na odrodzenie przez sezonowy przyrost. Wybór taktyki i składu nie zużywa tury.
+→ awans/prośba → łupy/dary → odbudowa wroga/zmiana kampanii/nowe ostrzeżenie.
+Nowy rekrut wroga nie uczestniczy we wcześniejszej bitwie. Nowy własny rekrut lub wieża
+walczą już w turze budowy. Śmierć ostatniego cywila blokuje przyrost i kończy grę.
+
+Migracja v5: staremu najazdowi zachowujemy datę i dokładnie 3 włóczników/2 łuczników,
+taktykę none i jedną próbę przechwycenia. Garnizon migracji to dawny oddział 4/2
+pomniejszony o najazd, więc nie dublujemy żołnierzy. Dawny trwały pokój zastępujemy
+36 turami od zapisanej tury, bez zmiany zasobów i zegara. Starsze kopie pozostają.
 
 ## Weryfikacja aktualizacji
 
-Aktualizacja „Za granicą osady” jest pokryta przez `war.test.mjs` i `kingdom-war.spec.mjs`:
-kontakty, najazdy, taktyki, odbudowa, rozejmy, trwały pokój, migracja v4 → v5, pamięć
+Aktualizacja „Wojna na pograniczu” jest pokryta przez `war.test.mjs` i `kingdom-war.spec.mjs`:
+kontakty, najazdy, taktyki obu stron, odbudowa, przechwycenia, rozejmy, czasowy pokój, migracja v5 → v6, pamięć
 bez możliwości zapisu oraz widoki 360/390/1440 px. Fixture pozostaje wyłącznie w testach.
 
 ```sh

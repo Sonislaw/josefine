@@ -112,8 +112,11 @@ export function useKingdom() {
     if (a.type === 'recruit' || a.type === 'dismiss')
       return `${a.type === 'recruit' ? 'Rekrutacja' : 'Rozwiązanie jednostki'}: ${UNITS[a.unit].name}`
     if (a.type === 'truce') return 'Rozejm — 12 tur ochrony'
+    if (a.type === 'negotiate') return 'Negocjacje — 36 tur pokoju'
+    if (a.type === 'intercept') return 'Przechwycenie najazdu'
+    if (a.type === 'forcePeace') return 'Wymuszenie pokoju'
     if (a.type === 'diplomacy') return `Poselstwo: ${SETTLEMENTS[a.id]?.name}`
-    if (a.type === 'expedition') return 'Wyprawa na Czerwone Wzgórze'
+    if (a.type === 'expedition') return 'Wyprawa na garnizon'
     if (a.type === 'explore') return `Odkrycie sektora ${a.x}, ${a.y}`
     if (a.type === 'landmark') {
       const d = state.value.discoveries[key(a.x, a.y)]

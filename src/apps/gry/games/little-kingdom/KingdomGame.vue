@@ -16,6 +16,7 @@ import {
   militaryBuilding,
   upkeep,
   armySize,
+  UNITS,
   type Tactic,
   type MilitaryBuilding,
 } from './military'
@@ -197,8 +198,13 @@ function compass(p: Point) {
       </div>
       <ResourceBar :resources="state.resources" :delta="preview?.delta" />
       <p v-if="state.affairs.raid" class="kingdom-notice danger" role="status">
-        ⚑ Najazd za {{ state.affairs.raid.dueTurn - state.turn }} tur! Wróg: 3 włóczników i 2
-        łuczników. Przygotuj obronę lub opłać rozejm w panelu sąsiadów.
+        ⚑ Najazd za {{ state.affairs.raid.dueTurn - state.turn }} tur! Wróg:
+        {{ armySize(state.affairs.raid.army) }} jednostek. Przechwyć oddział, przygotuj obronę lub
+        opłać rozejm w panelu sąsiadów.
+      </p>
+      <p v-if="state.affairs.enemy?.peaceUntil" class="kingdom-notice">
+        ⚐ Pokój na pograniczu: {{ state.affairs.enemy.peaceUntil - state.turn }} tur. Wróg uzupełnia
+        armię; po pokoju może ogłosić nowy najazd.
       </p>
       <p class="rank-badge" data-testid="kingdom-rank">♜ {{ RANKS[state.rank]!.name }}</p>
       <div class="economy-line">
@@ -361,7 +367,7 @@ function compass(p: Point) {
             >
               <button
                 type="button"
-                v-if="!selectedBuilding.damaged && !militaryBuilding(selectedBuilding.kind)"
+                v-if="!selectedBuilding.damaged"
                 :disabled="blocked || selectedBuilding.level >= 3"
                 @click="choose({ type: 'upgrade', ...selected })"
               >
@@ -445,7 +451,10 @@ function compass(p: Point) {
           </div>
           <div class="turn-preview" :class="{ 'has-action': action }">
             <fieldset
-              v-if="state.affairs.raid || action?.type === 'expedition'"
+              v-if="
+                state.affairs.raid ||
+                (action && ['expedition', 'intercept', 'forcePeace'].includes(action.type))
+              "
               class="tactic-picker"
             >
               <legend>Taktyka bitwy</legend>
@@ -453,7 +462,7 @@ function compass(p: Point) {
                 ><input v-model="tactic" type="radio" name="battle-tactic" :value="t" /><span
                   >{{ TACTICS[t].name }}<small>{{ TACTICS[t].description }}</small></span
                 ></label
-              ><small>Straty dotyczą najpierw włóczników, potem łuczników.</small>
+              ><small>Straty: najpierw włócznicy, potem łucznicy, na końcu tarczownicy.</small>
             </fieldset>
             <p class="eyebrow">NASTĘPNA TURA / {{ SEASONS[seasonIndex] }}</p>
             <h2>{{ actionName }}</h2>
@@ -472,7 +481,22 @@ function compass(p: Point) {
               <p v-if="preview.armyFood || armySize(preview.deserters)">
                 Wojsko zużyje {{ preview.armyFood }} żywności. Odejścia z niedoboru:
                 {{ preview.deserters.spearman }} włóczników i
-                {{ preview.deserters.archer }} łuczników.
+                {{ preview.deserters.archer }} łuczników i
+                {{ preview.deserters.shieldbearer }} tarczowników.
+              </p>
+              <p v-if="preview.campaignUpdate.recruited">
+                Po bitwie i produkcji wróg zrekrutuje:
+                {{ UNITS[preview.campaignUpdate.recruited].name }}.
+              </p>
+              <p v-if="preview.campaignUpdate.peaceEnded">
+                Pokój się kończy — rozpocznie się nowa kampania z zerową przewagą.
+              </p>
+              <p v-if="preview.state.affairs.enemy">
+                Przewaga po turze: {{ preview.state.affairs.enemy.advantage }} / 2.
+                <span v-if="preview.state.affairs.enemy.peaceUntil"
+                  >Pokój:
+                  {{ preview.state.affairs.enemy.peaceUntil - preview.state.turn }} tur.</span
+                >
               </p>
               <p v-if="Object.values(preview.diplomaticReward).some(Boolean)">
                 Dar po wyżywieniu: {{ priceText(preview.diplomaticReward) }}.
@@ -602,29 +626,54 @@ function compass(p: Point) {
     <section class="kingdom-faq">
       <h2>Pytania przed pierwszą wyprawą</h2>
       <details>
+        <summary>Jak działają przechwycenie i przewaga w kampanii?</summary>
+        <p>
+          Przechwycenie jest możliwe raz na najazd, do przedostatniej tury ostrzeżenia. Wybierasz
+          oddział i walczysz poza osadą bez wieży. Zwycięstwo odwołuje atak; porażka osłabia wroga,
+          ale nie zmienia terminu. W ostatniej turze wybierasz obronę lub rozejm. Wygrana obrona
+          albo wyprawa daje 1 punkt przewagi, porażka zabiera 1, w granicach 0–2. Wyprawa na
+          garnizon jest dostępna raz na 6 tur i nie daje łupów.
+        </p>
+      </details>
+      <details>
+        <summary>Czy wróg odbudowuje armię i wraca po pokoju?</summary>
+        <p>
+          Tak. Co 3 tury uzupełnia jedną brakującą jednostkę, również podczas pokoju. Jego docelowa
+          armia ma 6, 9 lub 12 żołnierzy zależnie od rangi gracza. Zmienia taktykę co 4 tury
+          konfliktu; taktyka zapowiedzianego najazdu zostaje ustalona. Dwa punkty przewagi pozwalają
+          zapłacić 20 monet i 12 żywności za pokój albo wygrać bitwę o pokój z łupami 12 kamienia i
+          15 monet, raz na kampanię. Pokój trwa 36 tur, następnie zaczyna się nowa kampania. Każdy
+          nowy najazd jest zapowiadany 4 tury wcześniej.
+        </p>
+      </details>
+      <details>
         <summary>Jak działają najazdy i rozejm?</summary>
         <p>
           Po osiągnięciu Wioski trzy kolejne eksploracje odkrywają Brzeziny, Kamienny Bród i
           Czerwone Wzgórze. Wróg daje 12 tur spokoju, a potem zapowiada najazd z wyprzedzeniem 4
-          tur. Możesz przygotować wojsko i wieżę albo zapłacić 12 monet za rozejm. Po starciu lub
-          rozejmie masz 12 tur ochrony. Zamknięcie strony nie przyspiesza ataku.
+          tur, jeśli ma co najmniej 3 żołnierzy. Oddział odchodzi z garnizonu i nie broni go
+          jednocześnie. Możesz przechwycić najazd, przygotować wojsko i wieżę albo zapłacić 12 monet
+          za rozejm. Po zakończeniu najazdu lub rozejmie masz 12 tur ochrony. Zwykła wyprawa nie
+          przedłuża ochrony. Zamknięcie strony nie przyspiesza ataku.
         </p>
       </details>
       <details>
         <summary>Jak wygrywać bitwy i odbudować osadę?</summary>
         <p>
-          Koszary mieszczą 6 najemników. Wybierz szyk obronny (+2 siły na włócznika), ostrzał (+2 na
-          łucznika) lub szturm (+25% siły i dodatkowa strata jednostki). Wieża daje +6 siły w
-          obronie. Remis wygrywa obrońca. Prognoza pokazuje dokładny wynik i straty przed
-          zatwierdzeniem.
+          Koszary mieszczą 6, 9 lub 12 najemników. Wybierz szyk obronny (+2 siły na włócznika i +1
+          na tarczownika), ostrzał (+2 na łucznika) lub szturm (+50% siły i dodatkowa strata
+          jednostki). Wieża daje +6, +9 lub +12 siły w obronie. Remis wygrywa obrońca. Prognoza
+          pokazuje dokładny wynik i straty przed zatwierdzeniem.
         </p>
         <p>
           Zwycięstwo kosztuje 25% oddziału, a porażka 50%, zaokrąglając w górę. Zwycięstwo z
-          dwukrotną przewagą nie kosztuje jednostek. Szturm dodaje jedną stratę. Najpierw tracisz
-          włóczników. Przegrany najazd odbiera mieszkańca, grabi do 10 drewna, 6 kamienia, 8
-          żywności i 6 monet oraz uszkadza jeden budynek gospodarczy. Naprawa kosztuje połowę
-          podstawowych materiałów, w górę, i jedną turę. Ratusz, domy i infrastruktura wojskowa są
-          chronione. Pokonanie garnizonu kończy najazdy.
+          dwukrotną przewagą nie powoduje podstawowych strat. Każdych dwóch tarczowników zmniejsza
+          je o jedną jednostkę; potem szturm dodaje jedną stratę. Najpierw tracisz włóczników,
+          następnie łuczników i tarczowników. Wróg też ponosi straty. Przegrany najazd odbiera
+          mieszkańca, grabi do 10 drewna, 6 kamienia, 8 żywności i 6 monet oraz uszkadza jeden
+          budynek gospodarczy. Naprawa kosztuje połowę podstawowych materiałów, w górę, i jedną
+          turę. Ratusz, domy i infrastruktura wojskowa są chronione. Dwa punkty przewagi pozwalają
+          wynegocjować lub wymusić pokój na 36 tur.
         </p>
       </details>
       <details>
@@ -752,7 +801,7 @@ function compass(p: Point) {
         </li>
         <li>
           Buduj na łąkach. Sąsiedztwo czterech krawędzi daje premie. Budynki gospodarcze ulepszysz
-          do poziomu 3; wojskowe mają jeden poziom.
+          do poziomu 3. Wojskowy poziom 2 wymaga Miasteczka, a 3 Małego królestwa.
         </li>
         <li>
           Oferta gospodarcza zmienia się wyłącznie po budowie gospodarczej. Zawsze zawiera farmę.

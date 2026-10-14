@@ -72,7 +72,11 @@ withDefaults(
     <DiscoveryArt v-if="discovery" :discovery="discovery" />
     <g v-if="building" stroke-linejoin="round">
       <ellipse cx="33" cy="51" rx="23" ry="6" fill="#344e3e" opacity=".18" />
-      <MilitaryArt v-if="militaryBuilding(building.kind)" :kind="building.kind" />
+      <MilitaryArt
+        v-if="militaryBuilding(building.kind)"
+        :kind="building.kind"
+        :level="building.level"
+      />
       <g v-else-if="building.kind === 'farm'"
         ><rect x="10" y="16" width="44" height="36" rx="4" fill="#98704d" /><path
           d="M15 24h34M15 34h34M15 44h34"

@@ -13,25 +13,48 @@ defineProps<{ report: BattleReport; preview?: boolean }>()
   >
     <strong
       >{{ preview ? 'Prognoza' : 'Raport' }}: {{ report.victory ? 'zwycięstwo' : 'porażka' }} ·
-      {{ report.defending ? 'Obrona osady' : 'Wyprawa' }}</strong
+      {{
+        {
+          defence: 'Obrona osady',
+          expedition: 'Wyprawa na garnizon',
+          intercept: 'Przechwycenie najazdu',
+          forcePeace: 'Wymuszenie pokoju',
+        }[report.kind]
+      }}</strong
     >
     <div class="armies">
       <div>
         <svg viewBox="0 0 64 64"><MilitaryArt kind="spearman" /></svg
         ><b>Twoi: {{ report.strength }}</b
-        ><span>{{ report.army.spearman }} włóczników · {{ report.army.archer }} łuczników</span>
+        ><span
+          >{{ report.army.spearman }} włóczników · {{ report.army.archer }} łuczników ·
+          {{ report.army.shieldbearer }} tarczowników</span
+        >
       </div>
       <div>
         <svg viewBox="0 0 64 64"><MilitaryArt kind="archer" hostile /></svg
         ><b>Wróg: {{ report.enemyStrength }}</b
-        ><span>{{ report.enemy.spearman }} włóczników · {{ report.enemy.archer }} łuczników</span>
+        ><span
+          >{{ report.enemy.spearman }} włóczników · {{ report.enemy.archer }} łuczników ·
+          {{ report.enemy.shieldbearer }} tarczowników</span
+        >
       </div>
     </div>
-    <p>{{ TACTICS[report.tactic].name }}. Remis wygrywa obrońca.</p>
     <p>
-      Straty: {{ report.losses.spearman }} włóczników, {{ report.losses.archer }} łuczników.
-      Mieszkańcy: −{{ report.populationLost }}.
+      {{ TACTICS[report.tactic].name }}. Wróg:
+      {{
+        report.enemyTactic === 'none' ? 'bez premii taktycznej' : TACTICS[report.enemyTactic].name
+      }}. Remis wygrywa obrońca.
     </p>
+    <p>
+      Twoje straty: {{ report.losses.spearman }} włóczników, {{ report.losses.archer }} łuczników,
+      {{ report.losses.shieldbearer }} tarczowników. Mieszkańcy: −{{ report.populationLost }}.
+    </p>
+    <p>
+      Straty wroga: {{ report.enemyLosses.spearman }} włóczników,
+      {{ report.enemyLosses.archer }} łuczników, {{ report.enemyLosses.shieldbearer }} tarczowników.
+    </p>
+    <p v-if="report.outcome">{{ report.outcome }}</p>
     <p v-if="report.damaged">
       Uszkodzony budynek: {{ report.damaged.x }}, {{ report.damaged.y }}. Produkcja i premie
       wyłączone do naprawy.
@@ -40,7 +63,7 @@ defineProps<{ report: BattleReport; preview?: boolean }>()
       Grabież: {{ resourceList(report.plunder) }}.
     </p>
     <p v-if="Object.values(report.loot).some(Boolean)">
-      Łupy po wyżywieniu: {{ resourceList(report.loot) }}. Czerwone Wzgórze nie będzie już napadać.
+      Łupy po wyżywieniu: {{ resourceList(report.loot) }}. Pokój trwa 36 tur.
     </p>
   </section>
 </template>

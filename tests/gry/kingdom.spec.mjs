@@ -3,7 +3,7 @@ import { createJiti } from 'jiti'
 const jiti = createJiti(import.meta.url)
 const { newKingdom } = await jiti.import('../../src/apps/gry/games/little-kingdom/engine.ts')
 const url = '/gry/male-krolestwo',
-  key = 'zgrana:gry:male-krolestwo:v5'
+  key = 'zgrana:gry:male-krolestwo:v6'
 async function prepare(page, state = newKingdom(42)) {
   await page.addInitScript(
     ({ state, key }) => {
@@ -13,7 +13,7 @@ async function prepare(page, state = newKingdom(42)) {
           key,
           typeof state === 'string'
             ? state
-            : JSON.stringify({ version: 5, state, tutorialDismissed: true }),
+            : JSON.stringify({ version: 6, state, tutorialDismissed: true }),
         )
         sessionStorage.setItem('kingdom-fixture', '1')
       }
@@ -37,7 +37,7 @@ test('catalog, own lazy route, title, illustration and FAQ', async ({ page }) =>
     'content',
     /\/og\/little-kingdom.png$/,
   )
-  await expect(page.locator('.kingdom-faq details')).toHaveCount(13)
+  await expect(page.locator('.kingdom-faq details')).toHaveCount(15)
   await expect(tile(page, '3,3')).toHaveAttribute('aria-label', /Ratusz/)
 })
 for (const [width, height] of [

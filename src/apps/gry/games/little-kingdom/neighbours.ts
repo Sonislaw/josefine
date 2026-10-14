@@ -1,6 +1,7 @@
 import type { Kingdom, Point } from './engine'
 import { SIZE, terrain } from './terrain'
 import { supplies, type Army, emptyArmy } from './military'
+import type { EnemyCampaign, Raid } from './campaign'
 
 export const SETTLEMENTS = [
   {
@@ -22,12 +23,12 @@ export const SETTLEMENTS = [
     reward: supplies(),
   },
 ] as const
-export type Relation = 'friendly' | 'neutral' | 'hostile' | 'subdued'
+export type Relation = 'friendly' | 'neutral' | 'hostile' | 'peaceful'
 export const RELATIONS: Record<Relation, string> = {
   friendly: 'Przyjazna',
   neutral: 'Neutralna',
   hostile: 'Wroga',
-  subdued: 'Podporządkowana — pokój',
+  peaceful: 'Pokój na pograniczu',
 }
 export interface Settlement extends Point {
   id: number
@@ -38,14 +39,16 @@ export interface Settlement extends Point {
 export interface ForeignAffairs {
   army: Army
   settlements: Settlement[]
-  raid: { announcedTurn: number; dueTurn: number } | null
+  raid: Raid | null
   protectedUntil: number
+  enemy: EnemyCampaign | null
 }
 export const emptyAffairs = (): ForeignAffairs => ({
   army: emptyArmy(),
   settlements: [],
   raid: null,
   protectedUntil: 0,
+  enemy: null,
 })
 /** Separate coordinate hash: exploration never draws from the building-card RNG. */
 export function settlementPosition(seed: number, sector: Point, excluded: Point): Point {

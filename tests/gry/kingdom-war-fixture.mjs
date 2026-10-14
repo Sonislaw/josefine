@@ -27,14 +27,18 @@ export function warKingdom(seed = 42) {
   for (let x = 1; x <= 3; x++) s = resolveTurn(s, { type: 'explore', x, y: 0 }).state
   return s
 }
-export function beforeRaid(army = { spearman: 0, archer: 0 }, tower = false) {
+export function beforeRaid(
+  army = { spearman: 0, archer: 0, shieldbearer: 0 },
+  tower = false,
+  turns = 1,
+) {
   let s = warKingdom()
   s = resolveTurn(s, { type: 'build', kind: 'barracks', ...emptyPlot(s) }).state
-  s.affairs.army = { ...army }
+  s.affairs.army = { shieldbearer: 0, ...army }
   if (tower) s = resolveTurn(s, { type: 'build', kind: 'watchtower', ...emptyPlot(s) }).state
   const p = emptyPlot(s)
   s.buildings[key(p.x, p.y)] = { ...p, kind: 'farm', level: 2 }
-  while (!s.affairs.raid || s.turn < s.affairs.raid.dueTurn - 1)
+  while (!s.affairs.raid || s.turn < s.affairs.raid.dueTurn - turns)
     s = resolveTurn(s, { type: 'gather' }).state
   return s
 }

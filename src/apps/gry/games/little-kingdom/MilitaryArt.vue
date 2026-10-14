@@ -1,13 +1,14 @@
 <script setup lang="ts">
 defineProps<{
-  kind: 'barracks' | 'watchtower' | 'settlement' | 'spearman' | 'archer'
+  kind: 'barracks' | 'watchtower' | 'settlement' | 'spearman' | 'archer' | 'shieldbearer'
   hostile?: boolean
+  level?: number
 }>()
 </script>
 <template>
   <g aria-hidden="true" stroke="#344c42" stroke-linejoin="round" stroke-width="1.5">
     <ellipse cx="32" cy="54" rx="24" ry="6" fill="#284436" opacity=".15" stroke="none" />
-    <g v-if="kind === 'spearman' || kind === 'archer'">
+    <g v-if="kind === 'spearman' || kind === 'archer' || kind === 'shieldbearer'">
       <path d="M22 42l-4 15h10l4-13 4 13h10l-5-18" fill="#5b665c" />
       <path d="M21 26h20l5 20H17z" :fill="hostile ? '#ac6047' : '#5b846e'" />
       <circle cx="31" cy="18" r="10" fill="#e5b98b" />
@@ -19,10 +20,16 @@ defineProps<{
           fill="#d2dad4" /><path d="M12 28h16v16l-8 7-8-7z" fill="#d7b761" /><path
           d="M20 31v15m-5-10h10"
       /></g>
-      <g v-else
+      <g v-else-if="kind === 'archer'"
         ><path d="M45 15q22 18 0 35" fill="none" stroke="#ac7d45" stroke-width="3" /><path
           d="M45 15v35M39 32h22m-5-4 5 4-5 4"
           fill="none"
+      /></g>
+      <g v-else
+        ><path d="M12 27h30v18l-15 13-15-13z" fill="#95b8ac" stroke-width="2" /><path
+          d="M27 31v19m-10-11h20"
+          stroke="#e4dfb7"
+          stroke-width="3" /><path d="M49 23v24m-5-19h10" stroke="#b4c1bc" stroke-width="3"
       /></g>
     </g>
     <g v-else-if="kind === 'watchtower'">
@@ -54,5 +61,11 @@ defineProps<{
           :fill="hostile ? '#bd6347' : '#e2bf69'"
       /></g>
     </g>
+    <g v-if="(level ?? 1) > 1 && (kind === 'watchtower' || kind === 'barracks')"
+      ><path d="M6 54V39h8v15m36 0V39h8v15" fill="#83988c" /><path
+        v-if="level === 3"
+        d="M7 38V25l13 3-13 5m46 5V25l10 3-10 5"
+        fill="#ecd078"
+    /></g>
   </g>
 </template>

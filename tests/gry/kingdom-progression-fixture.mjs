@@ -49,8 +49,22 @@ export function developedKingdom(rank = 0) {
   })
   return s
 }
-export const encode = (state, version = 5) => {
+export const encode = (state, version = 6) => {
   const copy = structuredClone(state)
+  if (version === 5) {
+    delete copy.affairs.enemy
+    delete copy.affairs.army.shieldbearer
+    if (copy.affairs.raid) {
+      delete copy.affairs.raid.army
+      delete copy.affairs.raid.tactic
+      delete copy.affairs.raid.intercepted
+    }
+    const hostile = copy.affairs.settlements.find((c) => c.id === 2)
+    if (hostile?.relation === 'peaceful') {
+      hostile.relation = 'subdued'
+      copy.affairs.protectedUntil = copy.turn + 12
+    }
+  }
   if (version < 5) delete copy.affairs
   if (version < 4) delete copy.requests
   if (version < 3) {
