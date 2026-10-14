@@ -6,12 +6,12 @@ const j = createJiti(import.meta.url)
 const { resolveTurn, newKingdom } = await j.import(
   '../../src/apps/gry/games/little-kingdom/engine.ts',
 )
-const key = 'zgrana:gry:male-krolestwo:v6',
+const key = 'zgrana:gry:male-krolestwo:v7',
   oldKey = 'zgrana:gry:male-krolestwo:v5',
   url = '/gry/male-krolestwo'
 const stored = (page) => page.evaluate((k) => JSON.parse(localStorage.getItem(k)), key)
 const commit = (page) => page.getByRole('button', { name: 'Zatwierdź turę' })
-async function prepare(page, state, version = 6) {
+async function prepare(page, state, version = 7) {
   await page.addInitScript(
     ({ raw, k }) => {
       localStorage.setItem('josefine:cookie-notice:dismissed:gry', '1')
@@ -50,7 +50,7 @@ for (const [width, height] of [
       await page.setViewportSize({ width, height })
       await prepare(page, s)
       await page.goto(url)
-      await expect(page.getByText('⚑ Najazd za 1 tur!')).toBeVisible()
+      await expect(page.getByText('Czerwone Wzgórze: najazd za 1 tur!')).toBeVisible()
       await openPanel(page, 'Obrona osady')
       await expect(
         page.getByRole('button', { name: 'Rekrutuj: Tarczownik', exact: true }),
@@ -97,6 +97,7 @@ test('successful interception shows exact enemy losses and keeps troop pools aft
   await expect(page.getByRole('region', { name: 'Prognoza bitwy' })).toContainText('Przechwycenie')
   const forecast = resolveTurn(s, {
     type: 'intercept',
+    enemyId: 2,
     army: { ...s.affairs.army },
     tactic: 'guard',
   })
@@ -195,8 +196,8 @@ test('gifts, two battles, cooldown and forcePeace pay once, with persistent temp
   )
   await commit(page).click()
   const saved = (await stored(page)).state
-  expect(saved.affairs.enemy.peaceUntil).toBe(saved.turn + 36)
-  expect(saved.affairs.enemy.lootCampaign).toBe(1)
+  expect(saved.affairs.enemies[2].peaceUntil).toBe(saved.turn + 36)
+  expect(saved.affairs.enemies[2].lootCampaign).toBe(1)
   await page.reload()
   await openPanel(page, 'Sąsiednie osady')
   await expect(page.getByTestId('campaign-peace')).toContainText('36 tur')
@@ -204,8 +205,8 @@ test('gifts, two battles, cooldown and forcePeace pay once, with persistent temp
 })
 test('negotiation expires with new campaign and full four-turn warning', async ({ page }) => {
   let s = beforeRaid()
-  s.affairs.enemy.advantage = 2
-  s = resolveTurn(s, { type: 'negotiate' }).state
+  s.affairs.enemies[2].advantage = 2
+  s = resolveTurn(s, { type: 'negotiate', enemyId: 2 }).state
   for (let i = 0; i < 35; i++) s = resolveTurn(s, { type: 'gather' }).state
   await prepare(page, s)
   await page.goto(url)
@@ -213,10 +214,10 @@ test('negotiation expires with new campaign and full four-turn warning', async (
   await expect(page.locator('.turn-preview')).toContainText('Pokój się kończy')
   await expect(page.locator('.turn-preview')).toContainText('za 4 tur')
   await commit(page).click()
-  expect((await stored(page)).state.affairs.enemy.campaign).toBe(2)
+  expect((await stored(page)).state.affairs.enemies[2].campaign).toBe(2)
   expect((await stored(page)).state.affairs.raid.dueTurn).toBe(s.turn + 5)
   await page.reload()
-  await expect(page.getByText('⚑ Najazd za 4 tur!')).toBeVisible()
+  await expect(page.getByText('Czerwone Wzgórze: najazd za 4 tur!')).toBeVisible()
 })
 test('v5 active raid migration preserves old bytes, and corrupt v6 blocks fallback until restart', async ({
   page,
@@ -240,7 +241,7 @@ test('v5 active raid migration preserves old bytes, and corrupt v6 blocks fallba
     archer: 0,
     shieldbearer: 0,
   })
-  expect((await stored(page)).state.affairs.enemy).toBeNull()
+  expect((await stored(page)).state.affairs.enemies).toEqual({})
 })
 test('quota failure allows in-memory combat and preserves stored campaign', async ({ page }) => {
   const s = beforeRaid({ spearman: 4, archer: 0, shieldbearer: 0 }, true)
@@ -248,7 +249,7 @@ test('quota failure allows in-memory combat and preserves stored campaign', asyn
   await page.addInitScript(() => {
     const write = Storage.prototype.setItem
     Storage.prototype.setItem = function (k, v) {
-      if (k === 'zgrana:gry:male-krolestwo:v6' && sessionStorage.getItem('war-fixture'))
+      if (k === 'zgrana:gry:male-krolestwo:v7' && sessionStorage.getItem('war-fixture'))
         throw Error('quota')
       return write.call(this, k, v)
     }

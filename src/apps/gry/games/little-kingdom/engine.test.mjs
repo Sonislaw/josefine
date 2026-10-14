@@ -29,7 +29,7 @@ const {
   PREVIOUS_KEY,
   LEGACY_KEY,
 } = await jiti.import('./storage.ts')
-const serialize = (state) => JSON.stringify({ version: 6, state, tutorialDismissed: true })
+const serialize = (state) => JSON.stringify({ version: 7, state, tutorialDismissed: true })
 const rich = () => ({
   ...newKingdom(42),
   resources: { wood: 5000, stone: 5000, food: 5000, gold: 5000 },
@@ -227,7 +227,7 @@ test('valid storage round-trip, unavailable port and corrupted saves', () => {
   const s = newKingdom(123),
     raw = serialize(s)
   assert.deepEqual(decode(raw), { state: s, tutorialDismissed: true })
-  for (const v of ['', '{', '{}', JSON.stringify({ version: 7, state: s })])
+  for (const v of ['', '{', '{}', JSON.stringify({ version: 8, state: s })])
     assert.equal(decode(v), null)
   for (const mutate of [
     (s) => (s.resources.food = -1),
@@ -246,9 +246,15 @@ test('valid storage round-trip, unavailable port and corrupted saves', () => {
   const memory = {
     getItem: (k) => {
       assert.ok(
-        [SAVE_KEY, WARFARE_KEY, REQUESTS_KEY, PROGRESSION_KEY, PREVIOUS_KEY, LEGACY_KEY].includes(
-          k,
-        ),
+        [
+          SAVE_KEY,
+          'zgrana:gry:male-krolestwo:v6',
+          WARFARE_KEY,
+          REQUESTS_KEY,
+          PROGRESSION_KEY,
+          PREVIOUS_KEY,
+          LEGACY_KEY,
+        ].includes(k),
       )
       if (k !== SAVE_KEY) return null
       return stored

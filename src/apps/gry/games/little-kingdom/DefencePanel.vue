@@ -1,52 +1,21 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { actionError, type Kingdom, type Action, type Point } from './engine'
-import {
-  UNITS,
-  UNIT_IDS,
-  WAR,
-  TACTICS,
-  armySize,
-  upkeep,
-  upkeepGold,
-  armyCapacity,
-  type Army,
-} from './military'
-import { enemyTactic, enemyTarget, enemyDefence } from './campaign'
-import { SETTLEMENTS, RELATIONS } from './neighbours'
+import { type Kingdom, type Action, type Point } from './engine'
+import { UNITS, UNIT_IDS, armySize, upkeep, upkeepGold, armyCapacity } from './military'
+import { settlementDefinition, RELATIONS } from './neighbours'
+import EnemyCastlePanel from './EnemyCastlePanel.vue'
 import { resourceList } from './format'
 import MilitaryArt from './MilitaryArt.vue'
 const props = defineProps<{ state: Kingdom; disabled: boolean }>()
 const emit = defineEmits<{ choose: [Action]; locate: [Point] }>()
-const troops = ref<Army>({ spearman: 0, archer: 0, shieldbearer: 0 })
+const visibleContacts = ref(5)
+const shownSettlements = computed(() =>
+  props.state.affairs.settlements.slice(0, visibleContacts.value),
+)
 const barracks = computed(() =>
   Object.values(props.state.buildings).find((b) => b.kind === 'barracks'),
 )
-const enemy = computed(() => props.state.affairs.enemy)
 const limit = computed(() => armyCapacity(barracks.value?.level ?? 0))
-const missions = [
-  {
-    type: 'intercept' as const,
-    title: 'Przechwyć najazd',
-    description:
-      'Jedna próba na najazd, do przedostatniej tury ostrzeżenia. Walka poza osadą, bez wieży. Zwycięstwo odwołuje najazd; porażka zachowuje termin.',
-  },
-  {
-    type: 'expedition' as const,
-    title: 'Wyprawa na garnizon',
-    description:
-      'Osłab garnizon i zdobywaj przewagę. Raz na 6 tur, bez najazdu w drodze. Brak łupów i dodatkowego okresu ochronnego.',
-  },
-  {
-    type: 'forcePeace' as const,
-    title: 'Wymuś pokój',
-    description:
-      'Wymaga 2 punktów przewagi i braku najazdu. Zwycięstwo daje 36 tur pokoju oraz raz na kampanię 12 kamienia i 15 monet.',
-  },
-]
-const missionError = (type: 'intercept' | 'expedition' | 'forcePeace') =>
-  actionError(props.state, { type, army: troops.value })
-const armyText = (a: Army) => UNIT_IDS.map((u) => UNITS[u].name + ': ' + a[u]).join(' · ')
 </script>
 <template>
   <div class="frontier-panels">
@@ -98,33 +67,36 @@ const armyText = (a: Army) => UNIT_IDS.map((u) => UNITS[u].name + ': ' + a[u]).j
     </details>
     <details class="defence-panel">
       <summary>
-        Sąsiednie osady <span>{{ state.affairs.settlements.length }} / 3 kontakty</span>
+        Sąsiednie osady <span>{{ state.affairs.settlements.length }} kontaktów</span>
       </summary>
       <p v-if="!state.affairs.settlements.length">
         Po awansie do Wioski odkrywaj nowe sektory, aby poznać sąsiadów.
       </p>
-      <article v-for="s in state.affairs.settlements" :key="s.id" class="neighbour">
+      <article v-for="s in shownSettlements" :key="s.id" class="neighbour">
         <div class="neighbour-title">
           <svg viewBox="0 0 64 64">
-            <MilitaryArt kind="settlement" :hostile="s.relation === 'hostile'" />
+            <MilitaryArt
+              :kind="s.relation === 'ruins' ? 'ruins' : 'settlement'"
+              :hostile="s.relation === 'hostile'"
+            />
           </svg>
           <div>
-            <h3>{{ SETTLEMENTS[s.id]!.name }}</h3>
+            <h3>{{ settlementDefinition(s.id).name }}</h3>
             <strong>{{ RELATIONS[s.relation] }}</strong>
           </div>
         </div>
         <p>
           {{
-            s.id === 2
-              ? 'Armia wroga ponosi straty, odbudowuje się i zmienia taktykę. Walcz o przewagę lub opłać rozejm.'
-              : SETTLEMENTS[s.id]!.description
+            s.id >= 2
+              ? 'Każdy zamek ma własną armię, skarbiec i wytrzymałość. Wyprawy grabią zapasy i mogą zamienić go w zgliszcza.'
+              : settlementDefinition(s.id).description
           }}
         </p>
         <button type="button" @click="emit('locate', s)">Pokaż na mapie ↗</button>
         <template v-if="s.id < 2 && !s.giftTaken">
           <p>
-            Koszt: {{ resourceList(SETTLEMENTS[s.id]!.cost) }}. Otrzymasz:
-            {{ resourceList(SETTLEMENTS[s.id]!.reward) }}.
+            Koszt: {{ resourceList(settlementDefinition(s.id).cost) }}. Otrzymasz:
+            {{ resourceList(settlementDefinition(s.id).reward) }}.
           </p>
           <button
             type="button"
@@ -135,85 +107,21 @@ const armyText = (a: Army) => UNIT_IDS.map((u) => UNITS[u].name + ': ' + a[u]).j
           </button>
         </template>
         <p v-else-if="s.id < 2">Wymiana zakończona. Sąsiedzi pozostają przyjaźni.</p>
-        <template v-if="s.id === 2 && enemy">
-          <div class="campaign-stats">
-            <strong>Kampania {{ enemy.campaign }} · Przewaga {{ enemy.advantage }} / 2</strong>
-            <p data-testid="enemy-garrison">Garnizon: {{ armyText(enemy.garrison) }}</p>
-            <p>
-              Taktyka garnizonu: {{ TACTICS[enemyTactic(enemy)].name }}. Zmiana co 4 tury konfliktu.
-              Obrona garnizonu: +{{ enemyDefence(state.rank) }} siły; poza osadą nie działa.
-            </p>
-            <p>
-              Odbudowa za {{ Math.max(1, WAR.recovery - enemy.recovery) }} tur: najwyżej jedna
-              brakująca jednostka. Cel łącznie: {{ armyText(enemyTarget(state.rank)) }}.
-            </p>
-          </div>
-          <p v-if="enemy.peaceUntil !== null" data-testid="campaign-peace">
-            Pokój: jeszcze {{ enemy.peaceUntil - state.turn }} tur. Wróg uzupełnia garnizon, ale nie
-            wysyła najazdów. Po pokoju przewaga się zeruje i może nadejść nowe ostrzeżenie.
-          </p>
-          <template v-else>
-            <p v-if="state.affairs.raid" data-testid="enemy-raid">
-              Najazd za {{ state.affairs.raid.dueTurn - state.turn }} tur:
-              {{ armyText(state.affairs.raid.army) }}. Taktyka:
-              {{
-                state.affairs.raid.tactic === 'none'
-                  ? 'bez premii'
-                  : TACTICS[state.affairs.raid.tactic].name
-              }}.
-            </p>
-            <p v-else>
-              Ochrona: {{ Math.max(0, state.affairs.protectedUntil - state.turn) }} tur. Najazd
-              wymaga co najmniej 3 żołnierzy.
-            </p>
-            <p>
-              Wygrana obrona lub wyprawa: +1 przewagi; porażka: −1. Dwa punkty pozwalają zakończyć
-              kampanię.
-            </p>
-            <button type="button" :disabled="disabled" @click="emit('choose', { type: 'truce' })">
-              Opłać rozejm · {{ WAR.truce.gold }} monet
-            </button>
-            <button
-              type="button"
-              :disabled="disabled || enemy.advantage < 2"
-              @click="emit('choose', { type: 'negotiate' })"
-            >
-              Wynegocjuj pokój · {{ WAR.negotiate.gold }} monet + {{ WAR.negotiate.food }} żywności
-            </button>
-            <details class="expedition">
-              <summary>Wyprawy wojenne</summary>
-              <p>
-                Wybierz oddział. Bitwa i powrót zajmą jedną turę. Reszta armii zostaje w osadzie.
-              </p>
-              <label v-for="unit in UNIT_IDS" :key="unit"
-                >{{ UNITS[unit].name
-                }}<input
-                  v-model.number="troops[unit]"
-                  type="number"
-                  min="0"
-                  :max="state.affairs.army[unit]"
-                  step="1"
-              /></label>
-              <p v-if="enemy.expeditionAvailableTurn > state.turn + 1">
-                Kolejna wyprawa na garnizon: za
-                {{ enemy.expeditionAvailableTurn - state.turn - 1 }} tur.
-              </p>
-              <article v-for="mission in missions" :key="mission.type" class="mission">
-                <strong>{{ mission.title }}</strong>
-                <p>{{ mission.description }}</p>
-                <small v-if="missionError(mission.type)">{{ missionError(mission.type) }}</small>
-                <button
-                  type="button"
-                  :disabled="disabled || !!missionError(mission.type)"
-                  @click="emit('choose', { type: mission.type, army: { ...troops } })"
-                >
-                  {{ mission.title }}
-                </button>
-              </article>
-            </details>
-          </template>
-        </template>
+        <EnemyCastlePanel
+          v-if="s.id >= 2"
+          :state="state"
+          :settlement="s"
+          :disabled="disabled"
+          @choose="emit('choose', $event)"
+        />
       </article>
+      <button
+        v-if="visibleContacts < state.affairs.settlements.length"
+        type="button"
+        @click="visibleContacts += 5"
+      >
+        Pokaż więcej osad
+      </button>
     </details>
   </div>
 </template>
@@ -310,48 +218,9 @@ const armyText = (a: Army) => UNIT_IDS.map((u) => UNITS[u].name + ': ' + a[u]).j
   outline: 3px solid #916528;
   outline-offset: 3px;
 }
-.expedition {
-  margin-top: 12px;
-  border-top: 1px solid #bdc4ac;
-}
-.expedition label {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin: 8px 0;
-}
-.expedition input {
-  width: 90px;
-  min-height: 44px;
-  background: white;
-  border: 1px solid #7c9077;
-  border-radius: 8px;
-  padding: 8px;
-  color: #294a39;
-}
 @media (max-width: 700px) {
   .unit-grid {
     grid-template-columns: 1fr;
   }
-}
-.campaign-stats {
-  padding: 12px;
-  border: 1px solid #b4bea2;
-  border-radius: 10px;
-  background: #edf0df;
-  margin-top: 12px;
-  overflow-wrap: anywhere;
-}
-.mission {
-  margin: 12px 0;
-  padding: 12px;
-  border: 1px solid #bdc4ac;
-  border-radius: 10px;
-}
-.mission small {
-  display: block;
-  color: #864527;
-  line-height: 1.5;
 }
 </style>

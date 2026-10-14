@@ -13,8 +13,15 @@ import { DISCOVERIES, blocksBuilding, discoveryForSector, type Discovery } from 
 import { REQUESTS, REQUEST_IDS, emptyRequests } from './requests'
 import { emptyAffairs, settlementPosition } from './neighbours'
 import { militaryBuilding, WAR } from './military'
-import { migrateWarfare, validateCampaign } from './campaign-storage'
-export const SAVE_KEY = 'zgrana:gry:male-krolestwo:v6'
+import { castleAppears } from './castles'
+import { migrateCastles, validateCampaign } from './campaign-storage'
+import {
+  migrateWarfare,
+  validateLegacyCampaign,
+  type LegacyKingdom,
+} from './legacy-campaign-storage'
+export const SAVE_KEY = 'zgrana:gry:male-krolestwo:v7'
+export const CAMPAIGN_KEY = 'zgrana:gry:male-krolestwo:v6'
 export const WARFARE_KEY = 'zgrana:gry:male-krolestwo:v5'
 export const REQUESTS_KEY = 'zgrana:gry:male-krolestwo:v4'
 export const PROGRESSION_KEY = 'zgrana:gry:male-krolestwo:v3'
@@ -37,13 +44,16 @@ const coordinate = (v: unknown): v is number =>
   Number.isSafeInteger(v) && Math.abs(v as number) <= Math.floor(Number.MAX_SAFE_INTEGER / 7) - 1
 export function decode(
   raw: string,
-  version: 1 | 2 | 3 | 4 | 5 | 6 = 6,
+  version: 1 | 2 | 3 | 4 | 5 | 6 | 7 = 7,
 ): { state: Kingdom; tutorialDismissed: boolean } | null {
   try {
     const data: unknown = JSON.parse(raw)
     if (!object(data) || data.version !== version || !object(data.state)) return null
     const s = data.state
-    if (version < 5) s.affairs = emptyAffairs()
+    if (version < 5) {
+      const f = emptyAffairs()
+      s.affairs = { army: f.army, settlements: [], raid: null, protectedUntil: 0, enemy: null }
+    }
     if (version < 4) s.requests = emptyRequests()
     // Migration adds progression only. It neither awards gifts nor advances simulation.
     if (version < 3) {
@@ -235,7 +245,7 @@ export function decode(
       !natural(f.army.archer) ||
       (version < 6 && f.army.spearman + f.army.archer > WAR.capacity) ||
       !Array.isArray(f.settlements) ||
-      f.settlements.length > 3 ||
+      (version < 7 && f.settlements.length > 3) ||
       !natural(f.protectedUntil)
     )
       return null
@@ -264,14 +274,19 @@ export function decode(
           ? c.relation !== 'friendly'
           : i === 1
             ? c.relation !== (c.giftTaken ? 'friendly' : 'neutral')
-            : !(version < 6 ? ['hostile', 'subdued'] : ['hostile', 'peaceful']).includes(
-                c.relation as string,
-              ) || c.giftTaken
+            : !(
+                version < 6
+                  ? ['hostile', 'subdued']
+                  : version < 7
+                    ? ['hostile', 'peaceful']
+                    : ['hostile', 'peaceful', 'ruins']
+              ).includes(c.relation as string) || c.giftTaken
       )
         return null
       const sector = sectorOf({ x: c.x, y: c.y }),
         sk = key(sector.x, sector.y)
       const d = discoveryForSector(s.seed, sector, c.discoveredTurn)
+      if (version >= 7 && i >= 3 && !castleAppears(s.seed, sector)) return null
       if (!d || !known.has(sk) || occupiedSectors.has(sk) || s.buildings[key(c.x, c.y)]) return null
       const storedDiscovery = (s.discoveries as Record<string, Discovery>)[key(d.x, d.y)]
       if (!storedDiscovery || storedDiscovery.discoveredTurn !== c.discoveredTurn) return null
@@ -303,8 +318,13 @@ export function decode(
           return null
       }
     }
-    let state = s as unknown as Kingdom
-    if (version < 6) state = migrateWarfare(state)
+    let state: Kingdom
+    if (version < 7) {
+      let legacy = s as unknown as LegacyKingdom
+      if (version < 6) legacy = migrateWarfare(legacy)
+      if (!validateLegacyCampaign(legacy)) return null
+      state = migrateCastles(legacy)
+    } else state = s as unknown as Kingdom
     if (!validateCampaign(state)) return null
     return { state, tutorialDismissed: data.tutorialDismissed === true }
   } catch {
@@ -315,7 +335,8 @@ export function load(storage: StoragePort): LoadResult {
   try {
     // Presence wins over validity: never silently resurrect an older settlement.
     for (const [key, version] of [
-      [SAVE_KEY, 6],
+      [SAVE_KEY, 7],
+      [CAMPAIGN_KEY, 6],
       [WARFARE_KEY, 5],
       [REQUESTS_KEY, 4],
       [PROGRESSION_KEY, 3],
@@ -326,7 +347,7 @@ export function load(storage: StoragePort): LoadResult {
       if (raw === null) continue
       const result = decode(raw, version)
       if (!result) return { status: 'corrupt', state: null, tutorialDismissed: false }
-      if (version < 6) {
+      if (version < 7) {
         const written = save(storage, result.state, result.tutorialDismissed)
         return { status: 'saved', ...result, migrationSaveFailed: !written }
       }
@@ -339,7 +360,7 @@ export function load(storage: StoragePort): LoadResult {
 }
 export function save(storage: StoragePort, state: Kingdom, tutorialDismissed: boolean): boolean {
   try {
-    storage.setItem(SAVE_KEY, JSON.stringify({ version: 6, state, tutorialDismissed }))
+    storage.setItem(SAVE_KEY, JSON.stringify({ version: 7, state, tutorialDismissed }))
     return true
   } catch {
     return false

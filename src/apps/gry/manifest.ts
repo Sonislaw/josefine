@@ -40,7 +40,7 @@ export const games = [
     id: 'male-krolestwo',
     title: 'Małe królestwo',
     description:
-      'Rozwijaj osadę i prowadź kampanie na pograniczu. Tarczownicy, przechwytywanie najazdów, wyprawy i negocjacje. Turowa strategia we własnym tempie.',
+      'Odkrywaj wrogie zamki, grab ich skarbce i prowadź kampanie aż do trwałych zgliszczy. Rozwijaj osadę, chroń mieszkańców i wybieraj między wojną a pokojem.',
     category: 'Strategia',
     players: '1 gracz',
     symbol: '♜',

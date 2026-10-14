@@ -23,12 +23,31 @@ export const SETTLEMENTS = [
     reward: supplies(),
   },
 ] as const
-export type Relation = 'friendly' | 'neutral' | 'hostile' | 'peaceful'
+const CASTLE_NAMES = [
+  'Czerwone Wzgórze',
+  'Północna Twierdza',
+  'Czarny Bastion',
+  'Kamienna Warownia',
+  'Wroni Fort',
+]
+export function settlementDefinition(id: number) {
+  if (id < 2) return SETTLEMENTS[id]!
+  const n = id - 2,
+    name = CASTLE_NAMES[n % CASTLE_NAMES.length]!
+  return {
+    ...SETTLEMENTS[2],
+    name: name + (n >= CASTLE_NAMES.length ? ` ${Math.floor(n / CASTLE_NAMES.length) + 1}` : ''),
+    description:
+      'Wroga warownia z własnym garnizonem i skarbcem. Kolejne zwycięskie wyprawy mogą obrócić ją w zgliszcza.',
+  }
+}
+export type Relation = 'friendly' | 'neutral' | 'hostile' | 'peaceful' | 'ruins'
 export const RELATIONS: Record<Relation, string> = {
   friendly: 'Przyjazna',
   neutral: 'Neutralna',
   hostile: 'Wroga',
   peaceful: 'Pokój na pograniczu',
+  ruins: 'Zgliszcza — zamek zniszczony',
 }
 export interface Settlement extends Point {
   id: number
@@ -41,14 +60,14 @@ export interface ForeignAffairs {
   settlements: Settlement[]
   raid: Raid | null
   protectedUntil: number
-  enemy: EnemyCampaign | null
+  enemies: Record<number, EnemyCampaign>
 }
 export const emptyAffairs = (): ForeignAffairs => ({
   army: emptyArmy(),
   settlements: [],
   raid: null,
   protectedUntil: 0,
-  enemy: null,
+  enemies: {},
 })
 /** Separate coordinate hash: exploration never draws from the building-card RNG. */
 export function settlementPosition(seed: number, sector: Point, excluded: Point): Point {

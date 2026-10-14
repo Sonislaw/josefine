@@ -11,6 +11,10 @@ import {
 } from './military'
 
 export interface BattleReport {
+  enemyId: number | null
+  castleDamage: number
+  castleHealth: number | null
+  castleDestroyed: boolean
   defending: boolean
   tactic: Tactic
   army: Army
@@ -43,6 +47,10 @@ export function battle(
     enemyStrength = tacticalStrength(enemy, enemyTactic) + enemySupport
   const victory = defending ? strength >= enemyStrength : strength > enemyStrength
   return {
+    enemyId: null,
+    castleDamage: 0,
+    castleHealth: null,
+    castleDestroyed: false,
     defending,
     tactic,
     army: { ...army },

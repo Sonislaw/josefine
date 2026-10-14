@@ -44,7 +44,7 @@ export function simulateDevelopment(seed, maxTurns = 700) {
       else if (score > 0 && error.startsWith('Brakuje zasobów'))
         candidates.push({ score: score - 0.5, action: { type: 'gather' } })
     }
-    if (s.affairs.raid) add(200, { type: 'truce' })
+    if (s.affairs.raid) add(200, { type: 'truce', enemyId: s.affairs.raid.enemyId })
     for (const b of Object.values(s.buildings))
       if (b.damaged) add(120, { type: 'repair', x: b.x, y: b.y })
     for (const kind of s.offer) {

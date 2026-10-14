@@ -5,7 +5,7 @@ const j = createJiti(import.meta.url)
 const { newKingdom, resolveTurn } = await j.import(
   '../../src/apps/gry/games/little-kingdom/engine.ts',
 )
-const key = 'zgrana:gry:male-krolestwo:v6'
+const key = 'zgrana:gry:male-krolestwo:v7'
 
 for (const [width, height] of [
   [360, 640],

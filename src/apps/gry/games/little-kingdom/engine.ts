@@ -1,6 +1,7 @@
 /** Pure, deterministic rules. Preview and commit both call resolveTurn; no browser state here. */
 import { SIZE, terrain, type Terrain } from './terrain'
 import { BALANCE, upgradeMultiplier, inventoryLimit } from './balance'
+import { CASTLES, castleAppears, plunderCastle } from './castles'
 import {
   MILITARY,
   UNITS,
@@ -90,8 +91,8 @@ export type Action = (
   | { type: 'gather' }
   | { type: 'recruit' | 'dismiss'; unit: Unit }
   | { type: 'diplomacy'; id: number }
-  | { type: 'truce' | 'negotiate' }
-  | { type: 'expedition' | 'intercept' | 'forcePeace'; army: Army }
+  | { type: 'truce' | 'negotiate'; enemyId: number }
+  | { type: 'expedition' | 'intercept' | 'forcePeace'; enemyId: number; army: Army }
 ) & { tactic?: Tactic }
 export const KEYS: Resource[] = ['wood', 'stone', 'food', 'gold']
 export const RESOURCE_NAMES: Record<Resource, string> = {
@@ -293,10 +294,12 @@ export function actionError(state: Kingdom, action: Action): string | null {
     if (!s || s.id > 1 || s.giftTaken) return 'Ta wymiana nie jest dostępna.'
   }
   if (['truce', 'expedition', 'intercept', 'forcePeace', 'negotiate'].includes(action.type)) {
-    if (!state.affairs.settlements.some((s) => s.relation === 'hostile'))
-      return 'Nie masz wrogiej osady.'
-    const enemy = state.affairs.enemy
-    if (!enemy) return 'Nie masz wrogiej osady.'
+    if (!('enemyId' in action) || !Number.isSafeInteger(action.enemyId))
+      return 'Wybierz wrogi zamek.'
+    const contact = state.affairs.settlements.find((s) => s.id === action.enemyId)
+    if (!contact || contact.relation !== 'hostile') return 'Nie masz wrogiej osady.'
+    const enemy = state.affairs.enemies[action.enemyId]
+    if (!enemy || enemy.health === 0) return 'Zniszczony zamek nie może być celem wyprawy.'
     if ((action.type === 'negotiate' || action.type === 'forcePeace') && enemy.advantage < 2)
       return 'Zdobądź dwa punkty przewagi, aby zakończyć kampanię.'
     if (
@@ -308,7 +311,12 @@ export function actionError(state: Kingdom, action: Action): string | null {
         return 'Najpierw odeprzyj najazd lub opłać rozejm.'
       if (action.type === 'expedition' && state.turn + 1 < enemy.expeditionAvailableTurn)
         return `Kolejna wyprawa dostępna za ${enemy.expeditionAvailableTurn - state.turn - 1} tur.`
-      if (action.type === 'intercept' && (!state.affairs.raid || state.affairs.raid.intercepted))
+      if (
+        action.type === 'intercept' &&
+        (!state.affairs.raid ||
+          state.affairs.raid.enemyId !== action.enemyId ||
+          state.affairs.raid.intercepted)
+      )
         return 'Ten najazd nie jest dostępny do przechwycenia.'
       if (action.type === 'intercept' && state.affairs.raid!.dueTurn <= state.turn + 1)
         return 'Wróg dotarł do osady. W tej turze przygotuj obronę lub zawrzyj rozejm.'
@@ -502,7 +510,11 @@ export function resolveTurn(state: Kingdom, action: Action): TurnResult | null {
     next.sectors.push({ x: action.x, y: action.y })
     discovery = discoveryForSector(state.seed, action, state.turn + 1)
     if (discovery) next.discoveries[key(discovery.x, discovery.y)] = discovery
-    if (state.rank >= 1 && next.affairs.settlements.length < 3 && discovery) {
+    if (
+      state.rank >= 1 &&
+      discovery &&
+      (next.affairs.settlements.length < 3 || castleAppears(state.seed, action))
+    ) {
       const id = next.affairs.settlements.length
       next.affairs.settlements.push({
         ...settlementPosition(state.seed, action, discovery),
@@ -511,9 +523,9 @@ export function resolveTurn(state: Kingdom, action: Action): TurnResult | null {
         relation: id === 0 ? 'friendly' : id === 1 ? 'neutral' : 'hostile',
         giftTaken: false,
       })
-      if (id === 2) {
-        next.affairs.protectedUntil = state.turn + 1 + WAR.protection
-        next.affairs.enemy = newCampaign(state.rank)
+      if (id >= 2) {
+        if (id === 2) next.affairs.protectedUntil = state.turn + 1 + WAR.protection
+        next.affairs.enemies[id] = newCampaign(state.rank, state.turn + 1)
       }
     }
   }
@@ -537,10 +549,13 @@ export function resolveTurn(state: Kingdom, action: Action): TurnResult | null {
     Object.assign(diplomaticReward, SETTLEMENTS[s.id]!.reward)
   }
   if (action.type === 'truce') {
-    returnRaid(next)
-    next.affairs.protectedUntil = state.turn + 1 + WAR.protection
+    if (next.affairs.raid?.enemyId === action.enemyId) {
+      returnRaid(next)
+      next.affairs.protectedUntil = state.turn + 1 + WAR.protection
+    }
+    next.affairs.enemies[action.enemyId]!.protectedUntil = state.turn + 1 + WAR.protection
   }
-  if (action.type === 'negotiate') makePeace(next, state.turn + 1)
+  if (action.type === 'negotiate') makePeace(next, action.enemyId, state.turn + 1)
   let report: BattleReport | null = null
   const defending = !!next.affairs.raid && next.affairs.raid.dueTurn === state.turn + 1
   const offensive =
@@ -551,7 +566,8 @@ export function resolveTurn(state: Kingdom, action: Action): TurnResult | null {
       Object.values(next.buildings).find((b) => b.kind === 'watchtower')?.level ?? 0,
     )
     const raid = next.affairs.raid,
-      e = next.affairs.enemy!
+      enemyId = offensive ? action.enemyId : raid!.enemyId,
+      e = next.affairs.enemies[enemyId]!
     const againstRaid = defending || action.type === 'intercept'
     report = battle(
       army,
@@ -569,6 +585,7 @@ export function resolveTurn(state: Kingdom, action: Action): TurnResult | null {
         : action.type === 'forcePeace'
           ? 'forcePeace'
           : 'expedition'
+    report.enemyId = enemyId
     next.affairs.army = subtractArmy(next.affairs.army, report.losses)
     e.advantage = Math.max(0, Math.min(2, e.advantage + (report.victory ? 1 : -1)))
     if (againstRaid) raid!.army = subtractArmy(raid!.army, report.enemyLosses)
@@ -576,6 +593,7 @@ export function resolveTurn(state: Kingdom, action: Action): TurnResult | null {
     if (defending || (action.type === 'intercept' && report.victory)) {
       returnRaid(next)
       next.affairs.protectedUntil = state.turn + 1 + WAR.protection
+      e.protectedUntil = next.affairs.protectedUntil
       report.outcome =
         'Najazd zakończony. 12 tur ochrony; ocalali przeciwnicy wrócili do garnizonu.'
     } else if (action.type === 'intercept') {
@@ -583,9 +601,31 @@ export function resolveTurn(state: Kingdom, action: Action): TurnResult | null {
       report.outcome = `Najazd osłabiony. Termin bez zmian: za ${raid!.dueTurn - state.turn - 1} tur.`
     }
     if (action.type === 'expedition') {
-      e.expeditionAvailableTurn = state.turn + 1 + WAR.expeditionCooldown
-      report.outcome =
-        'Straty garnizonu są trwałe do odbudowy. Wyprawa nie daje łupów ani okresu ochronnego.'
+      e.expeditionAvailableTurn = state.turn + 1 + CASTLES.expeditionCooldown
+      e.lastAttackedTurn = state.turn + 1
+      if (report.victory) {
+        report.castleDamage = Math.min(
+          e.health,
+          report.strength >= report.enemyStrength * 2 ? CASTLES.decisiveDamage : CASTLES.damage,
+        )
+        e.health -= report.castleDamage
+        report.loot = plunderCastle(e, CASTLES.plunder)
+        if (e.health === 0) {
+          const remainder = plunderCastle(e, CASTLES.treasury)
+          for (const k of KEYS) report.loot[k] += remainder[k]
+          e.destroyedTurn = state.turn + 1
+          e.garrison = { spearman: 0, archer: 0, shieldbearer: 0 }
+          e.peaceUntil = null
+          next.affairs.settlements.find((s) => s.id === enemyId)!.relation = 'ruins'
+          report.castleDestroyed = true
+        }
+      }
+      report.castleHealth = e.health
+      report.outcome = report.castleDestroyed
+        ? 'Zamek spłonął. Pozostają trwałe zgliszcza; ten wróg już nie wróci.'
+        : report.victory
+          ? 'Garnizon pokonany. Zabrano łupy i uszkodzono zamek. Następna wyprawa możliwa za 2 tury.'
+          : 'Garnizon odparł wyprawę. Brak łupów i uszkodzeń zamku.'
     }
     if (defending && !report.victory) {
       report.populationLost = Math.min(1, next.population)
@@ -609,7 +649,7 @@ export function resolveTurn(state: Kingdom, action: Action): TurnResult | null {
         report.loot = { ...WAR.loot }
         e.lootCampaign = e.campaign
       }
-      makePeace(next, state.turn + 1)
+      makePeace(next, enemyId, state.turn + 1)
       report.outcome = 'Pokój na 36 tur. Garnizon odbudowuje się; po pokoju wróci nowa kampania.'
     } else if (action.type === 'forcePeace') {
       report.outcome = 'Wróg odparł próbę wymuszenia pokoju. Kampania trwa dalej.'

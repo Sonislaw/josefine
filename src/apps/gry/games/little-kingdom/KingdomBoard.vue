@@ -12,7 +12,7 @@ import {
   type Point,
 } from './engine'
 import TileArt from './TileArt.vue'
-import { settlementAt, SETTLEMENTS, RELATIONS } from './neighbours'
+import { settlementDefinition, RELATIONS } from './neighbours'
 import { RANKS } from './progression'
 import { blocksBuilding, DISCOVERIES, discoveryStatus } from './discoveries'
 const props = defineProps<{ state: Kingdom; selected: Point | null; winter: boolean }>()
@@ -27,6 +27,9 @@ const cursor = ref<Point>({ x: 3, y: 3 })
 const CELL = 64
 const known = computed(() => new Set(props.state.sectors.map((p) => key(p.x, p.y))))
 const edges = computed(() => frontier(props.state))
+const contacts = computed(
+  () => new Map(props.state.affairs.settlements.map((c) => [key(c.x, c.y), c])),
+)
 const visible = computed(() => {
   const result = []
   const left = Math.floor(-ox.value / (CELL * zoom.value)) - 1,
@@ -41,14 +44,17 @@ const visible = computed(() => {
         b = props.state.buildings[key(x, y)]
       const found = props.state.discoveries[key(x, y)],
         d = blocksBuilding(found) ? found : undefined
+      const contact = contacts.value.get(key(x, y))
+      const enemy = contact ? props.state.affairs.enemies[contact.id] : undefined
       result.push({
         x,
         y,
         terrain: t,
         building: b,
-        settlement: settlementAt(props.state, { x, y }),
+        settlement: contact,
+        enemy,
         discovery: d,
-        label: `${x}, ${y}: ${settlementAt(props.state, { x, y }) ? SETTLEMENTS[settlementAt(props.state, { x, y })!.id]!.name + ', ' + RELATIONS[settlementAt(props.state, { x, y })!.relation] : d ? DISCOVERIES[d.kind].name + ', ' + discoveryStatus(d) : b ? (b.kind === 'hall' ? 'Ratusz, ' + RANKS[props.state.rank]!.name : BUILDINGS[b.kind].name + ', poziom ' + b.level + (b.damaged ? ', uszkodzony' : '')) : TERRAIN_NAMES[t]}`,
+        label: `${x}, ${y}: ${contact ? settlementDefinition(contact.id).name + ', ' + RELATIONS[contact.relation] + (enemy ? ', wytrzymałość ' + enemy.health + '%' : '') : d ? DISCOVERIES[d.kind].name + ', ' + discoveryStatus(d) : b ? (b.kind === 'hall' ? 'Ratusz, ' + RANKS[props.state.rank]!.name : BUILDINGS[b.kind].name + ', poziom ' + b.level + (b.damaged ? ', uszkodzony' : '')) : TERRAIN_NAMES[t]}`,
       })
     }
   return result
@@ -275,6 +281,7 @@ function wheel(e: WheelEvent) {
               :terrain="p.terrain"
               :building="p.building"
               :settlement="p.settlement"
+              :enemy="p.enemy"
               :winter="winter"
               :discovery="p.discovery"
             />

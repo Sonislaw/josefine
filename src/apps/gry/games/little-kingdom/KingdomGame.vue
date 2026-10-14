@@ -22,7 +22,7 @@ import {
   type Tactic,
   type MilitaryBuilding,
 } from './military'
-import { settlementAt, SETTLEMENTS, RELATIONS } from './neighbours'
+import { settlementAt, settlementDefinition, RELATIONS } from './neighbours'
 import { REQUESTS } from './requests'
 import { RANKS } from './progression'
 import { DISCOVERIES, discoveryStatus, discoveryBonus } from './discoveries'
@@ -92,12 +92,23 @@ const militaryOffer = computed(() =>
 const selectedSettlement = computed(() =>
   selected.value ? settlementAt(state.value, selected.value) : undefined,
 )
+const peacefulCastles = computed(
+  () => state.value.affairs.settlements.filter((c) => c.relation === 'peaceful').length,
+)
+const forecastTarget = computed(() => {
+  const id =
+    preview.value?.battle?.enemyId ??
+    (action.value && 'enemyId' in action.value ? action.value.enemyId : null)
+  return id !== null && preview.value
+    ? { id, enemy: preview.value.state.affairs.enemies[id]! }
+    : null
+})
 const seasonIndex = computed(() => season(state.value.turn))
 const output = computed(() => production(state.value))
 const edges = computed(() => frontier(state.value))
 const selectedName = computed(() =>
   selectedSettlement.value
-    ? SETTLEMENTS[selectedSettlement.value.id]!.name
+    ? settlementDefinition(selectedSettlement.value.id).name
     : selectedBuilding.value
       ? selectedBuilding.value.kind === 'hall'
         ? 'Ratusz'
@@ -206,13 +217,14 @@ function compass(p: Point) {
         >
       </div>
       <p v-if="state.affairs.raid" class="kingdom-notice danger" role="status">
-        ⚑ Najazd za {{ state.affairs.raid.dueTurn - state.turn }} tur! Wróg:
+        ⚑ {{ settlementDefinition(state.affairs.raid.enemyId).name }}: najazd za
+        {{ state.affairs.raid.dueTurn - state.turn }} tur! Wróg:
         {{ armySize(state.affairs.raid.army) }} jednostek. Przechwyć oddział, przygotuj obronę lub
         opłać rozejm w panelu sąsiadów.
       </p>
-      <p v-if="state.affairs.enemy?.peaceUntil" class="kingdom-notice">
-        ⚐ Pokój na pograniczu: {{ state.affairs.enemy.peaceUntil - state.turn }} tur. Wróg uzupełnia
-        armię; po pokoju może ogłosić nowy najazd.
+      <p v-if="peacefulCastles" class="kingdom-notice">
+        ⚐ Zamki objęte pokojem: {{ peacefulCastles }}. Terminy i relacje znajdziesz w panelu
+        sąsiadów; pozostali wrogowie nadal mogą zaatakować.
       </p>
       <p class="rank-badge" data-testid="kingdom-rank">♜ {{ RANKS[state.rank]!.name }}</p>
       <div class="economy-line">
@@ -312,8 +324,16 @@ function compass(p: Point) {
               </p>
               <p v-if="selectedSettlement">
                 {{ RELATIONS[selectedSettlement.relation] }}.
-                {{ SETTLEMENTS[selectedSettlement.id]!.description }} Decyzje znajdziesz w panelu
-                „Sąsiednie osady”.
+                {{ settlementDefinition(selectedSettlement.id).description }} Decyzje znajdziesz w
+                panelu „Sąsiednie osady”.
+              </p>
+              <p v-if="selectedSettlement && state.affairs.enemies[selectedSettlement.id]">
+                Wytrzymałość: {{ state.affairs.enemies[selectedSettlement.id]!.health }}%.
+                {{
+                  selectedSettlement.relation === 'ruins'
+                    ? 'Trwałe zgliszcza — ten zamek już się nie odbuduje.'
+                    : 'Zwycięskie wyprawy grabią skarbiec i uszkadzają warownię.'
+                }}
               </p>
               <p
                 v-if="
@@ -510,26 +530,46 @@ function compass(p: Point) {
                 {{ preview.deserters.archer }} łuczników i
                 {{ preview.deserters.shieldbearer }} tarczowników.
               </p>
-              <p v-if="preview.campaignUpdate.recruited">
-                Po bitwie i produkcji wróg zrekrutuje:
-                {{ UNITS[preview.campaignUpdate.recruited].name }}.
+              <p v-if="preview.campaignUpdate.recruits.length">
+                Rekrutacje po bitwie i produkcji:
+                {{
+                  preview.campaignUpdate.recruits
+                    .slice(0, 5)
+                    .map((r) => settlementDefinition(r.enemyId).name + ': ' + UNITS[r.unit].name)
+                    .join(' · ')
+                }}.
+                <span v-if="preview.campaignUpdate.recruits.length > 5"
+                  >I {{ preview.campaignUpdate.recruits.length - 5 }} kolejnych.</span
+                >
               </p>
               <p v-if="preview.campaignUpdate.peaceEnded">
                 Pokój się kończy — rozpocznie się nowa kampania z zerową przewagą.
               </p>
-              <p v-if="preview.state.affairs.enemy">
-                Przewaga po turze: {{ preview.state.affairs.enemy.advantage }} / 2.
-                <span v-if="preview.state.affairs.enemy.peaceUntil"
-                  >Pokój:
-                  {{ preview.state.affairs.enemy.peaceUntil - preview.state.turn }} tur.</span
+              <p v-if="forecastTarget">
+                {{ settlementDefinition(forecastTarget.id).name }} — przewaga po turze:
+                {{ forecastTarget.enemy.advantage }} / 2. Zamek: {{ forecastTarget.enemy.health }}%.
+                <span v-if="forecastTarget.enemy.peaceUntil"
+                  >Pokój: {{ forecastTarget.enemy.peaceUntil - preview.state.turn }} tur.</span
+                >
+              </p>
+              <p v-if="preview.campaignUpdate.castleRepairs.length">
+                Odbudowa zamków po turze:
+                {{
+                  preview.campaignUpdate.castleRepairs
+                    .slice(0, 5)
+                    .map((r) => settlementDefinition(r.enemyId).name + ': +' + r.amount + ' pp.')
+                    .join(' · ')
+                }}.
+                <span v-if="preview.campaignUpdate.castleRepairs.length > 5"
+                  >I {{ preview.campaignUpdate.castleRepairs.length - 5 }} kolejnych.</span
                 >
               </p>
               <p v-if="Object.values(preview.diplomaticReward).some(Boolean)">
                 Dar po wyżywieniu: {{ priceText(preview.diplomaticReward) }}.
               </p>
               <p v-if="preview.state.affairs.settlements.length > state.affairs.settlements.length">
-                Poznasz osadę: {{ SETTLEMENTS[state.affairs.settlements.length]!.name }}. Kontakt
-                znajdziesz w panelu sąsiadów.
+                Poznasz osadę: {{ settlementDefinition(state.affairs.settlements.length).name }}.
+                Kontakt znajdziesz w panelu sąsiadów.
               </p>
               <p v-if="KEYS.some((k) => preview!.reward[k])" class="discovery-reward">
                 Jednorazowa nagroda: <strong>{{ priceText(preview.reward) }}</strong>
@@ -652,6 +692,36 @@ function compass(p: Point) {
     <section class="kingdom-faq">
       <h2>Pytania przed pierwszą wyprawą</h2>
       <details>
+        <summary>Skąd biorą się kolejne wrogie zamki?</summary>
+        <p>
+          Po Wiosce trzy pierwsze kontakty to Brzeziny, Kamienny Bród i Czerwone Wzgórze. Potem
+          każdy nowo odkrywany sektor ma około jedną trzecią szansy na kolejną warownię. Typ terenu,
+          zamek i miejsce specjalne wynikają z ziarna mapy; odświeżenie nie zmienia odkrycia ani
+          kart budynków. Starsze sektory pozostają bez zmian.
+        </p>
+        <p>
+          Każdy wróg ma własną armię, skarbiec, przewagę i terminy pokoju. Pokój z jednym zamkiem
+          nie chroni przed pozostałymi. Jednocześnie nadchodzi najwyżej jeden najazd, a po
+          zakończonym starciu masz 12 tur na odbudowę.
+        </p>
+      </details>
+      <details>
+        <summary>Jak ograbić i zniszczyć zamek?</summary>
+        <p>
+          Zwycięska wyprawa na garnizon zabiera dostępne łupy: do 8 drewna, 6 kamienia, 4 żywności i
+          6 monet. Zamek traci 26 punktów procentowych wytrzymałości, a przy co najmniej dwukrotnej
+          przewadze 35. Kolejną wyprawę możesz rozliczyć po 2 turach. Koszty żołnierzy, straty i
+          utrzymanie nadal obowiązują.
+        </p>
+        <p>
+          Bez ataku warownia odzyskuje 3 punkty procentowe na zatwierdzoną turę. Szybkie zwycięstwa
+          pozwalają wyprzedzić odbudowę. Przy 0% otrzymasz również resztę skarbca, a na mapie
+          zostaną trwałe zgliszcza: bez odbudowy i kolejnych najazdów z tego zamku. Przegrana nie
+          daje łupów ani uszkodzeń. Skarbiec odnawia się powoli i nie da się odebrać tych samych
+          zasobów drugi raz.
+        </p>
+      </details>
+      <details>
         <summary>Dlaczego zapasy mają limity i ulepszenia są droższe?</summary>
         <p>
           Budowa wymaga materiałów i monet, a ulepszenie do poziomu 2 kosztuje ×3 ceny budowy i
@@ -675,7 +745,7 @@ function compass(p: Point) {
           oddział i walczysz poza osadą bez wieży. Zwycięstwo odwołuje atak; porażka osłabia wroga,
           ale nie zmienia terminu. W ostatniej turze wybierasz obronę lub rozejm. Wygrana obrona
           albo wyprawa daje 1 punkt przewagi, porażka zabiera 1, w granicach 0–2. Wyprawa na
-          garnizon jest dostępna raz na 6 tur i nie daje łupów.
+          garnizon jest dostępna co 2 tury, grabi skarbiec i uszkadza zamek.
         </p>
       </details>
       <details>

@@ -8,8 +8,8 @@ Samodzielna strategia turowa: `/gry/male-krolestwo` lokalnie, `/male-krolestwo` 
 - `engine.ts`: czyste typy i reguły, oferta, gospodarka i sezonowość. `resolveTurn(state, action)` zwraca nowy stan, koszt, produkcję, jednorazową nagrodę, nowe odkrycie, bilans oraz zmianę populacji. Nigdy nie mutuje wejścia. Ten sam wynik służy prognozie i zatwierdzeniu.
 - `terrain.ts`: dotychczasowy, niezmieniony generator terenu. Wspólny dla silnika i odkryć, bez cyklicznych importów reguł.
 - `discoveries.ts`: definicje miejsc, koszty, nagrody, rozmieszczenie i premie. Osobne hashe nie zużywają RNG oferty budynków.
-- `storage.ts`: wersjonowany format `{ version: 6, state, tutorialDismissed }`, walidacja i obsługa braku pamięci. Klucz `zgrana:gry:male-krolestwo:v6`. Uszkodzony zapis jest chroniony do jawnego potwierdzenia nowej osady.
-- `campaign.ts`, `campaign-storage.ts`: rzeczywisty garnizon, odbudowa, najazdy, przewaga, pokój i migracja. Cała symulacja pozostaje czysta i bez zegara przeglądarki.
+- `storage.ts`: wersjonowany format `{ version: 7, state, tutorialDismissed }`, walidacja i obsługa braku pamięci. Klucz `zgrana:gry:male-krolestwo:v7`. Uszkodzony zapis jest chroniony do jawnego potwierdzenia nowej osady.
+- `campaign.ts`, `campaign-storage.ts`: niezależne garnizony, odbudowa, najazdy, przewaga, pokój i migracja. Cała symulacja pozostaje czysta i bez zegara przeglądarki.
 - `military.ts`, `neighbours.ts`, `battle.ts`: konfiguracja wojska, kontakty i czysta prognoza walki. `DefencePanel.vue`, `BattleSummary.vue`, `MilitaryArt.vue`: panele oraz własne SVG.
 - `progression.ts`: definicje rang, wymagania, prezenty i czyste sprawdzanie awansu. `ProgressionPanel.vue` pokazuje postęp, a `HallArt.vue` cztery sylwetki ratusza w tym samym polu mapy.
 - `requests.ts`: 12 jednorazowych próśb, postęp i polecenia wyboru/odłożenia/przeglądania. `ResidentsPanel.vue` składa panel, a `ResidentPortrait.vue` rysuje portrety SVG.
@@ -19,6 +19,22 @@ Samodzielna strategia turowa: `/gry/male-krolestwo` lokalnie, `/male-krolestwo` 
 - `DiscoveryArt.vue`: cztery ilustracje wektorowe, z wariantami przed/po odnowieniu. `DiscoveryJournal.vue`: zwijana lista, filtry, po 10 wpisów i lokalizacja bez wykonywania tury.
 
 Gra nie współdzieli silnika ani zapisu z Warcabami, Klockami i Kryształem. Wspólny pozostaje katalog, routing, `GameDialog`, layout i infrastruktura Josefine. Brak nowych zależności.
+
+## Zamki, łupy i trwałe zgliszcza
+
+- Po pierwszych trzech kontaktach każdy kolejny sektor odkrywany od Wioski ma deterministyczną szansę 1/3 na dodatkowy wrogi zamek. Nie ma limitu liczby kontaktów. Nie dokładamy zamków do wcześniej odkrytych terenów.
+- `affairs.enemies[id]` przechowuje odrębną armię, kampanię, przewagę, terminy ochrony i pokoju, wytrzymałość oraz skarbiec. Polecenia wojenne muszą zawierać `enemyId`. Wybranie innego pola na mapie nie zmienia przygotowanej wyprawy.
+- Wytrzymałość zaczyna od 100%. Zwycięska zwykła wyprawa odbiera 26 punktów procentowych, lub 35 przy przynajmniej dwukrotnej przewadze. Kolejny atak na ten sam garnizon można rozliczyć po 2 turach. Stary, zapisany termin dostępności wyprawy pozostaje zachowany podczas migracji.
+- Na końcu tury bez ataku dany zamek odzyskuje 3 punkty procentowe, do 100%. W turze wyprawy nie ma odbudowy. Przegrana nie daje łupów ani uszkodzeń; przechwycenie dotyczy oddziału poza zamkiem i nie uszkadza murów.
+- Skarbiec zaczyna od 24 drewna, 18 kamienia, 16 żywności i 20 monet. Wygrana zabiera do 8/6/4/6, wyłącznie ze stanu skarbca. Po 6 turach bez ataku odnawia się najwyżej 2/2/1/2, do pojemności; nie ma darmowej pełnej nagrody za każdy klik.
+- Przy 0% wyprawa zabiera pozostały skarbiec, usuwa garnizon i zapisuje turę zniszczenia oraz relację `ruins`. Wytrzymałość, skarbiec i wojsko nie wracają. Własne SVG zgliszczy pozostaje na mapie, a pole nie jest dostępne pod budowę.
+- Pokój i rozejm dotyczą wybranego sąsiada. Jeden wspólny nadchodzący najazd oraz 12 tur globalnej ochrony po jego zakończeniu zapobiegają równoczesnym bitwom. Następny uprawniony wróg ma najstarszy termin ochrony, następnie najniższy ID — starszy zamek nie monopolizuje kolejki.
+- Łupy, szkody i końcowa wytrzymałość są częścią tego samego `resolveTurn` w prognozie i zatwierdzeniu. Łupy trafiają do osady po wyżywieniu i żołdzie; nie płacą wstecz za utrzymanie armii. Limity magazynów nadal obowiązują.
+- Panel sąsiadów pokazuje po 5 kontaktów, z opcją „Pokaż więcej osad”. Plansza nadal renderuje tylko widoczne pola; lokalizację osad indeksujemy po współrzędnych.
+
+Migracja v6 → v7 najpierw waliduje stary model. Zachowuje gospodarkę, rangi, prośby, armię, garnizon, terminy najazdu i pokoju. Dotychczasowy wróg staje się wpisem o ID 2; jego zamek zaczyna ze 100% wytrzymałości i pełnym skarbcem, bez przyznania zasobów graczowi. Istniejący najazd otrzymuje ID 2. Oryginalne bajty v6 pozostają; uszkodzony v7 nigdy nie uruchamia starszego zapisu. Nowi wrogowie pojawiają się dopiero podczas kolejnych eksploracji.
+
+`castles.ts` jest źródłem parametrów murów i skarbców; `EnemyCastlePanel.vue` ma osobny wybór oddziału dla każdego przeciwnika. `legacy-campaign-storage.ts` obsługuje stary pojedynczy model wyłącznie podczas odczytu starych wersji.
 
 ## Ziemie pełne tajemnic
 
@@ -142,7 +158,7 @@ Sektory 7×7 zapisujemy jako współrzędne, nie tablicę nieograniczonego świa
 
 Limit sprawdzamy na końcu tury, po wszystkich nagrodach i awansie, z uwzględnieniem nowej rangi. `TurnResult.storageLoss` pokazuje niezmagazynowaną nadwyżkę, również w prognozie. Produkcja bieżącej tury może wyżywić ludzi i wojsko, zanim ograniczymy magazyn.
 
-Format zapisu pozostaje v6. Nie kasujemy istniejących zasobów, budynków, poziomów ani osiągniętych rang. Gdy zapasy sprzed aktualizacji przekraczają limit, dozwolony stan końcowy to większa z wartości: limit i zapasy na początku tury. Dzięki temu stare bogactwo pozostaje dostępne, ale nie może już rosnąć ponad limit. Wyższe ceny i nowa produkcja obowiązują od następnej akcji. Walidacja dopuszcza dawny licznik odbudowy wroga równy 2; następna tura rozlicza go według nowego okresu, bez cofania zapisu.
+Format zapisu to v7. Nie kasujemy istniejących zasobów, budynków, poziomów ani osiągniętych rang. Gdy zapasy sprzed aktualizacji przekraczają limit, dozwolony stan końcowy to większa z wartości: limit i zapasy na początku tury. Dzięki temu stare bogactwo pozostaje dostępne, ale nie może już rosnąć ponad limit. Wyższe ceny i nowa produkcja obowiązują od następnej akcji. Walidacja dopuszcza dawny licznik odbudowy wroga równy 2; następna tura rozlicza go według nowego okresu, bez cofania zapisu.
 
 ## Sterowanie i zapis
 
@@ -150,8 +166,8 @@ Dotknięcie wybiera pole. Przeciąganie przesuwa mapę; dwa palce lub przyciski 
 
 Zapis po każdej turze jest synchroniczny; nie zapisujemy zaznaczenia, kamery ani rozpoczętych gestów. Zamknięcie strony nie zmienia gospodarki. Gra działa bez storage, ale bez gwarancji wznowienia. Karty przeglądarki nie są synchronizowane — ostatni zapis wygrywa. Zapis ma ograniczenia pojemności localStorage; błąd zapisu jest widoczny, a rozgrywka trwa w pamięci.
 
-Odczytujemy kolejno v6 → v5 → v4 → v3 → v2 → v1, wyłącznie przy braku nowszego klucza. Poprawny
-starszy zapis migrujemy do v6, zachowując oryginalne bajty kopii. Z v5 zachowujemy wojsko, kontakty, uszkodzenia i terminy najazdów;
+Odczytujemy kolejno v7 → v6 → v5 → v4 → v3 → v2 → v1, wyłącznie przy braku nowszego klucza. Poprawny
+starszy zapis migrujemy do v7, zachowując oryginalne bajty kopii. Z v5 zachowujemy wojsko, kontakty, uszkodzenia i terminy najazdów;
 dodajemy zero tarczowników i stan kampanii. Starszym zapisom dodajemy pustą armię,
 brak kontaktów i najazdu. Z v4 zachowujemy prośby; starszym wersjom dodajemy pusty stan
 próśb, bez nagród ani zmiany zasobów, tury, budynków, terenu i oferty. Z v3 zachowujemy
@@ -159,7 +175,7 @@ rangę i historię awansów. W v1/v2 ustawiamy rangę Osada i pustą historię a
 z v1 dodatkowo tworzymy pustą kolekcję odkryć. Duża istniejąca osada może zdobywać
 kolejne rangi w następnych zatwierdzonych turach. Uszkodzony nowszy zapis zawsze
 blokuje cofnięcie do starszej kopii. Błąd zapisu migracji pozwala grać w pamięci
-z ostrzeżeniem. Potwierdzony restart zastępuje v6; stare kopie pozostają.
+z ostrzeżeniem. Potwierdzony restart zastępuje v7; stare kopie pozostają.
 
 Walidacja sprawdza rodzaj, deterministyczne położenie, odkryty sektor, unikalność
 miejsca w sektorze, chronologię tur oraz zakaz zabudowy zajętego miejsca. Historia
@@ -167,14 +183,14 @@ awansów musi zawierać dokładnie kolejne rangi 1…rank z rosnącymi turami, n
 Nie sprawdzamy dawnych progów względem obecnej populacji — osiągnięć nie odbieramy.
 Prośby mają znane identyfikatory, jedną aktywną pozycję, unikalną historię najwyżej
 12 wykonań, poprawne rangi i chronologię przyjęcia/wykonania. Brak lub uszkodzenie
-stanu próśb w v4/v5/v6 nie jest cicho naprawiane, aby nie umożliwiać ponownego odbioru nagród.
+stanu próśb w v4/v5/v6/v7 nie jest cicho naprawiane, aby nie umożliwiać ponownego odbioru nagród.
 
 ## Wojna na pograniczu — reguły
 
 Po Wiosce trzy kolejne eksploracje poznają Brzeziny (dar 8 żywności/4 monety),
 Kamienny Bród (10 drewna/5 kamienia za przyjaźń i 12 monet) i Czerwone Wzgórze.
 Przyjazne wymiany są jednorazowe i zajmują turę. Położenie osad jest deterministyczne,
-poza miejscem specjalnym oraz jego sąsiednimi polami; nie zmienia RNG kart.
+poza miejscem specjalnym oraz jego sąsiednimi polami; nie zmienia RNG kart. Kolejne eksploracje mogą odkryć następne zamki, według reguł opisanych powyżej.
 
 Wojsko wroga jest rzeczywiste. Docelowa armia zależy od rangi:
 Wioska 4 włóczników/3 łuczników/1 tarczownik; Miasteczko 5/4/2; Małe królestwo 6/5/3.
@@ -214,8 +230,8 @@ Przechwycenie to jednorazowa wyprawa przeciw nadchodzącemu oddziałowi, bez wie
 Zwycięstwo odwołuje najazd; porażka zachowuje jego datę i osłabia partię, bez szkód cywilnych.
 Dostępne do przedostatniej tury ostrzeżenia: w ostatniej wróg jest już pod osadą.
 To zapobiega drugiej bitwie w tej samej turze. Zwykła wyprawa na garnizon jest dostępna
-bez najazdu, raz na 6 tur: jeśli pierwsza zakończyła się w turze T, kolejna może zakończyć
-się w T+6. Brak łupów i automatycznego rozejmu.
+bez najazdu, co 2 tury: jeśli pierwsza zakończyła się w turze T, kolejna może zakończyć
+się w T+2. Wyprawa grabi dostępne zasoby, uszkadza zamek i nie przyznaje automatycznego rozejmu.
 
 Przewaga 0–2: wygrana obrona/przechwycenie/wyprawa +1; porażka -1.
 Krótki rozejm kosztuje 24 monety, zwraca żywy najazd i nie zeruje przewagi.
@@ -245,6 +261,8 @@ pomniejszony o najazd, więc nie dublujemy żołnierzy. Dawny trwały pokój zas
 36 turami od zapisanej tury, bez zmiany zasobów i zegara. Starsze kopie pozostają.
 
 ## Weryfikacja aktualizacji
+
+`castles.test.mjs` obejmuje dodatkowych wrogów, niezależne kampanie, szkody 26/35 pp., odbudowę, skarbce, jednokrotne łupy, trwałe zgliszcza, kolejkę najazdów i migrację v6 → v7. `tests/gry/kingdom-castles.spec.mjs` sprawdza rzeczywisty wybór celu, prognozę i zatwierdzenie, łupy, odbudowę, zniszczenie, klawiaturę, odświeżenie oraz 100 odkrytych zamków na mobile. To obciążenie przygotowanego zapisu, nie deklaracja czasu osiągnięcia go przez gracza.
 
 `balance.test.mjs` sprawdza trudniejszy start, ceny, limity premii i magazynów, żołd, dezerterów, obronę garnizonu oraz zgodność wcześniejszych zapisów. `tests/gry/kingdom-balance.spec.mjs` sprawdza te informacje i prognozę nadwyżek w UI na 360/390/1440 px.
 

@@ -53,8 +53,28 @@ export function developedKingdom(rank = 0) {
   })
   return s
 }
-export const encode = (state, version = 6) => {
+export const encode = (state, version = 7) => {
   const copy = structuredClone(state)
+  if (version < 7) {
+    const e = copy.affairs.enemies[2]
+    copy.affairs.enemy = e
+      ? {
+          garrison: e.garrison,
+          recovery: e.recovery,
+          recruitmentCursor: e.recruitmentCursor,
+          warTurns: e.warTurns,
+          campaign: e.campaign,
+          advantage: e.advantage,
+          peaceUntil: e.peaceUntil,
+          expeditionAvailableTurn: e.expeditionAvailableTurn,
+          lootCampaign: e.lootCampaign,
+        }
+      : null
+    delete copy.affairs.enemies
+    if (copy.affairs.raid) delete copy.affairs.raid.enemyId
+    if (e?.peaceUntil !== null && e?.peaceUntil !== undefined)
+      copy.affairs.protectedUntil = e.peaceUntil
+  }
   if (version === 5) {
     delete copy.affairs.enemy
     delete copy.affairs.army.shieldbearer

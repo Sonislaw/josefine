@@ -76,14 +76,14 @@ test('full garrison cannot be swept by an inexpensive six-spearman army; sacrifi
 })
 test('existing v6 saves keep stocks, military levels, earned ranks and scheduled raid; previous recovery counter stays valid', () => {
   const s = warKingdom()
-  s.affairs.enemy.garrison = { spearman: 3, archer: 2, shieldbearer: 1 }
-  s.affairs.enemy.recovery = 2
+  s.affairs.enemies[2].garrison = { spearman: 3, archer: 2, shieldbearer: 1 }
+  s.affairs.enemies[2].recovery = 2
   const before = structuredClone(s),
     restored = decode(encode(s))
   assert.deepEqual(restored.state, before)
   const r = resolveTurn(restored.state, { type: 'gather' })
-  assert.equal(r.state.affairs.enemy.recovery, 0)
-  assert.ok(armySize(r.state.affairs.enemy.garrison) > 6)
+  assert.equal(r.state.affairs.enemies[2].recovery, 0)
+  assert.ok(armySize(r.state.affairs.enemies[2].garrison) > 6)
 })
 test('inventory limits stop hoarding, forecast excess exactly, and never confiscate existing above-limit stocks', () => {
   const s = newKingdom(),

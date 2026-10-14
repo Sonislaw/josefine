@@ -3,6 +3,7 @@ import type { BattleReport } from './battle'
 import MilitaryArt from './MilitaryArt.vue'
 import { TACTICS } from './military'
 import { resourceList } from './format'
+import { settlementDefinition } from './neighbours'
 defineProps<{ report: BattleReport; preview?: boolean }>()
 </script>
 <template>
@@ -22,6 +23,9 @@ defineProps<{ report: BattleReport; preview?: boolean }>()
         }[report.kind]
       }}</strong
     >
+    <p v-if="report.enemyId !== null">
+      Przeciwnik: {{ settlementDefinition(report.enemyId).name }}.
+    </p>
     <div class="armies">
       <div>
         <svg viewBox="0 0 64 64"><MilitaryArt kind="spearman" /></svg
@@ -57,6 +61,13 @@ defineProps<{ report: BattleReport; preview?: boolean }>()
     <p v-if="report.enemySupport">
       Obrona garnizonu wroga: +{{ report.enemySupport }} siły. Premia jest już uwzględniona.
     </p>
+    <p v-if="report.castleHealth !== null" data-testid="castle-impact">
+      Zamek: −{{ report.castleDamage }} punktów procentowych. Po wyprawie:
+      {{ report.castleHealth }}%.
+      <strong v-if="report.castleDestroyed"
+        >Zamek zniszczony — na mapie pozostaną zgliszcza.</strong
+      >
+    </p>
     <p v-if="report.outcome">{{ report.outcome }}</p>
     <p v-if="report.damaged">
       Uszkodzony budynek: {{ report.damaged.x }}, {{ report.damaged.y }}. Produkcja i premie
@@ -66,7 +77,7 @@ defineProps<{ report: BattleReport; preview?: boolean }>()
       Grabież: {{ resourceList(report.plunder) }}.
     </p>
     <p v-if="Object.values(report.loot).some(Boolean)">
-      Łupy po wyżywieniu: {{ resourceList(report.loot) }}. Pokój trwa 36 tur.
+      Łupy po wyżywieniu: {{ resourceList(report.loot) }}.
     </p>
   </section>
 </template>

@@ -37,7 +37,7 @@ const withArmy = (rank = 1) => {
     archer: rank === 1 ? 1 : 2,
     shieldbearer: rank === 1 ? 1 : 2,
   }
-  s.affairs.enemy.garrison = enemyTarget(rank)
+  s.affairs.enemies[2].garrison = enemyTarget(rank)
   return s
 }
 
@@ -134,27 +134,27 @@ test('raid transfers round-robin troops; total includes dispatched units and nev
     s = go(s, { type: 'gather' })
     assert.equal(s.affairs.raid, null)
   }
-  const previous = { ...s.affairs.enemy.garrison }
+  const previous = { ...s.affairs.enemies[2].garrison }
   s = go(s, { type: 'gather' })
   assert.equal(s.affairs.raid.dueTurn, s.turn + 4)
-  assert.deepEqual(addArmy(s.affairs.enemy.garrison, s.affairs.raid.army), previous)
+  assert.deepEqual(addArmy(s.affairs.enemies[2].garrison, s.affairs.raid.army), previous)
   const snapshot = structuredClone(s.affairs.raid)
   for (let i = 0; i < 3; i++) {
     s = go(s, { type: 'gather' })
     assert.deepEqual(s.affairs.raid, snapshot)
-    assert.equal(armySize(addArmy(s.affairs.enemy.garrison, s.affairs.raid.army)), 8)
+    assert.equal(armySize(addArmy(s.affairs.enemies[2].garrison, s.affairs.raid.army)), 8)
   }
 })
 test('enemy recovery adds at most one troop every second turn, round-robin skips full quotas and rank up never grants army', () => {
   let s = warKingdom()
-  s.affairs.enemy.garrison = emptyArmy()
-  s.affairs.enemy.recovery = 0
+  s.affairs.enemies[2].garrison = emptyArmy()
+  s.affairs.enemies[2].recovery = 0
   for (let i = 1; i <= 6; i++) {
     s = go(s, { type: 'gather' })
-    assert.equal(armySize(s.affairs.enemy.garrison), Math.floor(i / 2))
+    assert.equal(armySize(s.affairs.enemies[2].garrison), Math.floor(i / 2))
   }
-  assert.deepEqual(s.affairs.enemy.garrison, { spearman: 1, archer: 1, shieldbearer: 1 })
-  const before = armySize(s.affairs.enemy.garrison)
+  assert.deepEqual(s.affairs.enemies[2].garrison, { spearman: 1, archer: 1, shieldbearer: 1 })
+  const before = armySize(s.affairs.enemies[2].garrison)
   s.rank = 3
   s.promotions = [
     { rank: 1, turn: 12 },
@@ -162,31 +162,36 @@ test('enemy recovery adds at most one troop every second turn, round-robin skips
     { rank: 3, turn: 14 },
   ]
   s = go(s, { type: 'gather' })
-  assert.equal(armySize(s.affairs.enemy.garrison), before)
+  assert.equal(armySize(s.affairs.enemies[2].garrison), before)
 })
 test('garrison stance changes every four conflict turns, raid stance locks, peace freezes its counter', () => {
   let s = warKingdom()
-  s.affairs.enemy.warTurns = 3
+  s.affairs.enemies[2].warTurns = 3
   s = go(s, { type: 'gather' })
-  assert.equal(enemyTactic(s.affairs.enemy), 'volley')
-  s.affairs.enemy.advantage = 2
-  s = go(s, { type: 'negotiate' })
-  const turns = s.affairs.enemy.warTurns
+  assert.equal(enemyTactic(s.affairs.enemies[2]), 'volley')
+  s.affairs.enemies[2].advantage = 2
+  s = go(s, { type: 'negotiate', enemyId: 2 })
+  const turns = s.affairs.enemies[2].warTurns
   for (let i = 0; i < 8; i++) s = go(s, { type: 'gather' })
-  assert.equal(s.affairs.enemy.warTurns, turns)
+  assert.equal(s.affairs.enemies[2].warTurns, turns)
 })
 test('interception victory cancels raid and returns only survivors, without duplicating the garnison', () => {
   const s = beforeRaid({ spearman: 6, archer: 0, shieldbearer: 0 }, false, 3),
-    reserve = armySize(s.affairs.enemy.garrison),
+    reserve = armySize(s.affairs.enemies[2].garrison),
     wave = armySize(s.affairs.raid.army)
-  const r = resolveTurn(s, { type: 'intercept', army: { ...s.affairs.army }, tactic: 'guard' })
+  const r = resolveTurn(s, {
+    type: 'intercept',
+    enemyId: 2,
+    army: { ...s.affairs.army },
+    tactic: 'guard',
+  })
   assert.ok(r.battle.victory)
   assert.equal(r.battle.kind, 'intercept')
   assert.equal(r.state.affairs.raid, null)
-  assert.equal(r.state.affairs.enemy.advantage, 1)
+  assert.equal(r.state.affairs.enemies[2].advantage, 1)
   assert.equal(r.state.affairs.protectedUntil, r.state.turn + 12)
   assert.equal(
-    armySize(r.state.affairs.enemy.garrison),
+    armySize(r.state.affairs.enemies[2].garrison),
     reserve + wave - armySize(r.battle.enemyLosses) + (r.campaignUpdate.recruited ? 1 : 0),
   )
   assert.equal(r.battle.populationLost, 0)
@@ -195,7 +200,12 @@ test('interception victory cancels raid and returns only survivors, without dupl
 test('losing interception preserves date, weakens wave, cannot repeat and never triggers a second battle', () => {
   const s = beforeRaid({ spearman: 1, archer: 0, shieldbearer: 0 }, true, 3),
     due = s.affairs.raid.dueTurn
-  const r = resolveTurn(s, { type: 'intercept', army: { ...s.affairs.army }, tactic: 'charge' })
+  const r = resolveTurn(s, {
+    type: 'intercept',
+    enemyId: 2,
+    army: { ...s.affairs.army },
+    tactic: 'charge',
+  })
   assert.equal(r.battle.victory, false)
   assert.equal(r.state.affairs.raid.dueTurn, due)
   assert.equal(r.state.affairs.raid.intercepted, true)
@@ -203,109 +213,126 @@ test('losing interception preserves date, weakens wave, cannot repeat and never 
   assert.equal(r.battle.populationLost, 0)
   assert.equal(r.state.affairs.protectedUntil, s.affairs.protectedUntil)
   assert.equal(
-    resolveTurn(r.state, { type: 'intercept', army: { spearman: 1, archer: 0, shieldbearer: 0 } }),
+    resolveTurn(r.state, {
+      type: 'intercept',
+      enemyId: 2,
+      army: { spearman: 1, archer: 0, shieldbearer: 0 },
+    }),
     null,
   )
   const last = beforeRaid({ spearman: 6, archer: 0, shieldbearer: 0 })
-  assert.equal(resolveTurn(last, { type: 'intercept', army: { ...last.affairs.army } }), null)
+  assert.equal(
+    resolveTurn(last, { type: 'intercept', enemyId: 2, army: { ...last.affairs.army } }),
+    null,
+  )
   assert.ok(decode(encode(r.state)))
 })
-test('ordinary expeditions have a six-turn cooldown, actual enemy losses, no loot and no free protection', () => {
+test('ordinary expeditions have a two-turn cooldown, actual enemy losses, loot and no free protection', () => {
   let s = withArmy(),
     initial = s.affairs.protectedUntil
-  s.affairs.enemy.garrison = { spearman: 2, archer: 1, shieldbearer: 0 }
-  const r = resolveTurn(s, { type: 'expedition', army: { ...s.affairs.army } })
+  s.affairs.enemies[2].garrison = { spearman: 2, archer: 1, shieldbearer: 0 }
+  const r = resolveTurn(s, { type: 'expedition', enemyId: 2, army: { ...s.affairs.army } })
   assert.ok(r.battle.victory)
-  assert.equal(r.state.affairs.enemy.advantage, 1)
+  assert.equal(r.state.affairs.enemies[2].advantage, 1)
   assert.equal(r.state.affairs.protectedUntil, initial)
   assert.equal(armySize(r.battle.enemyLosses), 2)
-  assert.ok(Object.values(r.battle.loot).every((v) => v === 0))
+  assert.ok(Object.values(r.battle.loot).some((v) => v > 0))
+  assert.ok(r.battle.castleDamage > 0)
   s = r.state
-  assert.equal(resolveTurn(s, { type: 'expedition', army: { ...s.affairs.army } }), null)
-  for (let i = 0; i < 5; i++) s = go(s, { type: 'gather' })
-  assert.ok(resolveTurn(s, { type: 'expedition', army: { ...s.affairs.army } }))
+  assert.equal(
+    resolveTurn(s, { type: 'expedition', enemyId: 2, army: { ...s.affairs.army } }),
+    null,
+  )
+  s = go(s, { type: 'gather' })
+  assert.ok(resolveTurn(s, { type: 'expedition', enemyId: 2, army: { ...s.affairs.army } }))
 })
 test('invalid or unavailable army/actions never mutate resources, RNG, raid or campaign', () => {
   const s = withArmy(),
     before = structuredClone(s)
   for (const action of [
-    { type: 'forcePeace', army: { ...s.affairs.army } },
-    { type: 'negotiate' },
-    { type: 'intercept', army: { ...s.affairs.army } },
-    { type: 'expedition', army: { spearman: 9, archer: 0, shieldbearer: 0 } },
-    { type: 'expedition', army: { spearman: -1, archer: 1, shieldbearer: 0 } },
-    { type: 'expedition', army: { spearman: 0, archer: 0, shieldbearer: 0 } },
+    { type: 'forcePeace', enemyId: 2, army: { ...s.affairs.army } },
+    { type: 'negotiate', enemyId: 2 },
+    { type: 'intercept', enemyId: 2, army: { ...s.affairs.army } },
+    { type: 'expedition', enemyId: 2, army: { spearman: 9, archer: 0, shieldbearer: 0 } },
+    { type: 'expedition', enemyId: 2, army: { spearman: -1, archer: 1, shieldbearer: 0 } },
+    { type: 'expedition', enemyId: 2, army: { spearman: 0, archer: 0, shieldbearer: 0 } },
   ])
     assert.equal(resolveTurn(s, action), null)
   assert.deepEqual(s, before)
 })
 test('truce returns live wave, keeps advantage, cancels even a due attack and protects twelve full turns', () => {
   const s = beforeRaid()
-  s.affairs.enemy.advantage = 2
-  const total = armySize(addArmy(s.affairs.enemy.garrison, s.affairs.raid.army)),
-    r = resolveTurn(s, { type: 'truce' })
+  s.affairs.enemies[2].advantage = 2
+  const total = armySize(addArmy(s.affairs.enemies[2].garrison, s.affairs.raid.army)),
+    r = resolveTurn(s, { type: 'truce', enemyId: 2 })
   assert.equal(r.battle, null)
   assert.equal(r.state.affairs.raid, null)
-  assert.equal(r.state.affairs.enemy.advantage, 2)
+  assert.equal(r.state.affairs.enemies[2].advantage, 2)
   assert.equal(r.state.affairs.protectedUntil, r.state.turn + 12)
-  assert.equal(armySize(r.state.affairs.enemy.garrison), total)
+  assert.equal(armySize(r.state.affairs.enemies[2].garrison), total)
 })
 test('negotiated peace cancels raid, lasts 36 full turns, rebuilds enemy and resets advantage on next campaign', () => {
   let s = beforeRaid()
-  s.affairs.enemy.advantage = 2
-  const r = resolveTurn(s, { type: 'negotiate' })
+  s.affairs.enemies[2].advantage = 2
+  const r = resolveTurn(s, { type: 'negotiate', enemyId: 2 })
   assert.deepEqual(r.cost, { wood: 0, stone: 0, food: 24, gold: 40 })
   s = r.state
-  const until = s.affairs.enemy.peaceUntil,
-    warTurns = s.affairs.enemy.warTurns
+  const until = s.affairs.enemies[2].peaceUntil,
+    warTurns = s.affairs.enemies[2].warTurns
   assert.equal(until, s.turn + 36)
   assert.equal(s.affairs.raid, null)
   assert.equal(s.affairs.settlements[2].relation, 'peaceful')
   for (let i = 0; i < 35; i++) {
     s = go(s, { type: 'gather' })
     assert.equal(s.affairs.raid, null)
-    assert.equal(s.affairs.enemy.warTurns, warTurns)
+    assert.equal(s.affairs.enemies[2].warTurns, warTurns)
   }
   s = go(s, { type: 'gather' })
   assert.equal(s.turn, until)
-  assert.equal(s.affairs.enemy.campaign, 2)
-  assert.equal(s.affairs.enemy.advantage, 0)
+  assert.equal(s.affairs.enemies[2].campaign, 2)
+  assert.equal(s.affairs.enemies[2].advantage, 0)
   assert.equal(s.affairs.raid.dueTurn, s.turn + 4)
-  assert.equal(s.affairs.enemy.warTurns, 0)
+  assert.equal(s.affairs.enemies[2].warTurns, 0)
 })
 test('forced peace requires two advantage points, pays once per campaign after feeding and allows next campaign', () => {
   let s = withArmy()
-  s.affairs.enemy.advantage = 2
-  s.affairs.enemy.garrison = { spearman: 2, archer: 1, shieldbearer: 0 }
-  const r = resolveTurn(s, { type: 'forcePeace', army: { ...s.affairs.army }, tactic: 'guard' })
+  s.affairs.enemies[2].advantage = 2
+  s.affairs.enemies[2].garrison = { spearman: 2, archer: 1, shieldbearer: 0 }
+  const r = resolveTurn(s, {
+    type: 'forcePeace',
+    enemyId: 2,
+    army: { ...s.affairs.army },
+    tactic: 'guard',
+  })
   assert.ok(r.battle.victory)
   assert.deepEqual(r.battle.loot, WAR.loot)
-  assert.equal(r.state.affairs.enemy.lootCampaign, 1)
-  assert.equal(r.state.affairs.enemy.peaceUntil, r.state.turn + 36)
+  assert.equal(r.state.affairs.enemies[2].lootCampaign, 1)
+  assert.equal(r.state.affairs.enemies[2].peaceUntil, r.state.turn + 36)
   assert.equal(
-    resolveTurn(r.state, { type: 'forcePeace', army: { ...r.state.affairs.army } }),
+    resolveTurn(r.state, { type: 'forcePeace', enemyId: 2, army: { ...r.state.affairs.army } }),
     null,
   )
   s = structuredClone(withArmy())
-  s.affairs.enemy.advantage = 2
-  s.affairs.enemy.lootCampaign = 1
-  s.affairs.enemy.garrison = { spearman: 2, archer: 1, shieldbearer: 0 }
+  s.affairs.enemies[2].advantage = 2
+  s.affairs.enemies[2].lootCampaign = 1
+  s.affairs.enemies[2].garrison = { spearman: 2, archer: 1, shieldbearer: 0 }
   assert.ok(
     Object.values(
-      resolveTurn(s, { type: 'forcePeace', army: { ...s.affairs.army } }).battle.loot,
+      resolveTurn(s, { type: 'forcePeace', enemyId: 2, army: { ...s.affairs.army } }).battle.loot,
     ).every((v) => v === 0),
   )
 })
 test('failed forcePeace reduces advantage, keeps war and protection unchanged, and restores no casualties', () => {
   const s = withArmy()
-  s.affairs.enemy.advantage = 2
+  s.affairs.enemies[2].advantage = 2
   const r = resolveTurn(s, {
     type: 'forcePeace',
+    enemyId: 2,
     army: { spearman: 1, archer: 0, shieldbearer: 0 },
   })
   assert.equal(r.battle.victory, false)
-  assert.equal(r.state.affairs.enemy.advantage, 1)
-  assert.equal(r.state.affairs.enemy.peaceUntil, null)
+  assert.equal(r.state.affairs.enemies[2].advantage, 1)
+  assert.equal(r.state.affairs.enemies[2].peaceUntil, null)
   assert.equal(r.state.affairs.protectedUntil, s.affairs.protectedUntil)
   assert.ok(Object.values(r.battle.loot).every((v) => v === 0))
 })
@@ -351,8 +378,11 @@ test('v5 active raid migration preserves deadline, army, ranks, damage and origi
   assert.equal(migrated.affairs.raid.tactic, 'none')
   assert.equal(migrated.affairs.raid.dueTurn, s.affairs.raid.dueTurn)
   assert.deepEqual(migrated.affairs.army, s.affairs.army)
-  assert.equal(armySize(addArmy(migrated.affairs.enemy.garrison, migrated.affairs.raid.army)), 6)
-  assert.equal(JSON.parse(data.get(SAVE_KEY)).version, 6)
+  assert.equal(
+    armySize(addArmy(migrated.affairs.enemies[2].garrison, migrated.affairs.raid.army)),
+    6,
+  )
+  assert.equal(JSON.parse(data.get(SAVE_KEY)).version, 7)
   assert.deepEqual(decode(data.get(SAVE_KEY)).state, migrated)
   const before = structuredClone(migrated),
     a = { type: 'gather', tactic: 'guard' }
@@ -361,17 +391,17 @@ test('v5 active raid migration preserves deadline, army, ranks, damage and origi
 })
 test('previously subdued save receives 36 quiet turns without migration rewards; malformed v6 never falls back', () => {
   const s = withArmy()
-  s.affairs.enemy.advantage = 2
-  const peaceful = go(s, { type: 'negotiate' })
+  s.affairs.enemies[2].advantage = 2
+  const peaceful = go(s, { type: 'negotiate', enemyId: 2 })
   const raw = encode(peaceful, 5),
     data = new Map([[WARFARE_KEY, raw]])
   const migrated = load(port(data)).state
-  assert.equal(migrated.affairs.enemy.peaceUntil, peaceful.turn + 36)
+  assert.equal(migrated.affairs.enemies[2].peaceUntil, peaceful.turn + 36)
   assert.deepEqual(migrated.resources, peaceful.resources)
   for (const mutate of [
-    (s) => (s.affairs.enemy.garrison.spearman = 13),
-    (s) => (s.affairs.enemy.advantage = 3),
-    (s) => (s.affairs.enemy.recovery = 3),
+    (s) => (s.affairs.enemies[2].garrison.spearman = 13),
+    (s) => (s.affairs.enemies[2].advantage = 3),
+    (s) => (s.affairs.enemies[2].recovery = 3),
     (s) => (s.affairs.raid.dueTurn = s.turn),
     (s) => (s.affairs.raid.intercepted = 'yes'),
     (s) => (s.affairs.army.shieldbearer = -1),
@@ -413,17 +443,17 @@ test('multi-year campaigns at all ranks: offence, defence, rebuilding and peace 
     s = go(s, { type: 'build', kind: 'watchtower', ...emptyPlot(s) })
     Object.values(s.buildings).find((b) => b.kind === 'watchtower').level = rank
     for (let i = 0; i < 180; i++) {
-      const e = s.affairs.enemy,
+      const e = s.affairs.enemies[2],
         cap = armyCapacity(rank)
       let a = { type: 'gather' }
       const damaged = Object.values(s.buildings).find((b) => b.damaged)
       if (e.peaceUntil !== null) {
         if (armySize(s.affairs.army) < cap) a = { type: 'recruit', unit: 'spearman' }
-      } else if (e.advantage === 2) a = { type: 'negotiate' }
+      } else if (e.advantage === 2) a = { type: 'negotiate', enemyId: 2 }
       else if (damaged) a = { type: 'repair', x: damaged.x, y: damaged.y }
       else if (armySize(s.affairs.army) < cap) a = { type: 'recruit', unit: 'spearman' }
       else if (!s.affairs.raid && s.turn + 1 >= e.expeditionAvailableTurn)
-        a = { type: 'expedition', army: { ...s.affairs.army } }
+        a = { type: 'expedition', enemyId: 2, army: { ...s.affairs.army } }
       const r = resolveTurn(s, a)
       assert.ok(r, actionError(s, a))
       s = r.state
@@ -432,7 +462,7 @@ test('multi-year campaigns at all ranks: offence, defence, rebuilding and peace 
       assert.equal(s.status, 'playing')
       assert.ok(decode(encode(s)))
       assert.ok(
-        armySize(addArmy(s.affairs.enemy.garrison, s.affairs.raid?.army ?? emptyArmy())) <=
+        armySize(addArmy(s.affairs.enemies[2].garrison, s.affairs.raid?.army ?? emptyArmy())) <=
           armySize(enemyTarget(rank)),
       )
     }

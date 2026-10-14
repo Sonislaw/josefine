@@ -4,7 +4,7 @@ import { developedKingdom, encode } from './kingdom-progression-fixture.mjs'
 const jiti = createJiti(import.meta.url)
 const { resolveTurn } = await jiti.import('../../src/apps/gry/games/little-kingdom/engine.ts')
 const url = '/gry/male-krolestwo',
-  key = 'zgrana:gry:male-krolestwo:v6',
+  key = 'zgrana:gry:male-krolestwo:v7',
   previous = 'zgrana:gry:male-krolestwo:v2'
 const stored = (page) => page.evaluate((k) => JSON.parse(localStorage.getItem(k)), key)
 const runtimeErrors = new WeakMap()
@@ -113,14 +113,14 @@ test('v2 migration preserves discoveries and bytes; old settlement earns its fir
   expect(await page.evaluate((k) => localStorage.getItem(k), previous)).toBe(raw)
 })
 
-for (const brokenVersion of [2, 6])
+for (const brokenVersion of [2, 7])
   test(`corrupt v${brokenVersion} stays protected despite an older valid save`, async ({
     page,
   }) => {
-    const brokenKey = brokenVersion === 6 ? key : previous
+    const brokenKey = brokenVersion === 7 ? key : previous
     await prepare(page, [
       ['zgrana:gry:male-krolestwo:v1', encode(developedKingdom(), 1)],
-      ...(brokenVersion === 6 ? [[previous, encode(developedKingdom(), 2)]] : []),
+      ...(brokenVersion === 7 ? [[previous, encode(developedKingdom(), 2)]] : []),
       [brokenKey, '{broken'],
     ])
     await page.goto(url)
@@ -132,7 +132,7 @@ for (const brokenVersion of [2, 6])
     expect(await page.evaluate((k) => localStorage.getItem(k), brokenKey)).toBe('{broken')
     await page.getByRole('button', { name: 'Rozpocznij nową osadę' }).click()
     await page.getByRole('button', { name: 'Tak, nowa osada' }).click()
-    expect((await stored(page)).version).toBe(6)
+    expect((await stored(page)).version).toBe(7)
     expect((await stored(page)).state.rank).toBe(0)
   })
 

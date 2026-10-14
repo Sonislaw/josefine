@@ -16,7 +16,7 @@ import { DISCOVERIES, blocksBuilding, type Discovery } from './discoveries'
 import type { Promotion } from './progression'
 import { REQUESTS, manageRequest, type RequestCommand, type CompletedRequest } from './requests'
 import { UNITS, type Tactic } from './military'
-import { SETTLEMENTS } from './neighbours'
+import { SETTLEMENTS, settlementDefinition } from './neighbours'
 import type { BattleReport } from './battle'
 export function useKingdom() {
   // Identical SSR/client initial state; browser-only saved state is restored after hydration.
@@ -111,12 +111,15 @@ export function useKingdom() {
     if (a.type === 'repair') return 'Naprawa budynku'
     if (a.type === 'recruit' || a.type === 'dismiss')
       return `${a.type === 'recruit' ? 'Rekrutacja' : 'Rozwiązanie jednostki'}: ${UNITS[a.unit].name}`
-    if (a.type === 'truce') return 'Rozejm — 12 tur ochrony'
-    if (a.type === 'negotiate') return 'Negocjacje — 36 tur pokoju'
-    if (a.type === 'intercept') return 'Przechwycenie najazdu'
-    if (a.type === 'forcePeace') return 'Wymuszenie pokoju'
+    if (a.type === 'truce') return `Rozejm — ${settlementDefinition(a.enemyId).name}`
+    if (a.type === 'negotiate') return `Negocjacje — ${settlementDefinition(a.enemyId).name}`
+    if (a.type === 'intercept')
+      return `Przechwycenie najazdu — ${settlementDefinition(a.enemyId).name}`
+    if (a.type === 'forcePeace')
+      return `Wymuszenie pokoju — ${settlementDefinition(a.enemyId).name}`
     if (a.type === 'diplomacy') return `Poselstwo: ${SETTLEMENTS[a.id]?.name}`
-    if (a.type === 'expedition') return 'Wyprawa na garnizon'
+    if (a.type === 'expedition')
+      return `Wyprawa na garnizon — ${settlementDefinition(a.enemyId).name}`
     if (a.type === 'explore') return `Odkrycie sektora ${a.x}, ${a.y}`
     if (a.type === 'landmark') {
       const d = state.value.discoveries[key(a.x, a.y)]

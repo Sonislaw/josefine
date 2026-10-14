@@ -5,6 +5,7 @@ import DiscoveryArt from './DiscoveryArt.vue'
 import HallArt from './HallArt.vue'
 import MilitaryArt from './MilitaryArt.vue'
 import type { Settlement } from './neighbours'
+import type { EnemyCampaign } from './campaign'
 import { militaryBuilding } from './military'
 import type { SettlementRank } from './progression'
 withDefaults(
@@ -15,6 +16,7 @@ withDefaults(
     discovery?: Discovery
     rank?: SettlementRank
     settlement?: Settlement
+    enemy?: EnemyCampaign
   }>(),
   {
     terrain: 'meadow',
@@ -170,7 +172,16 @@ withDefaults(
         ></g
       >
     </g>
-    <MilitaryArt v-if="settlement" kind="settlement" :hostile="settlement.relation === 'hostile'" />
+    <MilitaryArt
+      v-if="settlement"
+      :kind="settlement.relation === 'ruins' ? 'ruins' : 'settlement'"
+      :hostile="settlement.relation === 'hostile'"
+      :damaged="enemy && enemy.health < 50"
+    />
+    <g v-if="enemy && enemy.health > 0">
+      <rect x="8" y="56" width="48" height="4" rx="2" fill="#53634b" />
+      <rect x="8" y="56" :width="(48 * enemy.health) / 100" height="4" rx="2" fill="#f1c369" />
+    </g>
     <g v-if="building?.damaged"
       ><rect x="3" y="3" width="58" height="58" rx="8" fill="#4e4841" opacity=".45" /><path
         d="M22 8l8 16-8 8 16 10-5 14"
