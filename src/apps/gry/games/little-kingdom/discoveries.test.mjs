@@ -7,7 +7,7 @@ const { newKingdom, terrain, key, resolveTurn, buildingProduction, actionError }
 const { DISCOVERIES, discoveryForSector, discoveryBonus, blocksBuilding } =
   await j.import('./discoveries.ts')
 const { decode, load, save, SAVE_KEY, LEGACY_KEY } = await j.import('./storage.ts')
-const serialize = (state) => JSON.stringify({ version: 4, state, tutorialDismissed: true })
+const serialize = (state) => JSON.stringify({ version: 5, state, tutorialDismissed: true })
 const rich = (seed) => ({
   ...newKingdom(seed),
   resources: { wood: 5000, stone: 5000, food: 5000, gold: 5000 },
@@ -181,7 +181,7 @@ test('v1 migrates once without retroactive places, resources or turn changes, pr
   assert.equal(result.migrationSaveFailed, false)
   assert.deepEqual(result.state, { ...old, discoveries: {} })
   assert.equal(data.get(LEGACY_KEY), raw)
-  assert.equal(JSON.parse(data.get(SAVE_KEY)).version, 4)
+  assert.equal(JSON.parse(data.get(SAVE_KEY)).version, 5)
   assert.deepEqual(load(port).state, result.state)
   const explored = resolveTurn(result.state, { type: 'explore', x: 2, y: 0 })
   assert.equal(Object.keys(explored.state.discoveries).length, 1)

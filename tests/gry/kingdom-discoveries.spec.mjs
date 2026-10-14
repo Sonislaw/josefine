@@ -10,7 +10,7 @@ const { discoveryForSector, DISCOVERIES } = await j.import(
   '../../src/apps/gry/games/little-kingdom/discoveries.ts',
 )
 const url = '/gry/male-krolestwo',
-  key = 'zgrana:gry:male-krolestwo:v4',
+  key = 'zgrana:gry:male-krolestwo:v5',
   legacy = 'zgrana:gry:male-krolestwo:v1'
 const commit = (page) => page.getByRole('button', { name: 'Zatwierdź turę' })
 const runtimeErrors = new WeakMap()
@@ -31,7 +31,7 @@ function fixture(kind) {
   }
   throw Error('missing fixture')
 }
-async function prepare(page, state, version = 4, raw) {
+async function prepare(page, state, version = 5, raw) {
   await page.addInitScript(
     ({ state, version, raw, key, legacy }) => {
       localStorage.setItem('josefine:cookie-notice:dismissed:gry', '1')
@@ -165,7 +165,7 @@ test('old osada migrates once, preserving raw v1 and every existing building', a
   await page.goto(url)
   await expect(page.getByTestId('kingdom-turn')).toHaveText('31')
   const result = await stored(page)
-  expect(result.version).toBe(4)
+  expect(result.version).toBe(5)
   expect(result.state).toEqual({ ...state, discoveries: {} })
   expect(await page.evaluate((k) => localStorage.getItem(k), legacy)).toBe(raw)
   await page.reload()

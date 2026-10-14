@@ -172,7 +172,7 @@ const adjacent = (p: Point): Point[] => [
   { x: p.x, y: p.y + 1 },
 ]
 export function requestProgress(state: Kingdom, id: RequestId) {
-  const buildings = Object.values(state.buildings)
+  const buildings = Object.values(state.buildings).filter((b) => !b.damaged)
   const known = new Set(state.sectors.map(xy))
   const hasTerrain = (b: Building, kind: 'water' | 'forest' | 'rock') =>
     adjacent(b).some(
@@ -182,7 +182,10 @@ export function requestProgress(state: Kingdom, id: RequestId) {
     )
   const nearby = (b: Building, kind: Building['kind'], level = 1) =>
     adjacent(b).filter(
-      (p) => state.buildings[xy(p)]?.kind === kind && state.buildings[xy(p)]!.level >= level,
+      (p) =>
+        state.buildings[xy(p)]?.kind === kind &&
+        !state.buildings[xy(p)]!.damaged &&
+        state.buildings[xy(p)]!.level >= level,
     ).length
   let value = 0,
     required = 1,

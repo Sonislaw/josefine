@@ -3,6 +3,9 @@ import type { Building, Terrain } from './engine'
 import type { Discovery } from './discoveries'
 import DiscoveryArt from './DiscoveryArt.vue'
 import HallArt from './HallArt.vue'
+import MilitaryArt from './MilitaryArt.vue'
+import type { Settlement } from './neighbours'
+import { militaryBuilding } from './military'
 import type { SettlementRank } from './progression'
 withDefaults(
   defineProps<{
@@ -11,6 +14,7 @@ withDefaults(
     winter?: boolean
     discovery?: Discovery
     rank?: SettlementRank
+    settlement?: Settlement
   }>(),
   {
     terrain: 'meadow',
@@ -68,7 +72,8 @@ withDefaults(
     <DiscoveryArt v-if="discovery" :discovery="discovery" />
     <g v-if="building" stroke-linejoin="round">
       <ellipse cx="33" cy="51" rx="23" ry="6" fill="#344e3e" opacity=".18" />
-      <g v-if="building.kind === 'farm'"
+      <MilitaryArt v-if="militaryBuilding(building.kind)" :kind="building.kind" />
+      <g v-else-if="building.kind === 'farm'"
         ><rect x="10" y="16" width="44" height="36" rx="4" fill="#98704d" /><path
           d="M15 24h34M15 34h34M15 44h34"
           stroke="#dfbc60"
@@ -161,5 +166,21 @@ withDefaults(
         ></g
       >
     </g>
+    <MilitaryArt v-if="settlement" kind="settlement" :hostile="settlement.relation === 'hostile'" />
+    <g v-if="building?.damaged"
+      ><rect x="3" y="3" width="58" height="58" rx="8" fill="#4e4841" opacity=".45" /><path
+        d="M22 8l8 16-8 8 16 10-5 14"
+        stroke="#ffe0aa"
+        stroke-width="4"
+        fill="none"
+      /><circle cx="52" cy="12" r="9" fill="#9e4b30" /><text
+        x="52"
+        y="16"
+        text-anchor="middle"
+        font-size="13"
+        fill="white"
+        >!</text
+      ></g
+    >
   </g>
 </template>

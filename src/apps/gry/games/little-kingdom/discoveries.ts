@@ -121,6 +121,7 @@ export function discoveryBonus(
   state: Kingdom,
   b: Building,
 ): { source: Discovery; resource: 'food' | 'gold' } | null {
+  if (b.damaged) return null
   const kind =
     b.kind === 'farm' || b.kind === 'orchard'
       ? 'spring'

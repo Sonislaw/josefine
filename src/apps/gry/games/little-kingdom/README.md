@@ -7,7 +7,8 @@ Samodzielna strategia turowa: `/gry/male-krolestwo` lokalnie, `/male-krolestwo` 
 - `engine.ts`: czyste typy i reguły, oferta, gospodarka i sezonowość. `resolveTurn(state, action)` zwraca nowy stan, koszt, produkcję, jednorazową nagrodę, nowe odkrycie, bilans oraz zmianę populacji. Nigdy nie mutuje wejścia. Ten sam wynik służy prognozie i zatwierdzeniu.
 - `terrain.ts`: dotychczasowy, niezmieniony generator terenu. Wspólny dla silnika i odkryć, bez cyklicznych importów reguł.
 - `discoveries.ts`: definicje miejsc, koszty, nagrody, rozmieszczenie i premie. Osobne hashe nie zużywają RNG oferty budynków.
-- `storage.ts`: wersjonowany format `{ version: 4, state, tutorialDismissed }`, walidacja i obsługa braku pamięci. Klucz `zgrana:gry:male-krolestwo:v4`. Uszkodzony zapis jest chroniony do jawnego potwierdzenia nowej osady.
+- `storage.ts`: wersjonowany format `{ version: 5, state, tutorialDismissed }`, walidacja i obsługa braku pamięci. Klucz `zgrana:gry:male-krolestwo:v5`. Uszkodzony zapis jest chroniony do jawnego potwierdzenia nowej osady.
+- `military.ts`, `neighbours.ts`, `battle.ts`: konfiguracja wojska, kontakty i czysta prognoza walki. `DefencePanel.vue`, `BattleSummary.vue`, `MilitaryArt.vue`: panele oraz własne SVG.
 - `progression.ts`: definicje rang, wymagania, prezenty i czyste sprawdzanie awansu. `ProgressionPanel.vue` pokazuje postęp, a `HallArt.vue` cztery sylwetki ratusza w tym samym polu mapy.
 - `requests.ts`: 12 jednorazowych próśb, postęp i polecenia wyboru/odłożenia/przeglądania. `ResidentsPanel.vue` składa panel, a `ResidentPortrait.vue` rysuje portrety SVG.
 - `useKingdom.ts`: stan Vue, wybór akcji, interakcje z pamięcią dopiero po mount. Stan SSR jest stały; nie korzysta z `window`, losowego ziarna ani zapisu gracza.
@@ -116,11 +117,11 @@ zamknąć. Nowe prośby po odświeżeniu nie zastępują aktywnego celu.
 
 ## Reguły
 
-Jedna zatwierdzona akcja = jedna tura. Koszt → akcja → produkcja (również nowego budynku) → wyżywienie → niedobór → przyrost ludności → następna tura. Oferta zawiera farmę i dwa różne inne budynki; zmienia się tylko po budowie. Stan generatora i oferta są zapisywane.
+Jedna zatwierdzona akcja = jedna tura. Gospodarka rozlicza koszt, akcję, produkcję (również nowego budynku), wyżywienie, niedobór i przyrost ludności. Pełna kolejność z bitwą i utrzymaniem wojska jest opisana poniżej. Oferta zawiera farmę i dwa różne inne budynki gospodarcze; zmienia się tylko po budowie gospodarczej. Stan generatora i oferta są zapisywane.
 
 Rok ma 12 tur, każda pora roku 3. Na końcu pory roku przybywa jedna osoba, jeśli jest miejsce, nie było niedoboru i po wyżywieniu zostały zapasy >= 2 × populacja. Pierwszy kolejny niedobór ostrzega, następne odbierają po jednej osobie; pełne wyżywienie zeruje serię.
 
-**Konsekwencja przyjętego balansu:** ratusz jest niewyburzalny i produkuje 2 żywności, więc niedobór nie zmniejszy legalnej osady poniżej 2 osób. Stan `gameover` dla populacji 0 i ekran końca są obsługiwane defensywnie, ale zwykła rozgrywka według tych reguł do niego nie dochodzi. Nie wprowadzamy ukrytej katastrofy ani nie zmieniamy produkcji ratusza, aby wymusić porażkę. Test terminalny sprawdza izolowany silnik; symulacje prawidłowych osad sprawdzają możliwość odbudowy.
+Ratusz produkuje 2 żywności, więc sam niedobór nie zmniejszy legalnej osady poniżej 2 osób. Najazd może jednak odebrać ostatniego mieszkańca. Stan `gameover` blokuje kolejne akcje i przyrost ludności w końcowej turze.
 
 Sąsiedztwo to 4 krawędzie. Premie młynów (2 × poziom młyna) sumują się, bonus wody to raz +1, całość plonów farmy mnożymy przez jej poziom i zimą dzielimy przez 2, zaokrąglając w dół. Tartak/kamieniołom/targ mnożą przez poziom całość swojej produkcji. Dom daje 3 miejsca na poziom.
 
@@ -134,14 +135,15 @@ Dotknięcie wybiera pole. Przeciąganie przesuwa mapę; dwa palce lub przyciski 
 
 Zapis po każdej turze jest synchroniczny; nie zapisujemy zaznaczenia, kamery ani rozpoczętych gestów. Zamknięcie strony nie zmienia gospodarki. Gra działa bez storage, ale bez gwarancji wznowienia. Karty przeglądarki nie są synchronizowane — ostatni zapis wygrywa. Zapis ma ograniczenia pojemności localStorage; błąd zapisu jest widoczny, a rozgrywka trwa w pamięci.
 
-Odczytujemy kolejno v4 → v3 → v2 → v1, wyłącznie przy braku nowszego klucza. Poprawny
-starszy zapis migrujemy do v4, zachowując oryginalne bajty kopii. Dodajemy pusty stan
+Odczytujemy kolejno v5 → v4 → v3 → v2 → v1, wyłącznie przy braku nowszego klucza. Poprawny
+starszy zapis migrujemy do v5, zachowując oryginalne bajty kopii. Dodajemy pustą armię,
+brak kontaktów i najazdu. Z v4 zachowujemy prośby; starszym wersjom dodajemy pusty stan
 próśb, bez nagród ani zmiany zasobów, tury, budynków, terenu i oferty. Z v3 zachowujemy
 rangę i historię awansów. W v1/v2 ustawiamy rangę Osada i pustą historię awansów;
 z v1 dodatkowo tworzymy pustą kolekcję odkryć. Duża istniejąca osada może zdobywać
 kolejne rangi w następnych zatwierdzonych turach. Uszkodzony nowszy zapis zawsze
 blokuje cofnięcie do starszej kopii. Błąd zapisu migracji pozwala grać w pamięci
-z ostrzeżeniem. Potwierdzony restart zastępuje v4; stare kopie pozostają.
+z ostrzeżeniem. Potwierdzony restart zastępuje v5; stare kopie pozostają.
 
 Walidacja sprawdza rodzaj, deterministyczne położenie, odkryty sektor, unikalność
 miejsca w sektorze, chronologię tur oraz zakaz zabudowy zajętego miejsca. Historia
@@ -149,9 +151,55 @@ awansów musi zawierać dokładnie kolejne rangi 1…rank z rosnącymi turami, n
 Nie sprawdzamy dawnych progów względem obecnej populacji — osiągnięć nie odbieramy.
 Prośby mają znane identyfikatory, jedną aktywną pozycję, unikalną historię najwyżej
 12 wykonań, poprawne rangi i chronologię przyjęcia/wykonania. Brak lub uszkodzenie
-stanu próśb w v4 nie jest cicho naprawiane, aby nie umożliwiać ponownego odbioru nagród.
+stanu próśb w v4/v5 nie jest cicho naprawiane, aby nie umożliwiać ponownego odbioru nagród.
 
-## Weryfikacja i publikacja
+## Za granicą osady — reguły
+
+Po Wiosce trzy kolejne eksploracje poznają Brzeziny (dar 8 żywności/4 monety),
+Kamienny Bród (10 drewna/5 kamienia za przyjaźń i 12 monet) oraz Czerwone Wzgórze.
+Wymiana zajmuje turę i jest jednorazowa. Sąsiad zajmuje deterministyczną łąkę poza
+miejscem specjalnym i jego bezpośrednim sąsiedztwem; nie zużywa RNG kart. Maksymalnie trzy kontakty.
+
+Wróg po 12 turach od poznania zapowiada najazd 3 włóczników i 2 łuczników (siła 18).
+Zapowiedź na końcu tury N oznacza bitwę po akcji N+4. Rozejm kosztuje 12 monet i turę,
+odwołuje nawet najazd przypadający na tę turę. Bitwa lub rozejm daje 12 tur ochrony;
+kolejna zapowiedź następuje dopiero na końcu tego okresu. Nie ma czasu offline.
+
+Zakładka Obrona: jedne koszary (12 drewna/8 kamienia/6 monet) i jedna wieża
+(10 drewna/12 kamienia, +6 siły obrony). Jeden poziom; nie wliczają się do awansów
+i nie zmieniają gospodarczej oferty. Koszary mieszczą 6 najemników. Włócznik kosztuje
+3 drewna/2 monety (siła 4), łucznik 4 drewna/3 monety (siła 3). Rekrutacja lub rozwiązanie
+jednostki to tura; brak zwrotu kosztów. Wojsko nie zajmuje populacji ani domów.
+Utrzymanie: ceil(liczba/3) żywności po cywilach; płacimy dostępne jedzenie, a przy braku
+pełnej racji odchodzi jedna jednostka (najpierw włócznik). Koszar nie wyburzamy z armią.
+
+Szyk obronny daje +2 na włócznika; ostrzał +2 na łucznika; szturm floor(siła bazowa/4)
+i dodatkową stratę. Wieża dolicza się po taktyce tylko w obronie. Remis wygrywa obrońca.
+Zwycięzca traci ceil(25% oddziału), przy dwukrotnej przewadze 0; przegrany ceil(50%).
+Szturm dodaje jedną stratę, do liczebności oddziału. Giną najpierw włócznicy.
+Wróg ma stały jednorazowy oddział; nie modelujemy jego rannych ani gospodarki.
+
+Przegrany najazd odbiera cywila, grabi do 10 drewna/6 kamienia/8 żywności/6 monet
+i wyłącza pierwszy działający budynek gospodarczy w porządku y,x. Ratusz, domy i wojsko
+są chronione. Uszkodzenie wyłącza produkcję, premie, cele próśb i nowe awanse.
+Naprawa zachowuje poziom, kosztuje ceil(połowa podstawowego kosztu) i turę; działa przed
+produkcją. Nie można ulepszać uszkodzenia; wyburzenie nie daje materiałów.
+
+Wyprawa przeciw garnizonowi 4 włóczników/2 łuczników (siła 22) zajmuje turę.
+Gracz wybiera oddział, reszta pozostaje w osadzie. Przy zapowiedzi najazdu wyprawa jest
+zablokowana. Zwycięstwo daje raz 12 kamienia/15 monet i trwały pokój. Porażka wyprawy
+nie uszkadza własnej osady; po każdej bitwie obowiązuje okres ochronny.
+
+Kolejność: koszt/akcja → bitwa → produkcja → cywile → utrzymanie wojska → niedobór/przyrost
+→ awans/prośba → łupy i dary dyplomacji. Znaleziska nadal działają przed produkcją.
+Nowa wieża lub rekrut walczą już w turze budowy/rekrutacji. Utrata ostatniego cywila
+nie pozwala na odrodzenie przez sezonowy przyrost. Wybór taktyki i składu nie zużywa tury.
+
+## Weryfikacja aktualizacji
+
+Aktualizacja „Za granicą osady” jest pokryta przez `war.test.mjs` i `kingdom-war.spec.mjs`:
+kontakty, najazdy, taktyki, odbudowa, rozejmy, trwały pokój, migracja v4 → v5, pamięć
+bez możliwości zapisu oraz widoki 360/390/1440 px. Fixture pozostaje wyłącznie w testach.
 
 ```sh
 npm run test:gry
@@ -179,6 +227,6 @@ cztery warianty ratusza, klawiaturę, mobile, restart i błędy pamięci. Fixtur
 wyłącznie w katalogu testów; nie dodajemy interfejsu testowego do produkcji.
 
 `requests.test.mjs` sprawdza wszystkie cele, sąsiedztwo, wybór i odłożenie, nagrody,
-wspólne rozliczenie z awansem, komplet 12 wykonań oraz migracje v1/v2/v3 → v4.
+wspólne rozliczenie z awansem, komplet 12 wykonań oraz migracje v1/v2/v3 do bieżącego formatu.
 `tests/gry/kingdom-requests.spec.mjs` sprawdza portrety, postęp, prognozę i odbiór,
 mapę, odświeżenie, odłożenie, restart, pamięć i historię na mobile/desktop.

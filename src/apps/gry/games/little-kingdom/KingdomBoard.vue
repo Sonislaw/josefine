@@ -12,6 +12,7 @@ import {
   type Point,
 } from './engine'
 import TileArt from './TileArt.vue'
+import { settlementAt, SETTLEMENTS, RELATIONS } from './neighbours'
 import { RANKS } from './progression'
 import { blocksBuilding, DISCOVERIES, discoveryStatus } from './discoveries'
 const props = defineProps<{ state: Kingdom; selected: Point | null; winter: boolean }>()
@@ -45,8 +46,9 @@ const visible = computed(() => {
         y,
         terrain: t,
         building: b,
+        settlement: settlementAt(props.state, { x, y }),
         discovery: d,
-        label: `${x}, ${y}: ${d ? DISCOVERIES[d.kind].name + ', ' + discoveryStatus(d) : b ? (b.kind === 'hall' ? 'Ratusz, ' + RANKS[props.state.rank]!.name : BUILDINGS[b.kind].name + ', poziom ' + b.level) : TERRAIN_NAMES[t]}`,
+        label: `${x}, ${y}: ${settlementAt(props.state, { x, y }) ? SETTLEMENTS[settlementAt(props.state, { x, y })!.id]!.name + ', ' + RELATIONS[settlementAt(props.state, { x, y })!.relation] : d ? DISCOVERIES[d.kind].name + ', ' + discoveryStatus(d) : b ? (b.kind === 'hall' ? 'Ratusz, ' + RANKS[props.state.rank]!.name : BUILDINGS[b.kind].name + ', poziom ' + b.level + (b.damaged ? ', uszkodzony' : '')) : TERRAIN_NAMES[t]}`,
       })
     }
   return result
@@ -272,6 +274,7 @@ function wheel(e: WheelEvent) {
               :rank="state.rank"
               :terrain="p.terrain"
               :building="p.building"
+              :settlement="p.settlement"
               :winter="winter"
               :discovery="p.discovery"
             />

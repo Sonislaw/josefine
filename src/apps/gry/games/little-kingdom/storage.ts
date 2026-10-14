@@ -11,7 +11,10 @@ import {
 } from './engine'
 import { DISCOVERIES, blocksBuilding, discoveryForSector, type Discovery } from './discoveries'
 import { REQUESTS, REQUEST_IDS, emptyRequests } from './requests'
-export const SAVE_KEY = 'zgrana:gry:male-krolestwo:v4'
+import { emptyAffairs, settlementPosition } from './neighbours'
+import { militaryBuilding, WAR } from './military'
+export const SAVE_KEY = 'zgrana:gry:male-krolestwo:v5'
+export const REQUESTS_KEY = 'zgrana:gry:male-krolestwo:v4'
 export const PROGRESSION_KEY = 'zgrana:gry:male-krolestwo:v3'
 export const PREVIOUS_KEY = 'zgrana:gry:male-krolestwo:v2'
 export const LEGACY_KEY = 'zgrana:gry:male-krolestwo:v1'
@@ -32,12 +35,13 @@ const coordinate = (v: unknown): v is number =>
   Number.isSafeInteger(v) && Math.abs(v as number) <= Math.floor(Number.MAX_SAFE_INTEGER / 7) - 1
 export function decode(
   raw: string,
-  version: 1 | 2 | 3 | 4 = 4,
+  version: 1 | 2 | 3 | 4 | 5 = 5,
 ): { state: Kingdom; tutorialDismissed: boolean } | null {
   try {
     const data: unknown = JSON.parse(raw)
     if (!object(data) || data.version !== version || !object(data.state)) return null
     const s = data.state
+    if (version < 5) s.affairs = emptyAffairs()
     if (version < 4) s.requests = emptyRequests()
     // Migration adds progression only. It neither awards gifts nor advances simulation.
     if (version < 3) {
@@ -143,7 +147,9 @@ export function decode(
       s.offer.length !== 3 ||
       s.offer[0] !== 'farm' ||
       new Set(s.offer).size !== 3 ||
-      !s.offer.every((k) => typeof k === 'string' && Object.hasOwn(BUILDINGS, k))
+      !s.offer.every(
+        (k) => typeof k === 'string' && Object.hasOwn(BUILDINGS, k) && !militaryBuilding(k),
+      )
     )
       return null
     if (!object(s.buildings)) return null
@@ -194,6 +200,10 @@ export function decode(
         return null
       if (typeof b.kind !== 'string' || (b.kind !== 'hall' && !Object.hasOwn(BUILDINGS, b.kind)))
         return null
+      if (b.damaged !== undefined && typeof b.damaged !== 'boolean') return null
+      if (b.damaged && (b.kind === 'hall' || b.kind === 'house' || militaryBuilding(b.kind)))
+        return null
+      if (militaryBuilding(b.kind) && (version < 5 || b.level !== 1 || s.rank < 1)) return null
       if (b.kind === 'hall') {
         if (k !== '3,3' || b.level !== 1) return null
         halls++
@@ -211,6 +221,80 @@ export function decode(
       s.status !== (s.population === 0 ? 'gameover' : 'playing')
     )
       return null
+    const f = s.affairs
+    if (
+      !object(f) ||
+      !object(f.army) ||
+      !natural(f.army.spearman) ||
+      !natural(f.army.archer) ||
+      f.army.spearman + f.army.archer > WAR.capacity ||
+      !Array.isArray(f.settlements) ||
+      f.settlements.length > 3 ||
+      !natural(f.protectedUntil)
+    )
+      return null
+    const buildings = Object.values(s.buildings) as unknown as Kingdom['buildings'][string][]
+    for (const kind of ['barracks', 'watchtower'])
+      if (buildings.filter((b) => b.kind === kind).length > 1) return null
+    if (f.army.spearman + f.army.archer > 0 && !buildings.some((b) => b.kind === 'barracks'))
+      return null
+    const occupiedSectors = new Set<string>()
+    let contactTurn = 0
+    for (const [i, c] of f.settlements.entries()) {
+      if (
+        !object(c) ||
+        c.id !== i ||
+        !coordinate(c.x) ||
+        !coordinate(c.y) ||
+        !natural(c.discoveredTurn) ||
+        c.discoveredTurn <= contactTurn ||
+        c.discoveredTurn > s.turn ||
+        typeof c.giftTaken !== 'boolean' ||
+        s.rank < 1
+      )
+        return null
+      if (
+        i === 0
+          ? c.relation !== 'friendly'
+          : i === 1
+            ? c.relation !== (c.giftTaken ? 'friendly' : 'neutral')
+            : !['hostile', 'subdued'].includes(c.relation as string) || c.giftTaken
+      )
+        return null
+      const sector = sectorOf({ x: c.x, y: c.y }),
+        sk = key(sector.x, sector.y)
+      const d = discoveryForSector(s.seed, sector, c.discoveredTurn)
+      if (!d || !known.has(sk) || occupiedSectors.has(sk) || s.buildings[key(c.x, c.y)]) return null
+      const storedDiscovery = (s.discoveries as Record<string, Discovery>)[key(d.x, d.y)]
+      if (!storedDiscovery || storedDiscovery.discoveredTurn !== c.discoveredTurn) return null
+      const p = settlementPosition(s.seed, sector, d)
+      if (p.x !== c.x || p.y !== c.y) return null
+      occupiedSectors.add(sk)
+      contactTurn = c.discoveredTurn
+    }
+    const hostile = f.settlements[2] as Record<string, unknown> | undefined
+    if (!hostile) {
+      if (f.raid !== null || f.protectedUntil !== 0) return null
+    } else {
+      if (
+        f.protectedUntil < (hostile.discoveredTurn as number) + WAR.protection ||
+        f.protectedUntil > s.turn + WAR.protection
+      )
+        return null
+      if (f.raid !== null) {
+        if (
+          !object(f.raid) ||
+          hostile.relation !== 'hostile' ||
+          !natural(f.raid.announcedTurn) ||
+          !natural(f.raid.dueTurn) ||
+          f.raid.announcedTurn < f.protectedUntil ||
+          f.raid.announcedTurn > s.turn ||
+          f.raid.dueTurn !== f.raid.announcedTurn + WAR.warning ||
+          f.raid.dueTurn <= s.turn
+        )
+          return null
+      }
+    }
     return { state: s as unknown as Kingdom, tutorialDismissed: data.tutorialDismissed === true }
   } catch {
     return null
@@ -220,7 +304,8 @@ export function load(storage: StoragePort): LoadResult {
   try {
     // Presence wins over validity: never silently resurrect an older settlement.
     for (const [key, version] of [
-      [SAVE_KEY, 4],
+      [SAVE_KEY, 5],
+      [REQUESTS_KEY, 4],
       [PROGRESSION_KEY, 3],
       [PREVIOUS_KEY, 2],
       [LEGACY_KEY, 1],
@@ -229,7 +314,7 @@ export function load(storage: StoragePort): LoadResult {
       if (raw === null) continue
       const result = decode(raw, version)
       if (!result) return { status: 'corrupt', state: null, tutorialDismissed: false }
-      if (version < 4) {
+      if (version < 5) {
         const written = save(storage, result.state, result.tutorialDismissed)
         return { status: 'saved', ...result, migrationSaveFailed: !written }
       }
@@ -242,7 +327,7 @@ export function load(storage: StoragePort): LoadResult {
 }
 export function save(storage: StoragePort, state: Kingdom, tutorialDismissed: boolean): boolean {
   try {
-    storage.setItem(SAVE_KEY, JSON.stringify({ version: 4, state, tutorialDismissed }))
+    storage.setItem(SAVE_KEY, JSON.stringify({ version: 5, state, tutorialDismissed }))
     return true
   } catch {
     return false

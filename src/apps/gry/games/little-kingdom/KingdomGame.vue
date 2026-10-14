@@ -9,6 +9,17 @@ import DiscoveryArt from './DiscoveryArt.vue'
 import HallArt from './HallArt.vue'
 import ProgressionPanel from './ProgressionPanel.vue'
 import ResidentsPanel from './ResidentsPanel.vue'
+import DefencePanel from './DefencePanel.vue'
+import BattleSummary from './BattleSummary.vue'
+import {
+  TACTICS,
+  militaryBuilding,
+  upkeep,
+  armySize,
+  type Tactic,
+  type MilitaryBuilding,
+} from './military'
+import { settlementAt, SETTLEMENTS, RELATIONS } from './neighbours'
 import { REQUESTS } from './requests'
 import { RANKS } from './progression'
 import { DISCOVERIES, discoveryStatus, discoveryBonus } from './discoveries'
@@ -31,6 +42,8 @@ import {
 import { useKingdom } from './useKingdom'
 import { resourceList as priceText } from './format'
 const {
+  tactic,
+  latestBattle,
   state,
   ready,
   corrupt,
@@ -61,19 +74,36 @@ const {
   dismissTutorial,
 } = useKingdom()
 const board = ref<InstanceType<typeof KingdomBoard>>()
+const buildTab = ref<'economy' | 'defence'>('economy')
+function changeBuildTab(tab: 'economy' | 'defence') {
+  buildTab.value = tab
+  card.value = null
+  action.value = null
+}
+const tactics = Object.keys(TACTICS) as Tactic[]
+const militaryOffer = computed(() =>
+  (['barracks', 'watchtower'] as MilitaryBuilding[]).filter(
+    (kind) => !Object.values(state.value.buildings).some((b) => b.kind === kind),
+  ),
+)
+const selectedSettlement = computed(() =>
+  selected.value ? settlementAt(state.value, selected.value) : undefined,
+)
 const seasonIndex = computed(() => season(state.value.turn))
 const output = computed(() => production(state.value))
 const edges = computed(() => frontier(state.value))
 const selectedName = computed(() =>
-  selectedBuilding.value
-    ? selectedBuilding.value.kind === 'hall'
-      ? 'Ratusz'
-      : BUILDINGS[selectedBuilding.value.kind].name
-    : selectedDiscovery.value
-      ? DISCOVERIES[selectedDiscovery.value.kind].name
-      : selected.value
-        ? TERRAIN_NAMES[terrain(state.value.seed, selected.value.x, selected.value.y)]
-        : 'Wybierz pole na mapie',
+  selectedSettlement.value
+    ? SETTLEMENTS[selectedSettlement.value.id]!.name
+    : selectedBuilding.value
+      ? selectedBuilding.value.kind === 'hall'
+        ? 'Ratusz'
+        : BUILDINGS[selectedBuilding.value.kind].name
+      : selectedDiscovery.value
+        ? DISCOVERIES[selectedDiscovery.value.kind].name
+        : selected.value
+          ? TERRAIN_NAMES[terrain(state.value.seed, selected.value.x, selected.value.y)]
+          : 'Wybierz pole na mapie',
 )
 const selectedOutput = computed(() =>
   selectedBuilding.value ? buildingProduction(state.value, selectedBuilding.value) : null,
@@ -110,6 +140,7 @@ function exploreFromList(p: Point) {
 }
 function reset() {
   startNew()
+  buildTab.value = 'economy'
   board.value?.locate({ x: 3, y: 3 })
 }
 function compass(p: Point) {
@@ -123,8 +154,8 @@ function compass(p: Point) {
         <p class="eyebrow">ZGRANA / SPOKOJNA STRATEGIA</p>
         <h1>Małe <em>królestwo.</em></h1>
         <p>
-          Każda osada ma swoich mieszkańców. Spełniaj ich prośby, odkrywaj nowe ziemie i rozwijaj
-          własne królestwo bez pośpiechu.
+          Odkrywaj sąsiednie osady, dbaj o mieszkańców i przygotuj obronę. Każdą decyzję podejmujesz
+          we własnym tempie — czas płynie tylko po zatwierdzeniu tury.
         </p>
       </div>
       <div class="heading-buttons">
@@ -165,14 +196,19 @@ function compass(p: Point) {
         >
       </div>
       <ResourceBar :resources="state.resources" :delta="preview?.delta" />
+      <p v-if="state.affairs.raid" class="kingdom-notice danger" role="status">
+        ⚑ Najazd za {{ state.affairs.raid.dueTurn - state.turn }} tur! Wróg: 3 włóczników i 2
+        łuczników. Przygotuj obronę lub opłać rozejm w panelu sąsiadów.
+      </p>
       <p class="rank-badge" data-testid="kingdom-rank">♜ {{ RANKS[state.rank]!.name }}</p>
       <div class="economy-line">
         <span>Produkcja / turę: {{ priceText(output) }}</span
         ><span
-          >Wyżywienie: {{ state.population }} · Bilans żywności:
-          <b :class="{ deficit: output.food < state.population }"
-            >{{ output.food - state.population >= 0 ? '+' : ''
-            }}{{ output.food - state.population }}</b
+          >Wyżywienie: {{ state.population }} + wojsko {{ upkeep(state.affairs.army) }} · Bilans
+          żywności:
+          <b :class="{ deficit: output.food < state.population + upkeep(state.affairs.army) }"
+            >{{ output.food - state.population - upkeep(state.affairs.army) >= 0 ? '+' : ''
+            }}{{ output.food - state.population - upkeep(state.affairs.army) }}</b
           ></span
         >
       </div>
@@ -202,6 +238,11 @@ function compass(p: Point) {
         </button>
       </div>
       <ProgressionPanel :state="state" />
+      <div v-if="latestBattle" class="battle-result" role="status">
+        <BattleSummary :report="latestBattle" /><button type="button" @click="latestBattle = null">
+          Zamknij raport bitwy
+        </button>
+      </div>
       <ResidentsPanel
         :state="state"
         :disabled="blocked"
@@ -231,6 +272,12 @@ function compass(p: Point) {
             @select="select"
             @explore="explore"
           />
+          <DefencePanel
+            :state="state"
+            :disabled="blocked"
+            @choose="choose"
+            @locate="locateDiscovery"
+          />
           <div class="selected-panel">
             <div>
               <p class="eyebrow">
@@ -245,6 +292,14 @@ function compass(p: Point) {
               </h2>
               <p v-if="selectedBuilding && selectedBuilding.kind !== 'hall'">
                 {{ BUILDINGS[selectedBuilding.kind].description }}
+              </p>
+              <p v-if="selectedSettlement">
+                {{ RELATIONS[selectedSettlement.relation] }}.
+                {{ SETTLEMENTS[selectedSettlement.id]!.description }} Decyzje znajdziesz w panelu
+                „Sąsiednie osady”.
+              </p>
+              <p v-if="selectedBuilding?.damaged" class="kingdom-notice danger">
+                Uszkodzony budynek: produkcja i premie są wyłączone. Naprawa zachowa jego poziom.
               </p>
               <p v-if="selectedBuilding?.kind === 'hall'">
                 Ratusz zmienia wygląd wraz z rangą osady. Jego produkcja pozostaje taka sama; nie
@@ -306,10 +361,18 @@ function compass(p: Point) {
             >
               <button
                 type="button"
+                v-if="!selectedBuilding.damaged && !militaryBuilding(selectedBuilding.kind)"
                 :disabled="blocked || selectedBuilding.level >= 3"
                 @click="choose({ type: 'upgrade', ...selected })"
               >
                 Ulepsz do {{ Math.min(3, selectedBuilding.level + 1) }}</button
+              ><button
+                v-if="selectedBuilding.damaged"
+                type="button"
+                :disabled="blocked"
+                @click="choose({ type: 'repair', ...selected })"
+              >
+                Napraw budynek</button
               ><button
                 type="button"
                 :disabled="blocked"
@@ -343,10 +406,29 @@ function compass(p: Point) {
         </div>
         <aside class="kingdom-planning" aria-label="Planowanie tury">
           <div class="offer-panel">
+            <div class="build-tabs" role="group" aria-label="Rodzaj zabudowy">
+              <button
+                type="button"
+                :aria-pressed="buildTab === 'economy'"
+                @click="changeBuildTab('economy')"
+              >
+                Gospodarka
+              </button>
+              <button
+                type="button"
+                :aria-pressed="buildTab === 'defence'"
+                @click="changeBuildTab('defence')"
+              >
+                Obrona
+              </button>
+            </div>
             <p class="eyebrow">CO ZBUDUJESZ?</p>
-            <h2>Trzy możliwości.</h2>
+            <h2>{{ buildTab === 'economy' ? 'Trzy możliwości.' : 'Bezpieczna osada.' }}</h2>
+            <p v-if="buildTab === 'defence' && state.rank < 1">
+              Obrona odblokuje się na randze Wioska.
+            </p>
             <BuildingOffer
-              :offer="state.offer"
+              :offer="buildTab === 'economy' ? state.offer : state.rank >= 1 ? militaryOffer : []"
               :selected="card"
               :resources="state.resources"
               :disabled="blocked"
@@ -362,6 +444,17 @@ function compass(p: Point) {
             </button>
           </div>
           <div class="turn-preview" :class="{ 'has-action': action }">
+            <fieldset
+              v-if="state.affairs.raid || action?.type === 'expedition'"
+              class="tactic-picker"
+            >
+              <legend>Taktyka bitwy</legend>
+              <label v-for="t in tactics" :key="t"
+                ><input v-model="tactic" type="radio" name="battle-tactic" :value="t" /><span
+                  >{{ TACTICS[t].name }}<small>{{ TACTICS[t].description }}</small></span
+                ></label
+              ><small>Straty dotyczą najpierw włóczników, potem łuczników.</small>
+            </fieldset>
             <p class="eyebrow">NASTĘPNA TURA / {{ SEASONS[seasonIndex] }}</p>
             <h2>{{ actionName }}</h2>
             <p v-if="!action">
@@ -371,6 +464,23 @@ function compass(p: Point) {
             <p v-if="error" class="preview-error" role="status">{{ error }}</p>
             <template v-if="preview"
               ><p>Koszt: {{ priceText(preview.cost) }}</p>
+              <BattleSummary v-if="preview.battle" :report="preview.battle" preview />
+              <p v-if="preview.state.affairs.raid">
+                Najazd po tej turze: za
+                {{ preview.state.affairs.raid.dueTurn - preview.state.turn }} tur.
+              </p>
+              <p v-if="preview.armyFood || armySize(preview.deserters)">
+                Wojsko zużyje {{ preview.armyFood }} żywności. Odejścia z niedoboru:
+                {{ preview.deserters.spearman }} włóczników i
+                {{ preview.deserters.archer }} łuczników.
+              </p>
+              <p v-if="Object.values(preview.diplomaticReward).some(Boolean)">
+                Dar po wyżywieniu: {{ priceText(preview.diplomaticReward) }}.
+              </p>
+              <p v-if="preview.state.affairs.settlements.length > state.affairs.settlements.length">
+                Poznasz osadę: {{ SETTLEMENTS[state.affairs.settlements.length]!.name }}. Kontakt
+                znajdziesz w panelu sąsiadów.
+              </p>
               <p v-if="KEYS.some((k) => preview!.reward[k])" class="discovery-reward">
                 Jednorazowa nagroda: <strong>{{ priceText(preview.reward) }}</strong>
               </p>
@@ -399,7 +509,11 @@ function compass(p: Point) {
                 }}. Premia jest już ujęta w produkcji.
               </p>
               <p v-if="action?.type === 'demolish'">
-                Odzyskasz połowę podstawowego kosztu. Ulepszenia nie zwiększają zwrotu.
+                {{
+                  selectedBuilding?.damaged
+                    ? 'Uszkodzony budynek nie zwraca materiałów.'
+                    : 'Odzyskasz połowę podstawowego kosztu. Ulepszenia nie zwiększają zwrotu.'
+                }}
               </p>
               <dl>
                 <div v-for="r in KEYS" :key="r">
@@ -488,12 +602,38 @@ function compass(p: Point) {
     <section class="kingdom-faq">
       <h2>Pytania przed pierwszą wyprawą</h2>
       <details>
+        <summary>Jak działają najazdy i rozejm?</summary>
+        <p>
+          Po osiągnięciu Wioski trzy kolejne eksploracje odkrywają Brzeziny, Kamienny Bród i
+          Czerwone Wzgórze. Wróg daje 12 tur spokoju, a potem zapowiada najazd z wyprzedzeniem 4
+          tur. Możesz przygotować wojsko i wieżę albo zapłacić 12 monet za rozejm. Po starciu lub
+          rozejmie masz 12 tur ochrony. Zamknięcie strony nie przyspiesza ataku.
+        </p>
+      </details>
+      <details>
+        <summary>Jak wygrywać bitwy i odbudować osadę?</summary>
+        <p>
+          Koszary mieszczą 6 najemników. Wybierz szyk obronny (+2 siły na włócznika), ostrzał (+2 na
+          łucznika) lub szturm (+25% siły i dodatkowa strata jednostki). Wieża daje +6 siły w
+          obronie. Remis wygrywa obrońca. Prognoza pokazuje dokładny wynik i straty przed
+          zatwierdzeniem.
+        </p>
+        <p>
+          Zwycięstwo kosztuje 25% oddziału, a porażka 50%, zaokrąglając w górę. Zwycięstwo z
+          dwukrotną przewagą nie kosztuje jednostek. Szturm dodaje jedną stratę. Najpierw tracisz
+          włóczników. Przegrany najazd odbiera mieszkańca, grabi do 10 drewna, 6 kamienia, 8
+          żywności i 6 monet oraz uszkadza jeden budynek gospodarczy. Naprawa kosztuje połowę
+          podstawowych materiałów, w górę, i jedną turę. Ratusz, domy i infrastruktura wojskowa są
+          chronione. Pokonanie garnizonu kończy najazdy.
+        </p>
+      </details>
+      <details>
         <summary>Czy Małe królestwo ma limit czasu?</summary>
         <p>
           Nie. To turowa gra strategiczna w przeglądarce. Możesz spokojnie sprawdzić produkcję i
           zaplanować ruch. Rozgrywka nie kończy się po określonej liczbie lat. Brak żywności
-          powoduje odejścia mieszkańców, ale ratusz utrzymuje dwie ostatnie osoby — możesz odbudować
-          osadę.
+          powoduje odejścia mieszkańców. Najazdy są zapowiadane i mogą odebrać mieszkańca, uszkodzić
+          budynek oraz zabrać zapasy. Utrata ostatniej osoby kończy rozgrywkę.
         </p>
       </details>
       <details>
@@ -504,9 +644,9 @@ function compass(p: Point) {
           prywatny może go nie zachować. Nie synchronizujemy osady między urządzeniami. Starsze
           zapisy osad są zachowywane i przenoszone do nowej wersji. Wyjątkowe miejsca pojawią się w
           nich dopiero w nowo odkrywanych sektorach, bez zmiany starej zabudowy. Po aktualizacji
-          starsza osada zaczyna od rangi „Osada”. Spełnione wymagania pozwolą awansować w kolejnych
-          zatwierdzonych turach, po jednym stopniu na turę. Migracja nie wydaje zasobów ani nie
-          nalicza czasu.
+          zachowujemy istniejące rangi i prośby. Najstarsze zapisy bez rang zaczynają od rangi
+          „Osada”. Spełnione wymagania pozwolą awansować w kolejnych zatwierdzonych turach, po
+          jednym stopniu na turę. Migracja nie wydaje zasobów ani nie nalicza czasu.
         </p>
       </details>
       <details>
@@ -541,7 +681,8 @@ function compass(p: Point) {
           Każdy nowo odkryty sektor kryje jedno miejsce: ruiny strażnicy, porzucony wóz, zarośnięte
           źródło albo dawny punkt handlowy. Ruiny i wóz dają jednorazowe zasoby. Odnowione źródło
           wspiera farmy i sady, a punkt handlowy — targi przy wspólnej krawędzi. Zbadanie lub
-          odnowienie zajmuje jedną osobno zatwierdzoną turę. Nie ma terminów, walk ani losowych kar.
+          odnowienie zajmuje jedną osobno zatwierdzoną turę. Po osiągnięciu Wioski trzy kolejne
+          eksploracje odkrywają również osady: przyjazną, neutralną i wrogą.
         </p>
       </details>
       <details>
@@ -610,9 +751,17 @@ function compass(p: Point) {
           oznaczają odejścia. Ratusz produkuje 2 żywności i utrzymuje dwie ostatnie osoby.
         </li>
         <li>
-          Buduj na łąkach. Sąsiedztwo czterech krawędzi daje premie. Budynki ulepszysz do poziomu 3.
+          Buduj na łąkach. Sąsiedztwo czterech krawędzi daje premie. Budynki gospodarcze ulepszysz
+          do poziomu 3; wojskowe mają jeden poziom.
         </li>
-        <li>Oferta zmienia się wyłącznie po budowie. Zawsze zawiera farmę.</li>
+        <li>
+          Oferta gospodarcza zmienia się wyłącznie po budowie gospodarczej. Zawsze zawiera farmę.
+          Koszary i wieża są w zakładce „Obrona”.
+        </li>
+        <li>
+          Najazd jest zapowiadany 4 tury wcześniej. Wybierz taktykę i sprawdź prognozę, przygotuj
+          wojsko lub opłać rozejm. Przegrana może odebrać ostatniego mieszkańca i zakończyć grę.
+        </li>
         <li>
           „Głos mieszkańców” daje 12 opcjonalnych próśb, odblokowywanych wraz z rangą. Wybierz
           jedną; istniejące budynki też się liczą. Cel i jednorazową nagrodę sprawdzamy po
@@ -659,6 +808,59 @@ function compass(p: Point) {
   </div>
 </template>
 <style scoped>
+.build-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.build-tabs button,
+.battle-result > button {
+  min-height: 44px;
+  border: 1px solid #a9b198;
+  border-radius: 10px;
+  padding: 8px 14px;
+  background: #e3e9d5;
+  color: #294a39;
+  cursor: pointer;
+}
+.build-tabs button[aria-pressed='true'] {
+  background: #324c3a;
+  color: #fff1c9;
+}
+.battle-result {
+  margin: 16px 0;
+}
+.battle-result > button {
+  margin-top: 8px;
+}
+.tactic-picker {
+  border: 1px solid #9ba98b;
+  border-radius: 12px;
+  padding: 12px;
+  margin-bottom: 16px;
+  min-width: 0;
+}
+.tactic-picker label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+  cursor: pointer;
+}
+.tactic-picker small {
+  display: block;
+  font-size: 0.8rem;
+}
+.tactic-picker input {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+.build-tabs :focus-visible,
+.battle-result > button:focus-visible {
+  outline: 3px solid #bb9237;
+  outline-offset: 3px;
+}
 .rank-badge {
   display: inline-block;
   border: 1px solid #bba467;

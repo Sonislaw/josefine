@@ -15,6 +15,9 @@ import { load, save } from './storage'
 import { DISCOVERIES, blocksBuilding, type Discovery } from './discoveries'
 import type { Promotion } from './progression'
 import { REQUESTS, manageRequest, type RequestCommand, type CompletedRequest } from './requests'
+import { UNITS, type Tactic } from './military'
+import { SETTLEMENTS } from './neighbours'
+import type { BattleReport } from './battle'
 export function useKingdom() {
   // Identical SSR/client initial state; browser-only saved state is restored after hydration.
   const state = shallowRef(newKingdom(1)),
@@ -27,6 +30,8 @@ export function useKingdom() {
   const latestDiscovery = shallowRef<Discovery | null>(null)
   const latestPromotion = shallowRef<Promotion | null>(null)
   const latestRequest = shallowRef<CompletedRequest | null>(null)
+  const latestBattle = shallowRef<BattleReport | null>(null)
+  const tactic = ref<Tactic>('guard')
   const selectedDiscovery = computed(() =>
     selected.value ? state.value.discoveries[key(selected.value.x, selected.value.y)] : undefined,
   )
@@ -37,8 +42,9 @@ export function useKingdom() {
   const selectedBuilding = computed(() =>
     selected.value ? state.value.buildings[key(selected.value.x, selected.value.y)] : undefined,
   )
-  const error = computed(() => (action.value ? actionError(state.value, action.value) : null))
-  const preview = computed(() => (action.value ? resolveTurn(state.value, action.value) : null))
+  const prepared = computed(() => (action.value ? { ...action.value, tactic: tactic.value } : null))
+  const error = computed(() => (prepared.value ? actionError(state.value, prepared.value) : null))
+  const preview = computed(() => (prepared.value ? resolveTurn(state.value, prepared.value) : null))
   const blocked = computed(() => !ready.value || corrupt.value || state.value.status === 'gameover')
   function persist() {
     if (corrupt.value) return
@@ -102,6 +108,12 @@ export function useKingdom() {
     if (!a) return 'Zaplanuj swój ruch'
     if (a.type === 'build') return `Budowa: ${BUILDINGS[a.kind].name}`
     if (a.type === 'gather') return 'Zbieranie zapasów'
+    if (a.type === 'repair') return 'Naprawa budynku'
+    if (a.type === 'recruit' || a.type === 'dismiss')
+      return `${a.type === 'recruit' ? 'Rekrutacja' : 'Rozwiązanie jednostki'}: ${UNITS[a.unit].name}`
+    if (a.type === 'truce') return 'Rozejm — 12 tur ochrony'
+    if (a.type === 'diplomacy') return `Poselstwo: ${SETTLEMENTS[a.id]?.name}`
+    if (a.type === 'expedition') return 'Wyprawa na Czerwone Wzgórze'
     if (a.type === 'explore') return `Odkrycie sektora ${a.x}, ${a.y}`
     if (a.type === 'landmark') {
       const d = state.value.discoveries[key(a.x, a.y)]
@@ -111,10 +123,16 @@ export function useKingdom() {
   })
   function commit() {
     if (blocked.value || !action.value) return
-    const result = resolveTurn(state.value, action.value)
+    const result = prepared.value ? resolveTurn(state.value, prepared.value) : null
     if (!result) return
     message.value = `${actionName.value}. ${result.shortage ? (result.populationChange < 0 ? 'Brak żywności — jeden mieszkaniec odszedł.' : 'Brak żywności! Kolejna tura niedoboru spowoduje odejście mieszkańca.') : result.populationChange > 0 ? 'Do osady przybył nowy mieszkaniec!' : 'Mieszkańcy otrzymali żywność.'}`
     state.value = result.state
+    if (result.battle) {
+      latestBattle.value = result.battle
+      message.value = result.battle.victory
+        ? 'Zwycięstwo! Sprawdź raport bitwy.'
+        : 'Przegrana bitwa. Sprawdź straty i zaplanuj odbudowę.'
+    }
     latestDiscovery.value = result.discovery
     if (result.promotion) latestPromotion.value = result.promotion
     if (result.completedRequest) latestRequest.value = result.completedRequest
@@ -132,6 +150,8 @@ export function useKingdom() {
     latestDiscovery.value = null
     latestPromotion.value = null
     latestRequest.value = null
+    latestBattle.value = null
+    tactic.value = 'guard'
     message.value = 'Nowa ziemia, nowy początek. Zadbaj o żywność przed zimą.'
     persist()
   }
@@ -156,6 +176,8 @@ export function useKingdom() {
   }
   const selectedSector = computed(() => (selected.value ? sectorOf(selected.value) : null))
   return {
+    tactic,
+    latestBattle,
     state,
     ready,
     corrupt,

@@ -1,4 +1,5 @@
 import type { Kingdom, Resources } from './engine'
+import { militaryBuilding } from './military'
 
 export type SettlementRank = 0 | 1 | 2 | 3
 export interface Promotion {
@@ -59,7 +60,9 @@ const METRICS: Record<Metric, { label: string; hint: string }> = {
 export function rankProgress(state: Kingdom) {
   const target = RANKS[state.rank + 1]
   if (!target) return []
-  const buildings = Object.values(state.buildings).filter((b) => b.kind !== 'hall')
+  const buildings = Object.values(state.buildings).filter(
+    (b) => b.kind !== 'hall' && !b.damaged && !militaryBuilding(b.kind),
+  )
   const values: Record<Metric, number> = {
     population: state.population,
     buildings: buildings.length,
