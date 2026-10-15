@@ -6,6 +6,7 @@ export const BALANCE = {
     house: cost(18, 8, 0, 4),
     farm: cost(12, 3, 0, 2),
     sawmill: cost(16, 6, 0, 3),
+    forester: cost(24, 10, 0, 8),
     quarry: cost(16, 4, 0, 3),
     mill: cost(24, 14, 0, 8),
     market: cost(22, 12, 0, 8),

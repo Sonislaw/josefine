@@ -8,11 +8,11 @@ import {
   key,
   sectorOf,
   season,
-  terrain,
   type Kingdom,
   type Point,
 } from './engine'
 import TileArt from './TileArt.vue'
+import { forestStage, terrainAt, inForestRange } from './forestry'
 import {
   depositCapacity,
   depositRemaining,
@@ -53,7 +53,10 @@ const showPopover = computed(
 const extraction = computed(() => planExtraction(props.state))
 const rangeKind = computed(() => selectedBuilding.value?.kind ?? props.buildKind)
 const showRange = computed(
-  () => !!props.selected && !!rangeKind.value && extractor(rangeKind.value),
+  () =>
+    !!props.selected &&
+    !!rangeKind.value &&
+    (extractor(rangeKind.value) || rangeKind.value === 'forester'),
 )
 const placement = computed(() =>
   props.selected
@@ -136,7 +139,7 @@ const visible = computed(() => {
     for (let x = left; x <= right; x++) {
       const s = sectorOf({ x, y })
       if (!known.value.has(key(s.x, s.y))) continue
-      const t = terrain(props.state.seed, x, y),
+      const t = terrainAt(props.state, { x, y }),
         b = props.state.buildings[key(x, y)]
       const found = props.state.discoveries[key(x, y)],
         d = blocksBuilding(found) ? found : undefined
@@ -144,6 +147,7 @@ const visible = computed(() => {
       const enemy = contact ? props.state.affairs.enemies[contact.id] : undefined
       const amount = depositRemaining(props.state, { x, y })
       const capacity = depositCapacity(props.state, { x, y })
+      const growth = t === 'forest' ? forestStage(props.state, { x, y }) : undefined
       const idle =
         !!b &&
         extractor(b.kind) &&
@@ -162,7 +166,7 @@ const visible = computed(() => {
                 ny = y + offset[1]!
               const neighbourSector = sectorOf({ x: nx, y: ny })
               return known.value.has(key(neighbourSector.x, neighbourSector.y)) &&
-                terrain(props.state.seed, nx, ny) !== 'water'
+                terrainAt(props.state, { x: nx, y: ny }) !== 'water'
                 ? mask | (1 << i)
                 : mask
             }, 0)
@@ -176,6 +180,7 @@ const visible = computed(() => {
         enemy,
         amount,
         capacity,
+        growth,
         idle,
         waterEdges,
         variant: Math.abs((x * 73856093) ^ (y * 19349663) ^ props.state.seed) % 6,
@@ -444,6 +449,7 @@ function wheel(e: WheelEvent) {
               :aria-label="
                 p.label +
                 (p.capacity ? ', zasób ' + p.amount + ' / ' + p.capacity : '') +
+                (p.growth ? ', etap lasu ' + p.growth + ' / 3' : '') +
                 (p.idle ? ', przestój — brak dostępnego surowca' : '')
               "
             >
@@ -460,11 +466,18 @@ function wheel(e: WheelEvent) {
                 :water-edges="p.waterEdges"
                 :deposit-remaining="p.capacity ? p.amount : undefined"
                 :deposit-capacity="p.capacity"
+                :forest-stage="p.growth"
                 :idle="p.idle"
                 :discovery="p.discovery"
               />
               <rect
-                v-if="showRange && selected && inExtractionRange(selected, p)"
+                v-if="
+                  showRange &&
+                  selected &&
+                  (rangeKind === 'forester'
+                    ? inForestRange(selected, p)
+                    : inExtractionRange(selected, p))
+                "
                 x="2"
                 y="2"
                 width="60"
@@ -533,7 +546,11 @@ function wheel(e: WheelEvent) {
     </div>
     <p class="map-hint">
       <template v-if="showRange"
-        >Zasięg wydobycia: 3 pola w pionie i poziomie. Złoża są wspólne dla budynków.<br
+        >{{
+          rangeKind === 'forester'
+            ? 'Zasięg sadzenia: 3 pola. Leśnik odnawia wycięty las i obsadza wolne łąki.'
+            : 'Zasięg wydobycia: 3 pola w pionie i poziomie. Złoża są wspólne dla budynków.'
+        }}<br
       /></template>
       Dotknij pola · przeciągnij mapę · rozsuń palce, aby przybliżyć. Sąsiadujące pola są
       obrysowane.

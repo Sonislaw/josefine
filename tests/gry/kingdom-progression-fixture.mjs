@@ -53,8 +53,9 @@ export function developedKingdom(rank = 0) {
   })
   return s
 }
-export const encode = (state, version = 8) => {
+export const encode = (state, version = 9) => {
   const copy = structuredClone(state)
+  if (version < 9) delete copy.forests
   if (version < 8) delete copy.deposits
   if (version < 7) {
     const e = copy.affairs.enemies[2]

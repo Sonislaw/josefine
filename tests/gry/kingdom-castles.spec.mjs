@@ -5,11 +5,11 @@ import { beforeRaid } from './kingdom-war-fixture.mjs'
 import { encode } from './kingdom-progression-fixture.mjs'
 const j = createJiti(import.meta.url)
 const { resolveTurn } = await j.import('../../src/apps/gry/games/little-kingdom/engine.ts')
-const key = 'zgrana:gry:male-krolestwo:v8',
+const key = 'zgrana:gry:male-krolestwo:v9',
   previous = 'zgrana:gry:male-krolestwo:v6'
 const stored = (page) => page.evaluate((k) => JSON.parse(localStorage.getItem(k)), key)
 const commit = (page) => page.getByRole('button', { name: 'Zatwierdź turę' })
-async function prepare(page, state, version = 8) {
+async function prepare(page, state, version = 9) {
   await page.route('**/*googletagmanager.com/**', (r) => r.abort())
   await page.addInitScript(
     ({ key, raw }) => {
@@ -112,7 +112,7 @@ for (const [width, height] of [
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
     expect(errors).toEqual([])
   })
-test('v6 ongoing raid migrates without changing old bytes and corrupt v8 never falls back', async ({
+test('v6 ongoing raid migrates without changing old bytes and corrupt v9 never falls back', async ({
   page,
 }) => {
   const state = beforeRaid(),

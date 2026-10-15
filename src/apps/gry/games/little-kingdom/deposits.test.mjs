@@ -102,7 +102,7 @@ test('new builds and repairs extract immediately, upgrades consume faster, inval
   assert.equal(resolveTurn(repaired.state, { type: 'build', kind: 'sawmill', ...source }), null)
   assert.equal(JSON.stringify(repaired.state), before)
 })
-test('v7 migration starts full deposits, preserves old bytes and never falls back from corrupt v8', () => {
+test('v7 migration starts full deposits, preserves old bytes and never falls back from corrupt v9', () => {
   const old = newKingdom(42)
   delete old.deposits
   const raw = JSON.stringify({ version: 7, state: old, tutorialDismissed: true })
@@ -114,7 +114,7 @@ test('v7 migration starts full deposits, preserves old bytes and never falls bac
   assert.deepEqual(loaded.state.resources, old.resources)
   assert.equal(loaded.state.turn, old.turn)
   assert.equal(data.get(CASTLES_KEY), raw)
-  assert.equal(JSON.parse(data.get(SAVE_KEY)).version, 8)
+  assert.equal(JSON.parse(data.get(SAVE_KEY)).version, 9)
   data.set(SAVE_KEY, 'broken')
   assert.equal(load(port).status, 'corrupt')
   assert.equal(data.get(SAVE_KEY), 'broken')
@@ -136,7 +136,7 @@ test('v7 migration starts full deposits, preserves old bytes and never falls bac
     'unavailable',
   )
 })
-test('v8 validation rejects forged, unknown, fractional and excessive reserves', () => {
+test('v9 validation rejects forged, unknown, fractional and excessive reserves', () => {
   const { state, source } = setup('sawmill')
   for (const change of [
     (s) => delete s.deposits,
@@ -149,7 +149,7 @@ test('v8 validation rejects forged, unknown, fractional and excessive reserves',
   ]) {
     const s = structuredClone(state)
     change(s)
-    assert.equal(decode(JSON.stringify({ version: 8, state: s })), null)
+    assert.equal(decode(JSON.stringify({ version: 9, state: s })), null)
   }
   assert.equal(depositCapacity(state, source), 60)
 })

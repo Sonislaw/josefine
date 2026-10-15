@@ -10,7 +10,7 @@ const { discoveryForSector, DISCOVERIES } = await j.import(
   '../../src/apps/gry/games/little-kingdom/discoveries.ts',
 )
 const url = '/gry/male-krolestwo',
-  key = 'zgrana:gry:male-krolestwo:v8',
+  key = 'zgrana:gry:male-krolestwo:v9',
   legacy = 'zgrana:gry:male-krolestwo:v1'
 const commit = (page) => page.getByRole('button', { name: 'Zatwierdź turę' })
 const runtimeErrors = new WeakMap()
@@ -31,7 +31,7 @@ function fixture(kind) {
   }
   throw Error('missing fixture')
 }
-async function prepare(page, state, version = 8, raw) {
+async function prepare(page, state, version = 9, raw) {
   await page.addInitScript(
     ({ state, version, raw, key, legacy }) => {
       localStorage.setItem('josefine:cookie-notice:dismissed:gry', '1')

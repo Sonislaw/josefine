@@ -20,6 +20,7 @@ withDefaults(
     waterEdges?: number
     depositRemaining?: number
     depositCapacity?: number
+    forestStage?: 1 | 2 | 3
     idle?: boolean
     discovery?: Discovery
     rank?: SettlementRank
@@ -38,6 +39,7 @@ withDefaults(
       :water-edges="waterEdges"
       :occupied="!!(building || settlement || discovery)"
       :depleted="depositRemaining === 0"
+      :forest-stage="forestStage"
     />
     <g v-if="building || settlement" fill="none" stroke="#d5c293" stroke-linejoin="round">
       <path d="M27 64v-9h10v9" stroke-width="5" opacity=".7" />
@@ -125,7 +127,18 @@ withDefaults(
       />
       <path d="M49 47v8m6-8v8" stroke="#fff0bf" stroke-width="2.5" />
     </g>
-    <g v-if="depositRemaining !== undefined && depositCapacity" aria-hidden="true">
+    <g v-if="forestStage && forestStage < 3" aria-hidden="true">
+      <rect x="10" y="56" width="44" height="7" rx="3" fill="#344f39" />
+      <circle
+        v-for="n in 3"
+        :key="n"
+        :cx="18 + (n - 1) * 14"
+        cy="59.5"
+        r="2"
+        :fill="n <= forestStage ? '#e6d98f' : '#7f9775'"
+      />
+    </g>
+    <g v-else-if="depositRemaining !== undefined && depositCapacity" aria-hidden="true">
       <rect x="12" y="58" width="40" height="3" rx="1.5" fill="#405641" />
       <rect
         x="12"

@@ -3,7 +3,7 @@ import { createJiti } from 'jiti'
 const jiti = createJiti(import.meta.url)
 const { newKingdom } = await jiti.import('../../src/apps/gry/games/little-kingdom/engine.ts')
 const url = '/gry/male-krolestwo',
-  key = 'zgrana:gry:male-krolestwo:v8'
+  key = 'zgrana:gry:male-krolestwo:v9'
 async function prepare(page, state = newKingdom(42)) {
   await page.addInitScript(
     ({ state, key }) => {
@@ -13,7 +13,7 @@ async function prepare(page, state = newKingdom(42)) {
           key,
           typeof state === 'string'
             ? state
-            : JSON.stringify({ version: 8, state, tutorialDismissed: true }),
+            : JSON.stringify({ version: 9, state, tutorialDismissed: true }),
         )
         sessionStorage.setItem('kingdom-fixture', '1')
       }

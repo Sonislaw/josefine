@@ -15,13 +15,15 @@ import { emptyAffairs, settlementPosition } from './neighbours'
 import { militaryBuilding, WAR } from './military'
 import { castleAppears } from './castles'
 import { depositCapacity } from './deposits'
+import { FORESTRY, terrainAt } from './forestry'
 import { migrateCastles, validateCampaign } from './campaign-storage'
 import {
   migrateWarfare,
   validateLegacyCampaign,
   type LegacyKingdom,
 } from './legacy-campaign-storage'
-export const SAVE_KEY = 'zgrana:gry:male-krolestwo:v8'
+export const SAVE_KEY = 'zgrana:gry:male-krolestwo:v9'
+export const DEPOSITS_KEY = 'zgrana:gry:male-krolestwo:v8'
 export const CASTLES_KEY = 'zgrana:gry:male-krolestwo:v7'
 export const CAMPAIGN_KEY = 'zgrana:gry:male-krolestwo:v6'
 export const WARFARE_KEY = 'zgrana:gry:male-krolestwo:v5'
@@ -46,7 +48,7 @@ const coordinate = (v: unknown): v is number =>
   Number.isSafeInteger(v) && Math.abs(v as number) <= Math.floor(Number.MAX_SAFE_INTEGER / 7) - 1
 export function decode(
   raw: string,
-  version: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 = 8,
+  version: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 = 9,
 ): { state: Kingdom; tutorialDismissed: boolean } | null {
   try {
     const data: unknown = JSON.parse(raw)
@@ -146,6 +148,24 @@ export function decode(
     if (known.size !== sectors.length || !known.has('0,0')) return null
     // Existing saves start with full deposits. Migration consumes no turn or resources.
     if (version < 8) s.deposits = {}
+    if (version < 9) s.forests = {}
+    if (!object(s.forests)) return null
+    for (const [k, forest] of Object.entries(s.forests)) {
+      const parts = k.split(','),
+        p = { x: Number(parts[0]), y: Number(parts[1]) }
+      if (
+        parts.length !== 2 ||
+        !coordinate(p.x) ||
+        !coordinate(p.y) ||
+        k !== key(p.x, p.y) ||
+        !known.has(key(sectorOf(p).x, sectorOf(p).y)) ||
+        !object(forest) ||
+        !natural(forest.age) ||
+        forest.age > FORESTRY.matureAge ||
+        !['meadow', 'forest'].includes(terrain(s.seed, p.x, p.y))
+      )
+        return null
+    }
     if (!object(s.deposits)) return null
     for (const [k, amount] of Object.entries(s.deposits)) {
       const parts = k.split(',')
@@ -159,9 +179,15 @@ export function decode(
         !known.has(key(sectorOf(p).x, sectorOf(p).y))
       )
         return null
-      const capacity = depositCapacity({ seed: s.seed }, p)
+      const capacity = depositCapacity(s as unknown as Kingdom, p)
       if (!capacity || amount > capacity) return null
     }
+    for (const [k, forest] of Object.entries(s.forests))
+      if (
+        (forest as { age: number }).age < FORESTRY.matureAge &&
+        s.deposits[k] !== FORESTRY.woodReserve
+      )
+        return null
     // Reject disconnected islands without quadratic scans on large saved maps.
     const visited = new Set(['0,0']),
       queue = [{ x: 0, y: 0 }]
@@ -233,6 +259,11 @@ export function decode(
       if (typeof b.kind !== 'string' || (b.kind !== 'hall' && !Object.hasOwn(BUILDINGS, b.kind)))
         return null
       if (b.damaged !== undefined && typeof b.damaged !== 'boolean') return null
+      if (
+        b.plantingProgress !== undefined &&
+        (b.kind !== 'forester' || !natural(b.plantingProgress) || b.plantingProgress > 4)
+      )
+        return null
       if (b.damaged && (b.kind === 'hall' || b.kind === 'house' || militaryBuilding(b.kind)))
         return null
       if (
@@ -246,7 +277,7 @@ export function decode(
       }
       if (
         !discovered(s as unknown as Kingdom, { x: b.x, y: b.y }) ||
-        terrain(s.seed, b.x, b.y) !== 'meadow'
+        terrainAt(s as unknown as Kingdom, { x: b.x, y: b.y }) !== 'meadow'
       )
         return null
     }
@@ -258,6 +289,15 @@ export function decode(
     )
       return null
     const f = s.affairs
+    for (const k of Object.keys(s.forests))
+      if (
+        s.buildings[k] ||
+        s.discoveries[k] ||
+        (object(f) &&
+          Array.isArray(f.settlements) &&
+          f.settlements.some((p) => object(p) && key(p.x as number, p.y as number) === k))
+      )
+        return null
     if (
       !object(f) ||
       !object(f.army) ||
@@ -355,7 +395,8 @@ export function load(storage: StoragePort): LoadResult {
   try {
     // Presence wins over validity: never silently resurrect an older settlement.
     for (const [key, version] of [
-      [SAVE_KEY, 8],
+      [SAVE_KEY, 9],
+      [DEPOSITS_KEY, 8],
       [CASTLES_KEY, 7],
       [CAMPAIGN_KEY, 6],
       [WARFARE_KEY, 5],
@@ -368,7 +409,7 @@ export function load(storage: StoragePort): LoadResult {
       if (raw === null) continue
       const result = decode(raw, version)
       if (!result) return { status: 'corrupt', state: null, tutorialDismissed: false }
-      if (version < 8) {
+      if (version < 9) {
         const written = save(storage, result.state, result.tutorialDismissed)
         return { status: 'saved', ...result, migrationSaveFailed: !written }
       }
@@ -381,7 +422,7 @@ export function load(storage: StoragePort): LoadResult {
 }
 export function save(storage: StoragePort, state: Kingdom, tutorialDismissed: boolean): boolean {
   try {
-    storage.setItem(SAVE_KEY, JSON.stringify({ version: 8, state, tutorialDismissed }))
+    storage.setItem(SAVE_KEY, JSON.stringify({ version: 9, state, tutorialDismissed }))
     return true
   } catch {
     return false

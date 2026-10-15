@@ -5,7 +5,7 @@ const j = createJiti(import.meta.url)
 const { newKingdom, terrain, resolveTurn } = await j.import(
   '../../src/apps/gry/games/little-kingdom/engine.ts',
 )
-const key = 'zgrana:gry:male-krolestwo:v8'
+const key = 'zgrana:gry:male-krolestwo:v9'
 for (const width of [360, 1440])
   test(`finite extraction, range, exhaustion graphics and reload ${width}`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 })
@@ -50,7 +50,7 @@ for (const width of [360, 1440])
       await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
     ).toBeTruthy()
   })
-test('v7 migration is non-destructive and corrupt v8 is protected', async ({ page }) => {
+test('v7 migration is non-destructive and corrupt v9 is protected', async ({ page }) => {
   const raw = encode(newKingdom(42), 7)
   await page.addInitScript((raw) => {
     localStorage.setItem('josefine:cookie-notice:dismissed:gry', '1')

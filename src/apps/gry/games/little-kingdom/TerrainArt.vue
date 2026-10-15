@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Terrain } from './engine'
+import ForestGrowthArt from './ForestGrowthArt.vue'
 // Cosmetic variants never consume the saved game's random generator.
 withDefaults(
   defineProps<{
@@ -9,6 +10,7 @@ withDefaults(
     occupied?: boolean
     waterEdges?: number
     depleted?: boolean
+    forestStage?: 1 | 2 | 3
   }>(),
   { season: 0, variant: 0, occupied: false, waterEdges: 15 },
 )
@@ -73,7 +75,12 @@ const canopy = ['#487749', '#507745', '#a77c3d', '#728e7c']
           r="1"
         /><circle v-if="variant % 3 === 1" cx="42" cy="45" r="1.5" />
       </g>
-      <g v-if="terrain === 'forest' && !depleted">
+      <ForestGrowthArt
+        v-if="terrain === 'forest' && forestStage && forestStage < 3"
+        :stage="forestStage as 1 | 2"
+        :winter="season === 3"
+      />
+      <g v-else-if="terrain === 'forest' && !depleted" data-forest-stage="3">
         <ellipse cx="34" cy="48" rx="26" ry="12" fill="#395d41" opacity=".2" />
         <g
           v-for="(tree, i) in [

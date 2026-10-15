@@ -6,11 +6,11 @@ import {
   newKingdom,
   resolveTurn,
   sectorOf,
-  terrain,
   type Action,
   type BuildingKind,
   type Point,
 } from './engine'
+import { terrainAt } from './forestry'
 import { load, save } from './storage'
 import { DISCOVERIES, blocksBuilding, type Discovery } from './discoveries'
 import type { Promotion } from './progression'
@@ -84,7 +84,7 @@ export function useKingdom() {
       !b &&
       !blocksBuilding(selectedDiscovery.value) &&
       card.value &&
-      terrain(state.value.seed, p.x, p.y) === 'meadow'
+      terrainAt(state.value, p) === 'meadow'
     )
       action.value = { type: 'build', kind: card.value, ...point }
   }

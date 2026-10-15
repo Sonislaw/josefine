@@ -2,6 +2,7 @@
 import { SIZE, terrain, type Terrain } from './terrain'
 import { BALANCE, upgradeMultiplier, inventoryLimit } from './balance'
 import { planExtraction, extractor, type ExtractionPlan } from './deposits'
+import { advanceForestry, terrainAt, type PlantedForest, type ForestryReport } from './forestry'
 import { CASTLES, castleAppears, plunderCastle } from './castles'
 import {
   MILITARY,
@@ -61,6 +62,7 @@ export type BuildingKind =
   | 'house'
   | 'farm'
   | 'sawmill'
+  | 'forester'
   | 'quarry'
   | 'mill'
   | 'market'
@@ -68,7 +70,12 @@ export type BuildingKind =
   | 'barracks'
   | 'watchtower'
 export type Point = { x: number; y: number }
-export type Building = Point & { kind: BuildingKind | 'hall'; level: number; damaged?: boolean }
+export type Building = Point & {
+  kind: BuildingKind | 'hall'
+  level: number
+  damaged?: boolean
+  plantingProgress?: number
+}
 export interface Kingdom {
   affairs: ForeignAffairs
   requests: ResidentRequests
@@ -80,6 +87,7 @@ export interface Kingdom {
   buildings: Record<string, Building>
   discoveries: Record<string, Discovery>
   deposits: Record<string, number>
+  forests: Record<string, PlantedForest>
   resources: Resources
   population: number
   hunger: number
@@ -133,6 +141,12 @@ export const BUILDINGS: Record<
     cost: BALANCE.buildings.sawmill,
     description:
       'Wydobywa 1/2/3 drewna na poziomach 1–3, do +2 za złoża w zasięgu 3 pól. Bez dostępnego lasu nie pracuje.',
+  },
+  forester: {
+    name: 'Domek leśnika',
+    cost: BALANCE.buildings.forester,
+    description:
+      'Sadzi las w zasięgu 3 pól co 4/3/2 tury na poziomach 1–3. Najpierw odnawia wycięte pola. Las dojrzewa przez 6 tur i daje 60 drewna.',
   },
   quarry: {
     name: 'Kamieniołom',
@@ -200,6 +214,7 @@ export function newKingdom(seed = 1): Kingdom {
     buildings: { '3,3': { x: 3, y: 3, kind: 'hall', level: 1 } },
     discoveries: {},
     deposits: {},
+    forests: {},
     resources: { wood: 20, stone: 12, food: 24, gold: 10 },
     population: 3,
     hunger: 0,
@@ -364,8 +379,7 @@ export function actionError(state: Kingdom, action: Action): string | null {
           (state.rank < 1 || Object.values(state.buildings).some((b) => b.kind === action.kind))
         )
           return 'Obrona wymaga rangi Wioska. Możesz mieć po jednym budynku wojskowym.'
-        if (b || terrain(state.seed, action.x, action.y) !== 'meadow')
-          return 'Budować można tylko na pustej łące.'
+        if (b || terrainAt(state, action) !== 'meadow') return 'Budować można tylko na pustej łące.'
       } else {
         if (!b || b.kind === 'hall') return 'Wybierz budynek inny niż ratusz.'
         if (action.type === 'repair' && !b.damaged) return 'Ten budynek nie wymaga naprawy.'
@@ -450,6 +464,7 @@ export function production(state: Kingdom, extraction = planExtraction(state)): 
   return result
 }
 export interface TurnResult {
+  forestry: ForestryReport
   extraction: ExtractionPlan
   storageLoss: Resources
   campaignUpdate: CampaignUpdate
@@ -483,6 +498,7 @@ export function resolveTurn(state: Kingdom, action: Action): TurnResult | null {
     buildings: { ...state.buildings },
     discoveries: { ...state.discoveries },
     deposits: { ...state.deposits },
+    forests: { ...state.forests },
     sectors: [...state.sectors],
     offer: [...state.offer],
   }
@@ -664,6 +680,7 @@ export function resolveTurn(state: Kingdom, action: Action): TurnResult | null {
   }
   // A fatal raid cannot be undone by end-of-season population growth.
   if (next.population === 0) next.status = 'gameover'
+  const forestry = advanceForestry(next)
   const extraction = planExtraction(next)
   const produced = production(next, extraction)
   next.deposits = extraction.remaining
@@ -718,6 +735,7 @@ export function resolveTurn(state: Kingdom, action: Action): TurnResult | null {
     next.resources[k] -= storageLoss[k]
   }
   return {
+    forestry,
     storageLoss,
     extraction,
     campaignUpdate,

@@ -5,7 +5,7 @@ const j = createJiti(import.meta.url)
 const { newKingdom, resolveTurn } = await j.import(
   '../../src/apps/gry/games/little-kingdom/engine.ts',
 )
-const key = 'zgrana:gry:male-krolestwo:v8',
+const key = 'zgrana:gry:male-krolestwo:v9',
   url = '/gry/male-krolestwo'
 const stored = (page) => page.evaluate((k) => JSON.parse(localStorage.getItem(k)).state, key)
 const bubble = (page) => page.getByRole('region', { name: 'Ulepszanie budynku', exact: true })

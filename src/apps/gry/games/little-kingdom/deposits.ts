@@ -1,18 +1,19 @@
 import type { Building, Kingdom, Point } from './engine'
-import { SIZE, terrain } from './terrain'
+import { SIZE } from './terrain'
 import { BALANCE } from './balance'
+import { FORESTRY, forestStage, terrainAt, type ForestState } from './forestry'
 
-export const DEPOSITS = { radius: 3, forest: 60, rock: 80 } as const
+export const DEPOSITS = { radius: 3, forest: FORESTRY.woodReserve, rock: 80 } as const
 const key = (p: Point) => `${p.x},${p.y}`
 export const extractor = (kind: string) => kind === 'sawmill' || kind === 'quarry'
 export const inExtractionRange = (a: Point, b: Point) =>
   Math.abs(a.x - b.x) + Math.abs(a.y - b.y) <= DEPOSITS.radius
-export function depositCapacity(state: Pick<Kingdom, 'seed'>, p: Point) {
-  const t = terrain(state.seed, p.x, p.y)
+export function depositCapacity(state: ForestState, p: Point) {
+  const t = terrainAt(state, p)
   return t === 'forest' || t === 'rock' ? DEPOSITS[t] : 0
 }
-/** Sparse overrides: untouched tiles use their full capacity; zero is retained forever. */
-export const depositRemaining = (state: Pick<Kingdom, 'seed' | 'deposits'>, p: Point) =>
+/** Sparse overrides: untouched natural tiles use full capacity; seedlings hold future stock. */
+export const depositRemaining = (state: Pick<Kingdom, 'seed' | 'deposits' | 'forests'>, p: Point) =>
   state.deposits[key(p)] ?? depositCapacity(state, p)
 export interface ExtractionReport {
   resource: 'wood' | 'stone'
@@ -47,7 +48,11 @@ export function planExtraction(state: Kingdom): ExtractionPlan {
             !known.has(`${Math.floor(p.x / SIZE)},${Math.floor(p.y / SIZE)}`)
           )
             continue
-          if (terrain(state.seed, p.x, p.y) === type && depositRemaining(state, p) > 0)
+          if (
+            terrainAt(state, p) === type &&
+            (type !== 'forest' || forestStage(state, p) === 3) &&
+            depositRemaining(state, p) > 0
+          )
             sources.push(p)
         }
       sources.sort(

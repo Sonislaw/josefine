@@ -1,6 +1,7 @@
 import type { Building, Kingdom, Point, Resources } from './engine'
 import type { SettlementRank } from './progression'
-import { SIZE, terrain } from './terrain'
+import { SIZE } from './terrain'
+import { forestStage, terrainAt } from './forestry'
 
 export const REQUEST_IDS = [
   'water-farm',
@@ -178,7 +179,7 @@ export function requestProgress(state: Kingdom, id: RequestId) {
     adjacent(b).some(
       (p) =>
         known.has(xy({ x: Math.floor(p.x / SIZE), y: Math.floor(p.y / SIZE) })) &&
-        terrain(state.seed, p.x, p.y) === kind,
+        terrainAt(state, p) === kind && (kind !== 'forest' || forestStage(state, p) === 3),
     )
   const nearby = (b: Building, kind: Building['kind'], level = 1) =>
     adjacent(b).filter(

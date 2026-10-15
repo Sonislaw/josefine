@@ -30,11 +30,11 @@ useGrySeo('privacy')
         mieszkańca, historię pomocy, armię, kontakty z osadami, najazdy, okres ochronny, uszkodzenia
         budynków, garnizony wrogów, ich odbudowę, przewagę i okresy pokoju w kampaniach,
         wytrzymałość i skarbce zamków, trwałe zgliszcza, pozostałe zasoby lasów i skał oraz stan
-        wskazówek pod kluczem „zgrana:gry:male-krolestwo:v8” w localStorage tej przeglądarki. Przy
-        aktualizacji odczytujemy starszy zapis v7, v6, v5, v4, v3, v2 lub v1 i zachowujemy oryginały
-        jako kopie. Zapis nie jest wysyłany na serwer ani synchronizowany między urządzeniami.
-        Możesz go zastąpić nową osadą lub usunąć, czyszcząc dane witryny. Czas gry nie płynie
-        podczas przerwy.
+        wzrostu posadzonych lasów, pracy leśników i wskazówek pod kluczem
+        „zgrana:gry:male-krolestwo:v9” w localStorage tej przeglądarki. Przy aktualizacji
+        odczytujemy starszy zapis v8, v7, v6, v5, v4, v3, v2 lub v1 i zachowujemy oryginały jako
+        kopie. Zapis nie jest wysyłany na serwer ani synchronizowany między urządzeniami. Możesz go
+        zastąpić nową osadą lub usunąć, czyszcząc dane witryny. Czas gry nie płynie podczas przerwy.
       </p>
       <p>
         Warcaby działają lokalnie na Twoim urządzeniu. W localStorage pod kluczem „arena-xp”

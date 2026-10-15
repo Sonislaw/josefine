@@ -2,6 +2,14 @@
 import { computed, ref } from 'vue'
 import { BALANCE, inventoryLimit } from './balance'
 import { depositCapacity, depositRemaining, extractionFor } from './deposits'
+import {
+  FORESTRY,
+  forestStage,
+  forestryForecast,
+  plantingInterval,
+  plantingSites,
+  terrainAt,
+} from './forestry'
 import GameDialog from '../../components/GameDialog.vue'
 import KingdomBoard from './KingdomBoard.vue'
 import ResourceBar from './ResourceBar.vue'
@@ -39,7 +47,6 @@ import {
   frontier,
   production,
   season,
-  terrain,
   year,
   type Point,
 } from './engine'
@@ -117,7 +124,7 @@ const selectedName = computed(() =>
       : selectedDiscovery.value
         ? DISCOVERIES[selectedDiscovery.value.kind].name
         : selected.value
-          ? TERRAIN_NAMES[terrain(state.value.seed, selected.value.x, selected.value.y)]
+          ? TERRAIN_NAMES[terrainAt(state.value, selected.value)]
           : 'Wybierz pole na mapie',
 )
 const selectedOutput = computed(() =>
@@ -127,8 +134,30 @@ const selectedBonus = computed(() =>
   selectedBuilding.value ? discoveryBonus(state.value, selectedBuilding.value) : null,
 )
 const selectedExtraction = computed(() =>
-  selectedBuilding.value ? extractionFor(state.value, selectedBuilding.value) : undefined,
+  selectedBuilding.value
+    ? (preview.value?.extraction.buildings[
+        `${selectedBuilding.value.x},${selectedBuilding.value.y}`
+      ] ?? extractionFor(forestryForecast(state.value), selectedBuilding.value))
+    : undefined,
 )
+const selectedForest = computed(() =>
+  selected.value && terrainAt(state.value, selected.value) === 'forest'
+    ? {
+        stage: forestStage(state.value, selected.value),
+        age:
+          state.value.forests[`${selected.value.x},${selected.value.y}`]?.age ?? FORESTRY.matureAge,
+      }
+    : null,
+)
+const selectedForester = computed(() => {
+  const b = selectedBuilding.value
+  return b?.kind === 'forester'
+    ? {
+        wait: Math.max(1, plantingInterval(b.level) - (b.plantingProgress ?? 0)),
+        sites: plantingSites(state.value, b).length,
+      }
+    : null
+})
 const selectedDeposit = computed(() =>
   selected.value && depositCapacity(state.value, selected.value)
     ? {
@@ -367,9 +396,31 @@ function compass(p: Point) {
                 >.
                 {{
                   selectedDeposit.remaining
-                    ? 'Wydobycie pomniejsza ten wspólny zapas. Złoże nie odnawia się.'
-                    : 'Złoże wyczerpane. Pole pozostaje niezabudowane.'
+                    ? selectedForest && selectedForest.stage < 3
+                      ? 'Zapas będzie dostępny dla tartaku dopiero po dojrzeniu lasu.'
+                      : 'Wydobycie pomniejsza ten wspólny zapas.'
+                    : selectedForest
+                      ? 'Las wycięty. Domek leśnika może ponownie go obsadzić.'
+                      : 'Złoże wyczerpane. Kamień nie odnawia się.'
                 }}
+              </p>
+              <p v-if="selectedForest && selectedForest.stage < 3" class="forest-details">
+                {{ selectedForest.stage === 1 ? 'Sadzonki' : 'Młody las' }} · etap
+                {{ selectedForest.stage }} / 3. Dojrzały las za
+                <strong>{{ FORESTRY.matureAge - selectedForest.age }} tur</strong>. Młode drzewa nie
+                dają jeszcze drewna. Rosną także zimą.
+              </p>
+              <p v-if="selectedForester" class="forestry-details">
+                Wolne pola do obsadzenia w zasięgu: <strong>{{ selectedForester.sites }}</strong
+                >.
+                {{
+                  selectedBuilding?.damaged
+                    ? 'Sadzenie wstrzymane do naprawy.'
+                    : !selectedForester.sites
+                      ? 'Brak miejsca — leśnik czeka na wolną łąkę lub wycięty las.'
+                      : `Następne sadzenie za ${selectedForester.wait} tur. Nowy las dojrzewa przez 6 tur.`
+                }}
+                Leśnik omija budynki, odkrycia, sąsiednie osady, skały i wodę.
               </p>
               <p v-if="selectedExtraction" class="deposit-details">
                 W zasięgu 3 pól:
@@ -383,7 +434,9 @@ function compass(p: Point) {
                   {{
                     selectedBuilding?.damaged
                       ? 'budynek wymaga naprawy'
-                      : 'brak dostępnego surowca; odkryj nowe ziemie lub wybierz inne miejsce pod budynek'
+                      : selectedBuilding?.kind === 'sawmill'
+                        ? 'brak dojrzałego lasu; posadź drzewa z pomocą leśnika lub odkryj nowe ziemie'
+                        : 'brak dostępnego surowca; odkryj nowe ziemie lub wybierz inne miejsce pod budynek'
                   }}.</span
                 >
               </p>
@@ -411,13 +464,7 @@ function compass(p: Point) {
               <p v-if="selectedBuilding?.kind === 'house'">
                 Miejsca dla mieszkańców: {{ selectedBuilding.level * 3 }}.
               </p>
-              <p
-                v-if="
-                  selected &&
-                  !selectedBuilding &&
-                  terrain(state.seed, selected.x, selected.y) !== 'meadow'
-                "
-              >
+              <p v-if="selected && !selectedBuilding && terrainAt(state, selected) !== 'meadow'">
                 Tartaki i kamieniołomy stawiaj na łąkach w zasięgu 3 pól od złóż. Woda nadal daje
                 premię farmom na sąsiednich polach.
               </p>
@@ -546,6 +593,16 @@ function compass(p: Point) {
               <p v-if="preview.extraction.exhausted.length" class="preview-error">
                 W tej turze wyczerpią się złoża:
                 {{ preview.extraction.exhausted.map((p) => `(${p.x}, ${p.y})`).join(', ') }}.
+              </p>
+              <p v-if="preview.forestry.planted.length" class="forestry-preview">
+                Leśnik posadzi nowy las:
+                {{ preview.forestry.planted.map((p) => `(${p.x}, ${p.y})`).join(', ') }}. Dojrzeje
+                za 6 tur.
+              </p>
+              <p v-if="preview.forestry.matured.length" class="forestry-preview">
+                W tej turze dojrzeje las:
+                {{ preview.forestry.matured.map((p) => `(${p.x}, ${p.y})`).join(', ') }}. Tartaki w
+                zasięgu mogą już z niego korzystać.
               </p>
               <p v-if="Object.values(preview.storageLoss).some(Boolean)" class="preview-error">
                 Nadwyżka poza limitem zapasów: {{ priceText(preview.storageLoss) }}. Końcowy bilans
@@ -731,10 +788,20 @@ function compass(p: Point) {
           dzielone między budynki; poziom zwiększa tempo wydobycia, nie ilość surowca w terenie.
         </p>
         <p>
-          Po wyczerpaniu pozostają pnie lub wyrobisko. Złoża nie odnawiają się, a budynek bez
-          dostępnego surowca pokazuje znak pauzy i nie produkuje. Wybierz go, aby zobaczyć zasięg i
-          pozostałe zapasy. Ratusz i zbieranie zapasów nadal dostarczają drewno niezależnie od złóż.
-          Nadwyżka wydobycia ponad limit magazynu przepada, tak jak pozostała nadprodukcja.
+          Po wyczerpaniu pozostają pnie lub wyrobisko. Kamień nie odnawia się; las może odtworzyć
+          domek leśnika. Budynek bez dostępnego surowca pokazuje znak pauzy i nie produkuje. Wybierz
+          go, aby zobaczyć zasięg i pozostałe zapasy. Ratusz i zbieranie zapasów nadal dostarczają
+          drewno niezależnie od złóż. Nadwyżka wydobycia ponad limit magazynu przepada, tak jak
+          pozostała nadprodukcja.
+        </p>
+        <p>
+          Domek leśnika kosztuje 24 drewna, 10 kamienia i 8 monet. W zasięgu 3 kroków sadzi jedno
+          pole lasu co 4 tury, na poziomie 2 co 3, a na poziomie 3 co 2 tury. Najpierw odnawia
+          wycięty las, potem zajmuje wolne łąki. Sadzonki po 3 turach stają się młodym lasem, a po 6
+          turach dojrzałym lasem z 60 drewna. Dopiero wtedy tartak może je ścinać. Kilka domków nie
+          przyspiesza wzrostu tych samych drzew. Zimą drzewa też rosną, również po uszkodzeniu lub
+          wyburzeniu domku. Wybierz pole, aby zobaczyć etap wzrostu; wybierz domek, aby sprawdzić
+          zasięg i termin kolejnego sadzenia.
         </p>
       </details>
       <h2>Pytania przed pierwszą wyprawą</h2>

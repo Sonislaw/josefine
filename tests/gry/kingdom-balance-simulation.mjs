@@ -1,22 +1,26 @@
 // Test-only strategy: uses dealt cards, legal actions and earned resources throughout.
 import { createJiti } from 'jiti'
 const j = createJiti(import.meta.url)
-const {
-  newKingdom,
-  resolveTurn,
-  actionError,
-  terrain,
-  key,
-  production,
-  capacity,
-  buildingProduction,
-} = await j.import('../../src/apps/gry/games/little-kingdom/engine.ts')
+const { newKingdom, resolveTurn, actionError, key, production, capacity, buildingProduction } =
+  await j.import('../../src/apps/gry/games/little-kingdom/engine.ts')
+const { terrainAt, plantingSites, inForestRange } = await j.import(
+  '../../src/apps/gry/games/little-kingdom/forestry.ts',
+)
 const { blocksBuilding } = await j.import('../../src/apps/gry/games/little-kingdom/discoveries.ts')
 export function simulateDevelopment(seed, maxTurns = 700) {
   let state = newKingdom(seed)
   const milestones = [],
     turns = []
-  const targets = { farm: 10, sawmill: 3, quarry: 3, house: 6, market: 3, orchard: 1, mill: 1 }
+  const targets = {
+    farm: 10,
+    sawmill: 3,
+    forester: 1,
+    quarry: 3,
+    house: 6,
+    market: 3,
+    orchard: 1,
+    mill: 1,
+  }
   for (let i = 0; i < maxTurns && state.rank < 3; i++) {
     const s = state,
       counts = Object.fromEntries(
@@ -31,7 +35,7 @@ export function simulateDevelopment(seed, maxTurns = 700) {
       for (let y = sector.y * 7; y < sector.y * 7 + 7; y++)
         for (let x = sector.x * 7; x < sector.x * 7 + 7; x++)
           if (
-            terrain(s.seed, x, y) === 'meadow' &&
+            terrainAt(s, { x, y }) === 'meadow' &&
             !s.buildings[key(x, y)] &&
             !blocksBuilding(s.discoveries[key(x, y)]) &&
             !s.affairs.settlements.some((c) => c.x === x && c.y === y)
@@ -60,6 +64,12 @@ export function simulateDevelopment(seed, maxTurns = 700) {
       const score = (p) => {
         const b = { ...p, kind, level: 1 },
           probe = { ...s, buildings: { ...s.buildings, [key(p.x, p.y)]: b } }
+        if (kind === 'forester')
+          return plantingSites(probe, b).filter((site) =>
+            Object.values(s.buildings).some(
+              (other) => other.kind === 'sawmill' && inForestRange(other, site),
+            ),
+          ).length
         return buildingProduction({ ...probe, turn: 0 }, b)[resource]
       }
       const p = plots.reduce((best, p) => (!best || score(p) > score(best) ? p : best), null)
@@ -82,7 +92,14 @@ export function simulateDevelopment(seed, maxTurns = 700) {
     }
     for (const d of Object.values(s.discoveries))
       if (d.status === 'available') add(52, { type: 'landmark', x: d.x, y: d.y })
-    if (counts.sawmill && counts.quarry && s.sectors.length < 7)
+    // Establish coin income before discovering hostile neighbours: a different card
+    // pool must not leave the strategy waiting forever to afford repeated truces.
+    if (
+      counts.sawmill &&
+      counts.quarry &&
+      (s.sectors.length < 3 || counts.market >= 2) &&
+      s.sectors.length < 7
+    )
       add(48, { type: 'explore', x: s.sectors.length, y: 0 })
     for (const b of Object.values(s.buildings))
       if (b.kind !== 'hall' && b.level < 3) add(25, { type: 'upgrade', x: b.x, y: b.y })

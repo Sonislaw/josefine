@@ -10,7 +10,7 @@ const { manageRequest, REQUESTS, REQUEST_IDS } = await j.import(
   '../../src/apps/gry/games/little-kingdom/requests.ts',
 )
 const url = '/gry/male-krolestwo',
-  key = 'zgrana:gry:male-krolestwo:v8',
+  key = 'zgrana:gry:male-krolestwo:v9',
   oldKey = 'zgrana:gry:male-krolestwo:v3'
 const stored = (page) => page.evaluate((k) => JSON.parse(localStorage.getItem(k)), key)
 const commit = (page) => page.getByRole('button', { name: 'Zatwierdź turę' })

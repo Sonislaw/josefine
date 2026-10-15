@@ -382,7 +382,7 @@ test('v5 active raid migration preserves deadline, army, ranks, damage and origi
     armySize(addArmy(migrated.affairs.enemies[2].garrison, migrated.affairs.raid.army)),
     6,
   )
-  assert.equal(JSON.parse(data.get(SAVE_KEY)).version, 8)
+  assert.equal(JSON.parse(data.get(SAVE_KEY)).version, 9)
   assert.deepEqual(decode(data.get(SAVE_KEY)).state, migrated)
   const before = structuredClone(migrated),
     a = { type: 'gather', tactic: 'guard' }

@@ -255,7 +255,7 @@ for (const version of [1, 2, 3])
     assert.equal(result.state.rank, version === 3 ? 3 : 0)
     assert.deepEqual(result.state.promotions, version === 3 ? old.promotions : [])
     assert.equal(data.get(oldKey), raw)
-    assert.equal(JSON.parse(data.get(SAVE_KEY)).version, 8)
+    assert.equal(JSON.parse(data.get(SAVE_KEY)).version, 9)
     assert.deepEqual(load(port(data)).state, result.state)
   })
 

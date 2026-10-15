@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import ForesterArt from './ForesterArt.vue'
 import type { Building } from './engine'
 defineProps<{ building: Building; winter?: boolean }>()
 </script>
@@ -6,7 +7,8 @@ defineProps<{ building: Building; winter?: boolean }>()
   <!-- Hand-drawn 2D silhouettes are reused by the map and building offer cards. -->
   <g aria-hidden="true" stroke-linecap="round" stroke-linejoin="round">
     <ellipse cx="33" cy="53" rx="26" ry="6" fill="#36553f" opacity=".22" />
-    <g v-if="building.kind === 'farm'">
+    <ForesterArt v-if="building.kind === 'forester'" :level="building.level" :winter="winter" />
+    <g v-else-if="building.kind === 'farm'">
       <path d="M5 24h41v32H5z" fill="#79543b" stroke="#5f4833" /><path
         d="M7 26h37v27H7z"
         fill="#a57845"

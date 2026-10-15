@@ -4,7 +4,7 @@ import { developedKingdom, encode } from './kingdom-progression-fixture.mjs'
 const jiti = createJiti(import.meta.url)
 const { resolveTurn } = await jiti.import('../../src/apps/gry/games/little-kingdom/engine.ts')
 const url = '/gry/male-krolestwo',
-  key = 'zgrana:gry:male-krolestwo:v8',
+  key = 'zgrana:gry:male-krolestwo:v9',
   previous = 'zgrana:gry:male-krolestwo:v2'
 const stored = (page) => page.evaluate((k) => JSON.parse(localStorage.getItem(k)), key)
 const runtimeErrors = new WeakMap()
@@ -113,14 +113,14 @@ test('v2 migration preserves discoveries and bytes; old settlement earns its fir
   expect(await page.evaluate((k) => localStorage.getItem(k), previous)).toBe(raw)
 })
 
-for (const brokenVersion of [2, 8])
+for (const brokenVersion of [2, 9])
   test(`corrupt v${brokenVersion} stays protected despite an older valid save`, async ({
     page,
   }) => {
-    const brokenKey = brokenVersion === 8 ? key : previous
+    const brokenKey = brokenVersion === 9 ? key : previous
     await prepare(page, [
       ['zgrana:gry:male-krolestwo:v1', encode(developedKingdom(), 1)],
-      ...(brokenVersion === 8 ? [[previous, encode(developedKingdom(), 2)]] : []),
+      ...(brokenVersion === 9 ? [[previous, encode(developedKingdom(), 2)]] : []),
       [brokenKey, '{broken'],
     ])
     await page.goto(url)

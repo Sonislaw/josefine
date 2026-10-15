@@ -8,7 +8,7 @@ Samodzielna strategia turowa: `/gry/male-krolestwo` lokalnie, `/male-krolestwo` 
 - `engine.ts`: czyste typy i reguły, oferta, gospodarka i sezonowość. `resolveTurn(state, action)` zwraca nowy stan, koszt, produkcję, jednorazową nagrodę, nowe odkrycie, bilans oraz zmianę populacji. Nigdy nie mutuje wejścia. Ten sam wynik służy prognozie i zatwierdzeniu.
 - `terrain.ts`: dotychczasowy, niezmieniony generator terenu. Wspólny dla silnika i odkryć, bez cyklicznych importów reguł.
 - `discoveries.ts`: definicje miejsc, koszty, nagrody, rozmieszczenie i premie. Osobne hashe nie zużywają RNG oferty budynków.
-- `storage.ts`: wersjonowany format `{ version: 8, state, tutorialDismissed }`, walidacja i obsługa braku pamięci. Klucz `zgrana:gry:male-krolestwo:v8`. Uszkodzony zapis jest chroniony do jawnego potwierdzenia nowej osady.
+- `storage.ts`: wersjonowany format `{ version: 9, state, tutorialDismissed }`, walidacja i obsługa braku pamięci. Klucz `zgrana:gry:male-krolestwo:v9`. Uszkodzony zapis jest chroniony do jawnego potwierdzenia nowej osady.
 - `campaign.ts`, `campaign-storage.ts`: niezależne garnizony, odbudowa, najazdy, przewaga, pokój i migracja. Cała symulacja pozostaje czysta i bez zegara przeglądarki.
 - `military.ts`, `neighbours.ts`, `battle.ts`: konfiguracja wojska, kontakty i czysta prognoza walki. `DefencePanel.vue`, `BattleSummary.vue`, `MilitaryArt.vue`: panele oraz własne SVG.
 - `progression.ts`: definicje rang, wymagania, prezenty i czyste sprawdzanie awansu. `ProgressionPanel.vue` pokazuje postęp, a `HallArt.vue` cztery sylwetki ratusza w tym samym polu mapy.
@@ -24,9 +24,39 @@ Gra nie współdzieli silnika ani zapisu z Warcabami, Klockami i Kryształem. Ws
 
 `deposits.ts` konfiguruje zasoby: las 60 drewna, skały 80 kamienia, zasięg Manhattan ≤ 3. Uwzględnia wyłącznie odkryte pola. Wydajność to 1/2/3 na poziomach 1–3 plus jedna jednostka za każde z maksymalnie dwóch dostępnych złóż; bez złóż wynosi zero. Wspólna alokacja przydziela po jednej jednostce na rundę każdemu budynkowi, najbliższe źródła pierwsze, remisy według y, x. Jeden pozyskany surowiec zużywa jedną jednostkę złoża. Uszkodzone budynki nie wydobywają. Nowa budowa, naprawa i ulepszenie działają już w tej turze.
 
-`production`, raport budynku i zatwierdzenie korzystają z tego samego planu. `TurnResult.extraction` zawiera zużycie i wyczerpane pola. Stan `deposits` przechowuje tylko zmienione ilości, również trwałe zera. Pnie i wyrobiska pozostają naturalnym terenem bez regeneracji i zabudowy. Mapa pokazuje zapasy, zasięg i ikonę przestoju; prognoza ostrzega o wyczerpaniu. Nadprodukcja poza magazynem nadal przepada, również po wydobyciu. Ratusz i zbieranie zapasów działają niezależnie od złóż.
+`production`, raport budynku i zatwierdzenie korzystają z tego samego planu. `TurnResult.extraction` zawiera zużycie i wyczerpane pola. Stan `deposits` przechowuje tylko zmienione ilości, również zera. Pnie i wyrobiska pozostają naturalnym terenem bez samoczynnej regeneracji i zabudowy; leśnik może odnowić wycięty las. Mapa pokazuje zapasy, zasięg i ikonę przestoju; prognoza ostrzega o wyczerpaniu. Nadprodukcja poza magazynem nadal przepada, również po wydobyciu. Ratusz i zbieranie zapasów działają niezależnie od złóż.
 
 Migracja v7 i starszych do v8 dodaje pełne złoża bez zmiany zasobów i tury, zachowując oryginalne kopie. Uszkodzony v8 nigdy nie uruchamia starszej osady. Walidacja sprawdza ilości, teren, odkrycie i współrzędne. `deposits.test.mjs` sprawdza współdzielenie, koszty zasobów, przestój, naprawy, zgodność prognozy i migrację. `kingdom-deposits.spec.mjs` obejmuje mapę, zapis i widok mobilny.
+
+## Domek leśnika i trzy etapy lasu (v9)
+
+`forestry.ts` zawiera zasięg Manhattan ≤ 3, okres sadzenia 4/3/2 tury dla poziomów 1–3,
+etapy wzrostu i deterministyczny wybór pola. Domek jest zwykłym budynkiem gospodarczym
+w ofercie, kosztuje 24 drewna, 10 kamienia i 8 monet; ulepszenia i naprawy korzystają
+ze wspólnych reguł. Uszkodzenie zatrzymuje sadzenie, ale już posadzone drzewa rosną dalej.
+
+Leśnik najpierw odnawia wycięty las, następnie obsadza pustą łąkę; w każdej grupie wybiera
+najbliższe pole, potem y i x. Omija nieodkryte sektory, budynki, wszystkie odkrycia i osady,
+wodę, skały, rosnące drzewa oraz niewycięty las. Kilku leśników nie sadzi na tym samym polu.
+Brak miejsca zatrzymuje licznik na progu; kolejna tura ponawia próbę bez gromadzenia zapasu sadzonek.
+
+Nowe drzewka mają wiek 0 (etap 1), po 3 turach młody las (etap 2), po 6 turach dojrzały
+las (etap 3). Zima ani brak domku nie zatrzymują wzrostu. Wiek jest ograniczony do 6,
+a nasadzenie daje przyszły zapas 60 drewna, niedostępny dla tartaków w etapach 1 i 2.
+Kolejność: akcja i bitwa → wzrost i sadzenie → wydobycie i produkcja → pozostałe rozliczenia.
+Tartak może korzystać z lasu już w turze dojrzenia. Wyczerpane pole może zostać ponownie obsadzone.
+
+`Kingdom.forests` to nakładka na stały generator terenu, a `terrainAt` wspólnie obsługuje
+budowanie, wydobycie, prośby i mapę. Posadzony las blokuje budowę na łące. Licznik sadzenia
+jest zapisany przy budynku; RNG kart pozostaje niezależne od leśnictwa. `TurnResult.forestry`
+pokazuje pola posadzone i dojrzałe. `ForestGrowthArt.vue` rysuje sadzonki i młode drzewa,
+`TerrainArt.vue` dojrzałe korony, a `ForesterArt.vue` domek na mapie i karcie.
+
+Migracja v8 → v9 dodaje pustą kolekcję nasadzeń, zachowując wyczerpanie złóż, budynki,
+zasoby, ofertę i turę. Nie obsadza wcześniejszych pól i zachowuje oryginał zapisu v8.
+Uszkodzony v9 blokuje cofnięcie do starszego zapisu; błędy pamięci pozwalają grać bez zapisu.
+`forestry.test.mjs` sprawdza wzrost, wycinkę, cykl odnowienia, kolizje, poziomy, uszkodzenia,
+zgodność prognozy oraz migrację. Test przeglądarkowy obejmuje trzy grafiki, zasięg, prognozę i odświeżenie.
 
 ## Zamki, łupy i trwałe zgliszcza
 
@@ -166,7 +196,7 @@ Sektory 7×7 zapisujemy jako współrzędne, nie tablicę nieograniczonego świa
 
 Limit sprawdzamy na końcu tury, po wszystkich nagrodach i awansie, z uwzględnieniem nowej rangi. `TurnResult.storageLoss` pokazuje niezmagazynowaną nadwyżkę, również w prognozie. Produkcja bieżącej tury może wyżywić ludzi i wojsko, zanim ograniczymy magazyn.
 
-Format zapisu to v8. Nie kasujemy istniejących zasobów, budynków, poziomów ani osiągniętych rang. Gdy zapasy sprzed aktualizacji przekraczają limit, dozwolony stan końcowy to większa z wartości: limit i zapasy na początku tury. Dzięki temu stare bogactwo pozostaje dostępne, ale nie może już rosnąć ponad limit. Wyższe ceny i nowa produkcja obowiązują od następnej akcji. Walidacja dopuszcza dawny licznik odbudowy wroga równy 2; następna tura rozlicza go według nowego okresu, bez cofania zapisu.
+Format zapisu to v9. Nie kasujemy istniejących zasobów, budynków, poziomów ani osiągniętych rang. Gdy zapasy sprzed aktualizacji przekraczają limit, dozwolony stan końcowy to większa z wartości: limit i zapasy na początku tury. Dzięki temu stare bogactwo pozostaje dostępne, ale nie może już rosnąć ponad limit. Wyższe ceny i nowa produkcja obowiązują od następnej akcji. Walidacja dopuszcza dawny licznik odbudowy wroga równy 2; następna tura rozlicza go według nowego okresu, bez cofania zapisu.
 
 ## Sterowanie i zapis
 
@@ -176,8 +206,8 @@ Dotknięcie wybiera pole. Przeciąganie przesuwa mapę; dwa palce lub przyciski 
 
 Zapis po każdej turze jest synchroniczny; nie zapisujemy zaznaczenia, kamery ani rozpoczętych gestów. Zamknięcie strony nie zmienia gospodarki. Gra działa bez storage, ale bez gwarancji wznowienia. Karty przeglądarki nie są synchronizowane — ostatni zapis wygrywa. Zapis ma ograniczenia pojemności localStorage; błąd zapisu jest widoczny, a rozgrywka trwa w pamięci.
 
-Odczytujemy kolejno v8 → v7 → v6 → v5 → v4 → v3 → v2 → v1, wyłącznie przy braku nowszego klucza. Poprawny
-starszy zapis migrujemy do v8, zachowując oryginalne bajty kopii. Z v5 zachowujemy wojsko, kontakty, uszkodzenia i terminy najazdów;
+Odczytujemy kolejno v9 → v8 → v7 → v6 → v5 → v4 → v3 → v2 → v1, wyłącznie przy braku nowszego klucza. Poprawny
+starszy zapis migrujemy do v9, zachowując oryginalne bajty kopii. Z v5 zachowujemy wojsko, kontakty, uszkodzenia i terminy najazdów;
 dodajemy zero tarczowników i stan kampanii. Starszym zapisom dodajemy pustą armię,
 brak kontaktów i najazdu. Z v4 zachowujemy prośby; starszym wersjom dodajemy pusty stan
 próśb, bez nagród ani zmiany zasobów, tury, budynków, terenu i oferty. Z v3 zachowujemy
@@ -185,7 +215,7 @@ rangę i historię awansów. W v1/v2 ustawiamy rangę Osada i pustą historię a
 z v1 dodatkowo tworzymy pustą kolekcję odkryć. Duża istniejąca osada może zdobywać
 kolejne rangi w następnych zatwierdzonych turach. Uszkodzony nowszy zapis zawsze
 blokuje cofnięcie do starszej kopii. Błąd zapisu migracji pozwala grać w pamięci
-z ostrzeżeniem. Potwierdzony restart zastępuje v8; stare kopie pozostają.
+z ostrzeżeniem. Potwierdzony restart zastępuje v9; stare kopie pozostają.
 
 Walidacja sprawdza rodzaj, deterministyczne położenie, odkryty sektor, unikalność
 miejsca w sektorze, chronologię tur oraz zakaz zabudowy zajętego miejsca. Historia
