@@ -5,11 +5,11 @@ const j = createJiti(import.meta.url)
 const { newKingdom, terrain, resolveTurn } = await j.import(
   '../../src/apps/gry/games/little-kingdom/engine.ts',
 )
-const key = 'zgrana:gry:male-krolestwo:v10'
+const key = 'zgrana:gry:male-krolestwo:v11'
 for (const width of [360, 1440])
   test(`finite extraction, range, exhaustion graphics and reload ${width}`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 })
-    const s = newKingdom(42)
+    const s = newKingdom(42, 1)
     for (let y = 0; y < 7; y++)
       for (let x = 0; x < 7; x++)
         if (['forest', 'rock'].includes(terrain(s.seed, x, y))) s.deposits[`${x},${y}`] = 0
@@ -51,8 +51,8 @@ for (const width of [360, 1440])
       await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
     ).toBeTruthy()
   })
-test('v7 migration is non-destructive and corrupt v10 is protected', async ({ page }) => {
-  const raw = encode(newKingdom(42), 7)
+test('v7 migration is non-destructive and corrupt v11 is protected', async ({ page }) => {
+  const raw = encode(newKingdom(42, 1), 7)
   await page.addInitScript((raw) => {
     localStorage.setItem('josefine:cookie-notice:dismissed:gry', '1')
     localStorage.setItem('zgrana:gry:male-krolestwo:v7', raw)

@@ -54,7 +54,7 @@ test('rank offers have at most three distinct goals; rotation, acceptance and de
   ])
     assert.deepEqual(current[field], original[field])
   assert.deepEqual(s, original)
-  const fresh = newKingdom()
+  const fresh = newKingdom(1, 1)
   assert.deepEqual(requestOffer(fresh), REQUEST_IDS.slice(0, 3))
   assert.equal(manageRequest(fresh, { type: 'accept', id: 'winter-mill' }), null)
   assert.equal(manageRequest(fresh, { type: 'defer' }), null)
@@ -71,12 +71,12 @@ test('all twelve goals recognize existing valid buildings and restored places; e
   for (const id of REQUEST_IDS) {
     assert.equal(requestProgress(s, id).complete, true, id)
     assert.ok(requestProgress(s, id).location, id)
-    assert.equal(requestProgress(newKingdom(), id).complete, false, id)
+    assert.equal(requestProgress(newKingdom(1, 1), id).complete, false, id)
   }
 })
 
 test('adjacency uses shared edges and discovered terrain; several separate mills cannot combine farms', () => {
-  const s = newKingdom(42)
+  const s = newKingdom(42, 1)
   s.buildings['3,2'] = { kind: 'farm', x: 3, y: 2, level: 3 } // diagonal to fixed water 4,3
   assert.equal(requestProgress(s, 'water-farm').complete, false)
   delete s.buildings['3,2']
@@ -103,7 +103,7 @@ test('adjacency uses shared edges and discovered terrain; several separate mills
   s.buildings['0,0'].kind = 'market'
   assert.equal(requestProgress(s, 'market-houses').value, 1)
   // A building at a sector boundary must not count a still undiscovered water tile.
-  const outside = newKingdom(42)
+  const outside = newKingdom(42, 1)
   outside.buildings['6,5'] = { kind: 'farm', x: 6, y: 5, level: 1 }
   const before = requestProgress(outside, 'water-farm')
   outside.sectors.push({ x: 1, y: 0 })
@@ -161,7 +161,7 @@ test('preview/commit matches; reward is separate, once only, after feeding and g
 })
 
 test('building, upgrading or restoring may finish a goal; demolishing it cancels forecast and rejected turns stay immutable', () => {
-  let s = newKingdom(42)
+  let s = newKingdom(42, 1)
   s = manageRequest(s, { type: 'accept', id: 'water-farm' })
   assert.equal(requestProgress(s, 'water-farm').complete, false)
   const build = resolveTurn(s, { type: 'build', kind: 'farm', x: 4, y: 2 })
@@ -252,7 +252,7 @@ for (const version of [1, 2, 3])
     assert.equal(result.state.rank, version === 3 ? 3 : 0)
     assert.deepEqual(result.state.promotions, version === 3 ? old.promotions : [])
     assert.equal(data.get(oldKey), raw)
-    assert.equal(JSON.parse(data.get(SAVE_KEY)).version, 10)
+    assert.equal(JSON.parse(data.get(SAVE_KEY)).version, 11)
     assert.deepEqual(load(port(data)).state, result.state)
   })
 

@@ -10,7 +10,7 @@ const { manageRequest, REQUESTS, REQUEST_IDS } = await j.import(
   '../../src/apps/gry/games/little-kingdom/requests.ts',
 )
 const url = '/gry/male-krolestwo',
-  key = 'zgrana:gry:male-krolestwo:v10',
+  key = 'zgrana:gry:male-krolestwo:v11',
   oldKey = 'zgrana:gry:male-krolestwo:v3'
 const stored = (page) => page.evaluate((k) => JSON.parse(localStorage.getItem(k)), key)
 const commit = (page) => page.getByRole('button', { name: 'Zatwierdź turę' })
@@ -102,7 +102,7 @@ for (const [width, height] of [
 test('fresh settlement builds its goal, deferral is free and locked goals wait for rank', async ({
   page,
 }) => {
-  const s = newKingdom(42)
+  const s = newKingdom(42, 1)
   await prepare(page, [[key, encode(s)]])
   await page.goto(url)
   await open(page)
@@ -133,7 +133,10 @@ test('v3 retains rank and old bytes; migration does not complete requests or adv
   await page.goto(url)
   await expect(page.getByTestId('kingdom-rank')).toContainText('Małe królestwo')
   await expect(page.getByTestId('kingdom-turn')).toHaveText('61')
-  expect((await stored(page)).state).toEqual(s)
+  expect((await stored(page)).state).toEqual({
+    ...s,
+    landscape: { version: 2, legacySectors: s.sectors.map((p) => `${p.x},${p.y}`) },
+  })
   expect(await page.evaluate((k) => localStorage.getItem(k), oldKey)).toBe(raw)
   await open(page)
   await page.getByRole('button', { name: 'Przyjmij prośbę: Pole przy strumieniu' }).click()
@@ -187,7 +190,7 @@ test('corrupt current request data stays protected despite valid v3 until confir
   expect(await page.evaluate((k) => localStorage.getItem(k), key)).toBe(broken)
   await page.getByRole('button', { name: 'Rozpocznij nową osadę' }).click()
   await page.getByRole('button', { name: 'Tak, nowa osada' }).click()
-  expect((await stored(page)).version).toBe(10)
+  expect((await stored(page)).version).toBe(11)
 })
 
 test('finished collection displays history and continuing play without more rewards on mobile', async ({

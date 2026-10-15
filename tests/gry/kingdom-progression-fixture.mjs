@@ -9,7 +9,7 @@ const { discoveryForSector, blocksBuilding } = await jiti.import(
 )
 
 export function developedKingdom(rank = 0) {
-  const s = newKingdom(42)
+  const s = newKingdom(42, 1)
   s.turn = 60
   s.population = 24
   s.rank = rank
@@ -53,8 +53,9 @@ export function developedKingdom(rank = 0) {
   })
   return s
 }
-export const encode = (state, version = 10) => {
+export const encode = (state, version = 11) => {
   const copy = structuredClone(state)
+  if (version < 11) delete copy.landscape
   if (version < 10) {
     copy.rng = state.seed
     copy.offer = ['farm', 'house', 'quarry']

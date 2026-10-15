@@ -1,4 +1,4 @@
-import { hash, SIZE, terrain } from './terrain'
+import { hash, SIZE, terrain, type TerrainVersion } from './terrain'
 import type { Building, Kingdom, Point, Resources } from './engine'
 
 export type DiscoveryKind = 'ruins' | 'wagon' | 'spring' | 'tradingPost'
@@ -70,6 +70,7 @@ export function discoveryForSector(
   seed: number,
   sector: Point,
   discoveredTurn: number,
+  terrainVersion: TerrainVersion = 1,
 ): Discovery | null {
   if (sector.x === 0 && sector.y === 0) return null
   const kind = kinds[hash(seed ^ 0x27d4eb2d, sector.x, sector.y) % 4]!
@@ -77,9 +78,9 @@ export function discoveryForSector(
   for (let y = 0; y < SIZE; y++)
     for (let x = 0; x < SIZE; x++) {
       const p = { x: sector.x * SIZE + x, y: sector.y * SIZE + y }
-      if (terrain(seed, p.x, p.y) !== 'meadow') continue
+      if (terrain(seed, p.x, p.y, terrainVersion) !== 'meadow') continue
       // A permanent site must have a useful building plot next to it, not be trapped
-      // among rocks/water. Guaranteed meadow rows ensure this candidate list is nonempty.
+      // among rocks/water. Both generators guarantee ample building plots.
       if (
         DISCOVERIES[kind].permanent &&
         ![
@@ -91,7 +92,7 @@ export function discoveryForSector(
           (q) =>
             Math.floor(q.x / SIZE) === sector.x &&
             Math.floor(q.y / SIZE) === sector.y &&
-            terrain(seed, q.x, q.y) === 'meadow',
+            terrain(seed, q.x, q.y, terrainVersion) === 'meadow',
         )
       )
         continue

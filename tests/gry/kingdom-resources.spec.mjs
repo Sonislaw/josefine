@@ -5,7 +5,7 @@ const j = createJiti(import.meta.url)
 const { newKingdom, resolveTurn } = await j.import(
   '../../src/apps/gry/games/little-kingdom/engine.ts',
 )
-const key = 'zgrana:gry:male-krolestwo:v10'
+const key = 'zgrana:gry:male-krolestwo:v11'
 
 for (const [width, height] of [
   [360, 640],
@@ -20,7 +20,7 @@ for (const [width, height] of [
     page.on('pageerror', (e) => errors.push(e.message))
     await page.setViewportSize({ width, height })
     await page.route('**/*googletagmanager.com/**', (route) => route.abort())
-    const state = newKingdom(42)
+    const state = newKingdom(42, 1)
     // Old above-limit stocks must remain readable too, without widening the page.
     state.resources.wood = 1234567
     await page.addInitScript(

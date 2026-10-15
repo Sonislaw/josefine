@@ -5,12 +5,12 @@ const j = createJiti(import.meta.url)
 const { newKingdom, ECONOMY_BUILDINGS } = await j.import(
   '../../src/apps/gry/games/little-kingdom/engine.ts',
 )
-const key = 'zgrana:gry:male-krolestwo:v10',
+const key = 'zgrana:gry:male-krolestwo:v11',
   previous = 'zgrana:gry:male-krolestwo:v9'
 for (const width of [360, 1440])
   test(`full catalog stays available across turns and v9 migration ${width}`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 })
-    const state = newKingdom(42)
+    const state = newKingdom(42, 1)
     state.resources = { wood: 100, stone: 100, food: 80, gold: 80 }
     const raw = encode(state, 9)
     await page.route('**/*googletagmanager.com/**', (r) => r.abort())

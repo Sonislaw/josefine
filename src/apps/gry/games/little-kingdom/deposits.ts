@@ -13,8 +13,10 @@ export function depositCapacity(state: ForestState, p: Point) {
   return t === 'forest' || t === 'rock' ? DEPOSITS[t] : 0
 }
 /** Sparse overrides: untouched natural tiles use full capacity; seedlings hold future stock. */
-export const depositRemaining = (state: Pick<Kingdom, 'seed' | 'deposits' | 'forests'>, p: Point) =>
-  state.deposits[key(p)] ?? depositCapacity(state, p)
+export const depositRemaining = (
+  state: Pick<Kingdom, 'seed' | 'landscape' | 'deposits' | 'forests'>,
+  p: Point,
+) => state.deposits[key(p)] ?? depositCapacity(state, p)
 export interface ExtractionReport {
   resource: 'wood' | 'stone'
   amount: number

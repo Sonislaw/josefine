@@ -13,7 +13,7 @@ const { enemyTarget, enemyDefence } = await j.import('./campaign.ts')
 const { battle } = await j.import('./battle.ts')
 const { decode } = await j.import('./storage.ts')
 test('opening builds one farm, not instant upgrades or two farms; no economy rank bypass', () => {
-  const s = newKingdom(9),
+  const s = newKingdom(9, 1),
     p = resolveTurn(s, { type: 'build', kind: 'farm', x: 0, y: 0 })
   assert.deepEqual(p.cost, { wood: 12, stone: 3, food: 0, gold: 2 })
   assert.equal(resolveTurn(p.state, { type: 'build', kind: 'farm', x: 1, y: 0 }), null)
@@ -22,7 +22,7 @@ test('opening builds one farm, not instant upgrades or two farms; no economy ran
   assert.match(actionError(rich, { type: 'upgrade', x: 0, y: 0 }), /Wioski/)
 })
 test('max-level adjacent production is bounded, and winter halves the capped complete harvest', () => {
-  const s = newKingdom(42),
+  const s = newKingdom(42, 1),
     farm = { x: 0, y: 0, kind: 'farm', level: 3 }
   s.buildings['0,0'] = farm
   for (const p of [
@@ -86,7 +86,7 @@ test('existing v6 saves keep stocks, military levels, earned ranks and scheduled
   assert.ok(armySize(r.state.affairs.enemies[2].garrison) > 6)
 })
 test('inventory limits stop hoarding, forecast excess exactly, and never confiscate existing above-limit stocks', () => {
-  const s = newKingdom(),
+  const s = newKingdom(1, 1),
     limit = inventoryLimit(0)
   s.resources = { ...limit }
   s.buildings['0,0'] = { x: 0, y: 0, kind: 'farm', level: 3 }

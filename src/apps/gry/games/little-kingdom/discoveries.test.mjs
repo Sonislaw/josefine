@@ -8,9 +8,9 @@ const { newKingdom, terrain, key, resolveTurn, buildingProduction, actionError }
 const { DISCOVERIES, discoveryForSector, discoveryBonus, blocksBuilding } =
   await j.import('./discoveries.ts')
 const { decode, load, save, SAVE_KEY, LEGACY_KEY } = await j.import('./storage.ts')
-const serialize = (state) => JSON.stringify({ version: 10, state, tutorialDismissed: true })
+const serialize = (state) => JSON.stringify({ version: 11, state, tutorialDismissed: true })
 const rich = (seed) => ({
-  ...newKingdom(seed),
+  ...newKingdom(seed, 1),
   resources: { wood: 5000, stone: 5000, food: 5000, gold: 5000 },
 })
 function fixture(kind) {
@@ -179,9 +179,13 @@ test('v1 migrates once without retroactive places, resources or turn changes, pr
   const result = load(port)
   assert.equal(result.status, 'saved')
   assert.equal(result.migrationSaveFailed, false)
-  assert.deepEqual(result.state, { ...old, discoveries: {} })
+  assert.deepEqual(result.state, {
+    ...old,
+    discoveries: {},
+    landscape: { version: 2, legacySectors: ['0,0', '1,0'] },
+  })
   assert.equal(data.get(LEGACY_KEY), raw)
-  assert.equal(JSON.parse(data.get(SAVE_KEY)).version, 10)
+  assert.equal(JSON.parse(data.get(SAVE_KEY)).version, 11)
   assert.deepEqual(load(port).state, result.state)
   const explored = resolveTurn(result.state, { type: 'explore', x: 2, y: 0 })
   assert.equal(Object.keys(explored.state.discoveries).length, 1)
@@ -197,7 +201,7 @@ test('existing or corrupt current save takes precedence; failed migration preser
   const port = { getItem: (k) => data.get(k) ?? null, setItem: (k, v) => data.set(k, v) }
   assert.equal(load(port).status, 'corrupt')
   assert.equal(data.get(SAVE_KEY), '{broken')
-  save(port, newKingdom(99), false)
+  save(port, newKingdom(99, 1), false)
   assert.equal(load(port).state.seed, 99)
   data.delete(SAVE_KEY)
   const failed = load({

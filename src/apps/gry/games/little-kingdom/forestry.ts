@@ -1,5 +1,5 @@
 import type { Kingdom, Point } from './engine'
-import { SIZE, terrain, type Terrain } from './terrain'
+import { SIZE, baseTerrain, type Terrain } from './terrain'
 
 /** Forestry uses coordinates and turn counters, independently of UI selection. */
 export const FORESTRY = {
@@ -12,7 +12,7 @@ export const FORESTRY = {
 export interface PlantedForest {
   age: number
 }
-export type ForestState = Pick<Kingdom, 'seed'> & Partial<Pick<Kingdom, 'forests'>>
+export type ForestState = Pick<Kingdom, 'seed' | 'landscape'> & Partial<Pick<Kingdom, 'forests'>>
 const key = (p: Point) => `${p.x},${p.y}`
 export const inForestRange = (a: Point, b: Point) =>
   Math.abs(a.x - b.x) + Math.abs(a.y - b.y) <= FORESTRY.radius
@@ -22,7 +22,7 @@ export const forestStage = (state: ForestState, p: Point): 1 | 2 | 3 => {
 }
 /** Seeded terrain remains immutable; planted forests are a saved overlay. */
 export const terrainAt = (state: ForestState, p: Point): Terrain =>
-  state.forests?.[key(p)] ? 'forest' : terrain(state.seed, p.x, p.y)
+  state.forests?.[key(p)] ? 'forest' : baseTerrain(state, p.x, p.y)
 export const plantingInterval = (level: number) => FORESTRY.plantingTurns[level - 1] ?? 4
 
 export function plantingSites(state: Kingdom, building: Point): Point[] {

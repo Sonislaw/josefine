@@ -6,9 +6,9 @@ Samodzielna strategia turowa: `/gry/male-krolestwo` lokalnie, `/male-krolestwo` 
 
 - `balance.ts`: koszty budynków i ulepszeń, ograniczenia produkcji, limity zapasów, utrzymanie wojska i parametry strat. Zmiany balansu nie tworzą drugiego silnika ani osobnego poziomu trudności.
 - `engine.ts`: czyste typy i reguły, katalog budynków, gospodarka i sezonowość. `resolveTurn(state, action)` zwraca nowy stan, koszt, produkcję, jednorazową nagrodę, nowe odkrycie, bilans oraz zmianę populacji. Nigdy nie mutuje wejścia. Ten sam wynik służy prognozie i zatwierdzeniu.
-- `terrain.ts`: dotychczasowy, niezmieniony generator terenu. Wspólny dla silnika i odkryć, bez cyklicznych importów reguł.
+- `terrain.ts`: wersjonowany, deterministyczny generator terenu. Skupiska lasów i skał oraz rzadsze, większe jeziora. Wspólny dla silnika, odkryć i sąsiadów, bez cyklicznych importów reguł.
 - `discoveries.ts`: definicje miejsc, koszty, nagrody, rozmieszczenie i premie. Rozmieszczenie wynika z osobnych hashy współrzędnych i ziarna.
-- `storage.ts`: wersjonowany format `{ version: 10, state, tutorialDismissed }`, walidacja i obsługa braku pamięci. Klucz `zgrana:gry:male-krolestwo:v10`. Uszkodzony zapis jest chroniony do jawnego potwierdzenia nowej osady.
+- `storage.ts`: wersjonowany format `{ version: 11, state, tutorialDismissed }`, walidacja i obsługa braku pamięci. Klucz `zgrana:gry:male-krolestwo:v11`. Uszkodzony zapis jest chroniony do jawnego potwierdzenia nowej osady.
 - `campaign.ts`, `campaign-storage.ts`: niezależne garnizony, odbudowa, najazdy, przewaga, pokój i migracja. Cała symulacja pozostaje czysta i bez zegara przeglądarki.
 - `military.ts`, `neighbours.ts`, `battle.ts`: konfiguracja wojska, kontakty i czysta prognoza walki. `DefencePanel.vue`, `BattleSummary.vue`, `MilitaryArt.vue`: panele oraz własne SVG.
 - `progression.ts`: definicje rang, wymagania, prezenty i czyste sprawdzanie awansu. `ProgressionPanel.vue` pokazuje postęp, a `HallArt.vue` cztery sylwetki ratusza w tym samym polu mapy.
@@ -29,6 +29,24 @@ rozgrywka nie przyjmuje tej akcji; pozostałe decyzje nadal wymagają osobnego z
 Po wykonaniu zbierania przycisk rozświetla się na 550 ms i pokazuje krótki pasek postępu.
 Każde kliknięcie ponawia wyłącznie animację CSS, bez blokowania sterowania i opóźniania tury.
 Przy `prefers-reduced-motion` pozostaje krótkie podświetlenie bez ruchomego paska.
+
+## Skupiska terenu (zapis v11)
+
+Generator terenu v2 wyznacza skupiska we współrzędnych świata, a nie losuje rodzaju
+każdego pola osobno. Lasy i skały tworzą zwarte obszary, również przez granice sektorów.
+Rzadsze jeziora mają wspólny, ciągły akwen zamiast pojedynczych pól wody.
+Zachowujemy przynajmniej 20 łąk w sektorze oraz startową polanę z dostępem do lasu,
+skał i wody. Ograniczony cache 512 sektorów nie wpływa na deterministyczność.
+
+`landscape.version` wybiera generator; `landscape.legacySectors` zachowuje teren
+już odkryty przed migracją. Zapisy v1–v10 otrzymują generator v2 dla przyszłych
+eksploracji, ale wszystkie znane sektory pozostają na v1. Nie przesuwamy budynków,
+odkryć, zamków ani złóż i nie zmieniamy zasobów czy tury. Oryginalne zapisy pozostają.
+`baseTerrain` jest wspólnym źródłem terenu dla gospodarki i walidacji; `terrainAt`
+dodaje do niego nasadzenia leśników. Nowa osada od razu korzysta z v2.
+Jawny v1 jest zachowany dla kompatybilności i geometrycznych fixture'ów regresji.
+`terrain.test.mjs` sprawdza spójność skupisk, powierzchnię jezior, dostęp do surowców,
+migrację oraz eksplorację; symulacje rozwoju korzystają z aktualnego generatora.
 
 ## Stały katalog budynków (v10)
 
@@ -219,7 +237,7 @@ Sektory 7×7 zapisujemy jako współrzędne, nie tablicę nieograniczonego świa
 
 Limit sprawdzamy na końcu tury, po wszystkich nagrodach i awansie, z uwzględnieniem nowej rangi. `TurnResult.storageLoss` pokazuje niezmagazynowaną nadwyżkę, również w prognozie. Produkcja bieżącej tury może wyżywić ludzi i wojsko, zanim ograniczymy magazyn.
 
-Format zapisu to v10. Nie kasujemy istniejących zasobów, budynków, poziomów ani osiągniętych rang. Gdy zapasy sprzed aktualizacji przekraczają limit, dozwolony stan końcowy to większa z wartości: limit i zapasy na początku tury. Dzięki temu stare bogactwo pozostaje dostępne, ale nie może już rosnąć ponad limit. Wyższe ceny i nowa produkcja obowiązują od następnej akcji. Walidacja dopuszcza dawny licznik odbudowy wroga równy 2; następna tura rozlicza go według nowego okresu, bez cofania zapisu.
+Format zapisu to v11. Nie kasujemy istniejących zasobów, budynków, poziomów ani osiągniętych rang. Gdy zapasy sprzed aktualizacji przekraczają limit, dozwolony stan końcowy to większa z wartości: limit i zapasy na początku tury. Dzięki temu stare bogactwo pozostaje dostępne, ale nie może już rosnąć ponad limit. Wyższe ceny i nowa produkcja obowiązują od następnej akcji. Walidacja dopuszcza dawny licznik odbudowy wroga równy 2; następna tura rozlicza go według nowego okresu, bez cofania zapisu.
 
 ## Sterowanie i zapis
 
@@ -229,8 +247,8 @@ Dotknięcie wybiera pole. Przeciąganie przesuwa mapę; dwa palce lub przyciski 
 
 Zapis po każdej turze jest synchroniczny; nie zapisujemy zaznaczenia, kamery ani rozpoczętych gestów. Zamknięcie strony nie zmienia gospodarki. Gra działa bez storage, ale bez gwarancji wznowienia. Karty przeglądarki nie są synchronizowane — ostatni zapis wygrywa. Zapis ma ograniczenia pojemności localStorage; błąd zapisu jest widoczny, a rozgrywka trwa w pamięci.
 
-Odczytujemy kolejno v10 → v9 → v8 → v7 → v6 → v5 → v4 → v3 → v2 → v1, wyłącznie przy braku nowszego klucza. Poprawny
-starszy zapis migrujemy do v10, zachowując oryginalne bajty kopii. Z v5 zachowujemy wojsko, kontakty, uszkodzenia i terminy najazdów;
+Odczytujemy kolejno v11 → v10 → v9 → v8 → v7 → v6 → v5 → v4 → v3 → v2 → v1, wyłącznie przy braku nowszego klucza. Poprawny
+starszy zapis migrujemy do v11, zachowując oryginalne bajty kopii. Z v5 zachowujemy wojsko, kontakty, uszkodzenia i terminy najazdów;
 dodajemy zero tarczowników i stan kampanii. Starszym zapisom dodajemy pustą armię,
 brak kontaktów i najazdu. Z v4 zachowujemy prośby; starszym wersjom dodajemy pusty stan
 próśb, bez nagród ani zmiany zasobów, tury, budynków i terenu. Z v3 zachowujemy
@@ -238,7 +256,7 @@ rangę i historię awansów. W v1/v2 ustawiamy rangę Osada i pustą historię a
 z v1 dodatkowo tworzymy pustą kolekcję odkryć. Duża istniejąca osada może zdobywać
 kolejne rangi w następnych zatwierdzonych turach. Uszkodzony nowszy zapis zawsze
 blokuje cofnięcie do starszej kopii. Błąd zapisu migracji pozwala grać w pamięci
-z ostrzeżeniem. Potwierdzony restart zastępuje v10; stare kopie pozostają.
+z ostrzeżeniem. Potwierdzony restart zastępuje v11; stare kopie pozostają.
 
 Walidacja sprawdza rodzaj, deterministyczne położenie, odkryty sektor, unikalność
 miejsca w sektorze, chronologię tur oraz zakaz zabudowy zajętego miejsca. Historia

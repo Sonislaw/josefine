@@ -9,7 +9,7 @@ const { discoveryForSector, blocksBuilding } = await j.import(
 )
 
 export function requestsKingdom() {
-  const s = newKingdom(42)
+  const s = newKingdom(42, 1)
   s.rank = 3
   s.promotions = [
     { rank: 1, turn: 30 },

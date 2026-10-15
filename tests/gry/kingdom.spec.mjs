@@ -5,8 +5,8 @@ const { newKingdom, resolveTurn } = await jiti.import(
   '../../src/apps/gry/games/little-kingdom/engine.ts',
 )
 const url = '/gry/male-krolestwo',
-  key = 'zgrana:gry:male-krolestwo:v10'
-async function prepare(page, state = newKingdom(42)) {
+  key = 'zgrana:gry:male-krolestwo:v11'
+async function prepare(page, state = newKingdom(42, 1)) {
   await page.addInitScript(
     ({ state, key }) => {
       localStorage.setItem('josefine:cookie-notice:dismissed:gry', '1')
@@ -15,7 +15,7 @@ async function prepare(page, state = newKingdom(42)) {
           key,
           typeof state === 'string'
             ? state
-            : JSON.stringify({ version: 10, state, tutorialDismissed: true }),
+            : JSON.stringify({ version: 11, state, tutorialDismissed: true }),
         )
         sessionStorage.setItem('kingdom-fixture', '1')
       }
@@ -75,7 +75,7 @@ for (const [width, height] of [
   })
 }
 test('upgrade, demolition and exploration', async ({ page }) => {
-  const s = newKingdom(4)
+  const s = newKingdom(4, 1)
   s.rank = 1
   s.turn = 1
   s.promotions = [{ rank: 1, turn: 1 }]
@@ -102,7 +102,7 @@ test('upgrade, demolition and exploration', async ({ page }) => {
 test('insufficient funds and natural terrain do not spend turns; gathering restores resources', async ({
   page,
 }) => {
-  const s = newKingdom(42)
+  const s = newKingdom(42, 1)
   s.resources.wood = 0
   await prepare(page, s)
   await page.goto(url)
@@ -240,7 +240,7 @@ test('corrupt save untouched until explicit restart; denied storage remains play
 test('100 sectors render only visible tiles; camera, resize and navigation remain usable', async ({
   page,
 }, info) => {
-  const s = newKingdom(31)
+  const s = newKingdom(31, 1)
   s.sectors = Array.from({ length: 100 }, (_, i) => ({ x: i % 10, y: Math.floor(i / 10) }))
   await prepare(page, s)
   await page.goto(url)

@@ -5,13 +5,13 @@ const j = createJiti(import.meta.url)
 const { newKingdom, resolveTurn } = await j.import(
   '../../src/apps/gry/games/little-kingdom/engine.ts',
 )
-const key = 'zgrana:gry:male-krolestwo:v10',
+const key = 'zgrana:gry:male-krolestwo:v11',
   url = '/gry/male-krolestwo'
 const stored = (page) => page.evaluate((k) => JSON.parse(localStorage.getItem(k)).state, key)
 const bubble = (page) => page.getByRole('region', { name: 'Ulepszanie budynku', exact: true })
 const commit = (page) => page.getByRole('button', { name: 'Zatwierdź turę' })
 function fixture() {
-  const s = newKingdom(42)
+  const s = newKingdom(42, 1)
   s.turn = 12
   s.rank = 1
   s.promotions = [{ rank: 1, turn: 12 }]

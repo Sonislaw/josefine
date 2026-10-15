@@ -4,7 +4,7 @@ import { developedKingdom, encode } from './kingdom-progression-fixture.mjs'
 const jiti = createJiti(import.meta.url)
 const { resolveTurn } = await jiti.import('../../src/apps/gry/games/little-kingdom/engine.ts')
 const url = '/gry/male-krolestwo',
-  key = 'zgrana:gry:male-krolestwo:v10',
+  key = 'zgrana:gry:male-krolestwo:v11',
   previous = 'zgrana:gry:male-krolestwo:v2'
 const stored = (page) => page.evaluate((k) => JSON.parse(localStorage.getItem(k)), key)
 const runtimeErrors = new WeakMap()
@@ -98,7 +98,10 @@ test('v2 migration preserves discoveries and bytes; old settlement earns its fir
   await prepare(page, [[previous, raw]])
   await page.goto(url)
   await expect(page.getByTestId('kingdom-turn')).toHaveText('61')
-  expect((await stored(page)).state).toEqual(s)
+  expect((await stored(page)).state).toEqual({
+    ...s,
+    landscape: { version: 2, legacySectors: s.sectors.map((p) => `${p.x},${p.y}`) },
+  })
   await expect(page.locator('.promotion-announcement')).toHaveCount(0)
   expect(await page.evaluate((k) => localStorage.getItem(k), previous)).toBe(raw)
   await gather(page)
@@ -109,14 +112,14 @@ test('v2 migration preserves discoveries and bytes; old settlement earns its fir
   expect(await page.evaluate((k) => localStorage.getItem(k), previous)).toBe(raw)
 })
 
-for (const brokenVersion of [2, 10])
+for (const brokenVersion of [2, 11])
   test(`corrupt v${brokenVersion} stays protected despite an older valid save`, async ({
     page,
   }) => {
-    const brokenKey = brokenVersion === 10 ? key : previous
+    const brokenKey = brokenVersion === 11 ? key : previous
     await prepare(page, [
       ['zgrana:gry:male-krolestwo:v1', encode(developedKingdom(), 1)],
-      ...(brokenVersion === 10 ? [[previous, encode(developedKingdom(), 2)]] : []),
+      ...(brokenVersion === 11 ? [[previous, encode(developedKingdom(), 2)]] : []),
       [brokenKey, '{broken'],
     ])
     await page.goto(url)
@@ -128,7 +131,7 @@ for (const brokenVersion of [2, 10])
     expect(await page.evaluate((k) => localStorage.getItem(k), brokenKey)).toBe('{broken')
     await page.getByRole('button', { name: 'Rozpocznij nową osadę' }).click()
     await page.getByRole('button', { name: 'Tak, nowa osada' }).click()
-    expect((await stored(page)).version).toBe(10)
+    expect((await stored(page)).version).toBe(11)
     expect((await stored(page)).state.rank).toBe(0)
   })
 

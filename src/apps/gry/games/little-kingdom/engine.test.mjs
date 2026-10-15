@@ -29,9 +29,9 @@ const {
   PREVIOUS_KEY,
   LEGACY_KEY,
 } = await jiti.import('./storage.ts')
-const serialize = (state) => JSON.stringify({ version: 10, state, tutorialDismissed: true })
+const serialize = (state) => JSON.stringify({ version: 11, state, tutorialDismissed: true })
 const rich = () => ({
-  ...newKingdom(42),
+  ...newKingdom(42, 1),
   resources: { wood: 5000, stone: 5000, food: 5000, gold: 5000 },
 })
 const put = (s, kind, x, y, level = 1) => {
@@ -40,16 +40,16 @@ const put = (s, kind, x, y, level = 1) => {
 }
 
 test('starting resources, hall, capacity and full building catalog', () => {
-  const s = newKingdom(42)
+  const s = newKingdom(42, 1)
   assert.equal(capacity(s), 5)
   assert.equal(s.population, 3)
   assert.deepEqual(s.resources, { wood: 20, stone: 12, food: 24, gold: 10 })
   assert.deepEqual(production(s), { wood: 1, stone: 0, food: 2, gold: 1 })
   for (let seed = 0; seed < 1000; seed++) {
     assert.equal(ECONOMY_BUILDINGS.length, 8)
-    assert.equal(Object.hasOwn(newKingdom(seed), 'offer'), false)
-    assert.equal(Object.hasOwn(newKingdom(seed), 'rng'), false)
-    assert.equal(decode(serialize(newKingdom(seed))).state.seed, seed)
+    assert.equal(Object.hasOwn(newKingdom(seed, 1), 'offer'), false)
+    assert.equal(Object.hasOwn(newKingdom(seed, 1), 'rng'), false)
+    assert.equal(decode(serialize(newKingdom(seed, 1))).state.seed, seed)
   }
 })
 test('terrain is deterministic across negative coordinates, with guaranteed land and resources', () => {
@@ -65,7 +65,7 @@ test('terrain is deterministic across negative coordinates, with guaranteed land
       }
 })
 test('preview/commit deterministic, immutable; build costs precede immediate production', () => {
-  const s = newKingdom(9),
+  const s = newKingdom(9, 1),
     before = structuredClone(s),
     a = { type: 'build', kind: 'farm', x: 0, y: 0 }
   const p = resolveTurn(s, a)
@@ -76,7 +76,7 @@ test('preview/commit deterministic, immutable; build costs precede immediate pro
   assert.equal(Object.hasOwn(p.state, 'offer'), false)
 })
 test('reject occupied, natural, unknown, unaffordable buildings without mutation', () => {
-  const s = newKingdom(3),
+  const s = newKingdom(3, 1),
     initial = serialize(s)
   for (const a of [
     { type: 'build', kind: 'farm', x: 3, y: 3 },
@@ -96,7 +96,7 @@ test('reject occupied, natural, unknown, unaffordable buildings without mutation
   assert.equal(resolveTurn(s, { type: 'build', kind: 'farm', x: 0, y: 0 }), null)
 })
 test('adjacency is cardinal, water is once, and mill bonuses are capped without multiplying by farm level', () => {
-  const s = newKingdom(7)
+  const s = newKingdom(7, 1)
   put(s, 'farm', 4, 2, 2)
   put(s, 'mill', 3, 2, 2)
   put(s, 'mill', 5, 2, 1)
@@ -104,13 +104,13 @@ test('adjacency is cardinal, water is once, and mill bonuses are capped without 
   assert.equal(buildingProduction(s, s.buildings['4,2']).food, 5 + 1 + 3)
   s.turn = 9
   assert.equal(buildingProduction(s, s.buildings['4,2']).food, 4)
-  const winter = newKingdom(2)
+  const winter = newKingdom(2, 1)
   winter.turn = 9
   put(winter, 'farm', 4, 2)
   assert.equal(buildingProduction(winter, winter.buildings['4,2']).food, 2)
 })
 test('tartak, quarry, market, houses and orchard have correct effects', () => {
-  const s = newKingdom(1)
+  const s = newKingdom(1, 1)
   put(s, 'sawmill', 2, 2, 2)
   put(s, 'quarry', 3, 5, 1)
   put(s, 'market', 0, 0, 2)
@@ -170,7 +170,7 @@ test('season boundaries, growth threshold, capacity and food use order', () => {
     Array.from({ length: 13 }, (_, t) => season(t)),
     [0, 0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3, 0],
   )
-  let s = newKingdom()
+  let s = newKingdom(1, 1)
   s.turn = 2
   s.resources.food = 5
   let r = resolveTurn(s, { type: 'gather' })
@@ -184,7 +184,7 @@ test('season boundaries, growth threshold, capacity and food use order', () => {
   assert.equal(resolveTurn(s, { type: 'gather' }).state.population, 5)
 })
 test('gather with zero stock is legal; hunger warns, loses people, resets and ends', () => {
-  let s = newKingdom()
+  let s = newKingdom(1, 1)
   s.resources = { wood: 0, stone: 0, food: 0, gold: 0 }
   const gathered = resolveTurn(s, { type: 'gather' })
   assert.deepEqual(gathered.state.resources, { wood: 2, stone: 1, food: 1, gold: 1 })
@@ -201,7 +201,7 @@ test('gather with zero stock is legal; hunger warns, loses people, resets and en
   assert.equal(fed.state.hunger, 0)
   // With remaining 1 resident the hall normally covers food; a synthetic no-hall state tests terminal rules independently.
   const starving = {
-    ...newKingdom(),
+    ...newKingdom(1, 1),
     buildings: {},
     population: 1,
     hunger: 1,
@@ -213,10 +213,10 @@ test('gather with zero stock is legal; hunger warns, loses people, resets and en
   assert.equal(resolveTurn(dead, { type: 'gather' }), null)
 })
 test('valid storage round-trip, unavailable port and corrupted saves', () => {
-  const s = newKingdom(123),
+  const s = newKingdom(123, 1),
     raw = serialize(s)
   assert.deepEqual(decode(raw), { state: s, tutorialDismissed: true })
-  for (const v of ['', '{', '{}', JSON.stringify({ version: 11, state: s })])
+  for (const v of ['', '{', '{}', JSON.stringify({ version: 12, state: s })])
     assert.equal(decode(v), null)
   for (const mutate of [
     (s) => (s.resources.food = -1),
@@ -237,6 +237,7 @@ test('valid storage round-trip, unavailable port and corrupted saves', () => {
       assert.ok(
         [
           SAVE_KEY,
+          'zgrana:gry:male-krolestwo:v10',
           'zgrana:gry:male-krolestwo:v9',
           'zgrana:gry:male-krolestwo:v8',
           'zgrana:gry:male-krolestwo:v6',
@@ -288,7 +289,7 @@ test('hall food provides a recovery floor of two residents under the agreed rule
 })
 test('20 years of legal decisions remain playable, deterministic and saveable', () => {
   for (const seed of [1, 17, 183, 0xffffffff]) {
-    let s = newKingdom(seed)
+    let s = newKingdom(seed, 1)
     // First sustain the initial population, then upgrade and make economic decisions.
     for (let turn = 0; turn < 240; turn++) {
       const candidates = []
@@ -316,7 +317,7 @@ test('20 years of legal decisions remain playable, deterministic and saveable', 
   }
 })
 test('100 connected sectors retain deterministic terrain and valid serialization', () => {
-  const s = newKingdom(31)
+  const s = newKingdom(31, 1)
   s.sectors = Array.from({ length: 100 }, (_, i) => ({ x: i % 10, y: Math.floor(i / 10) }))
   assert.equal(frontier(s).length, 40)
   assert.deepEqual(decode(serialize(s)).state, s)

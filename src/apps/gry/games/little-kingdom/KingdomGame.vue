@@ -772,6 +772,7 @@ function compass(p: Point) {
           <span>03 / ZA HORYZONTEM</span>
           <h3>Odkrywaj w swoim tempie.</h3>
           <p>
+            Lasy i skały tworzą zwarte skupiska, a większe jeziora mogą sięgać poza granice sektora.
             Za granicą czekają ruiny strażnic, porzucone wozy, źródła i dawne punkty handlowe. Jedne
             odkrycia przyniosą zapasy, inne pomogą gospodarstwom i targom w sąsiedztwie. Odkryj
             ziemię, sprawdź znalezisko i zdecyduj, kiedy warto poświęcić na nie turę.

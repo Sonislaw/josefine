@@ -181,10 +181,10 @@ test('v6 active wave and peaceful campaign migrate without advancing or altering
     assert.equal(n.affairs.enemies[2].health, 100)
     assert.deepEqual(n.affairs.enemies[2].treasury, CASTLES.treasury)
     assert.equal(values.get(CAMPAIGN_KEY), raw)
-    assert.equal(JSON.parse(values.get(SAVE_KEY)).version, 10)
+    assert.equal(JSON.parse(values.get(SAVE_KEY)).version, 11)
   }
 })
-test('corrupt v10 blocks valid v6 fallback; denied writes keep migrated gameplay in memory', () => {
+test('corrupt v11 blocks valid v6 fallback; denied writes keep migrated gameplay in memory', () => {
   const s = warKingdom(),
     raw = encode(s, 6)
   const values = new Map([

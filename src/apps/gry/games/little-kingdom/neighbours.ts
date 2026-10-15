@@ -1,5 +1,5 @@
 import type { Kingdom, Point } from './engine'
-import { SIZE, terrain } from './terrain'
+import { SIZE, terrain, type TerrainVersion } from './terrain'
 import { supplies, type Army, emptyArmy } from './military'
 import type { EnemyCampaign, Raid } from './campaign'
 
@@ -70,14 +70,19 @@ export const emptyAffairs = (): ForeignAffairs => ({
   enemies: {},
 })
 /** Separate coordinate hash: exploration never draws from the building-card RNG. */
-export function settlementPosition(seed: number, sector: Point, excluded: Point): Point {
+export function settlementPosition(
+  seed: number,
+  sector: Point,
+  excluded: Point,
+  terrainVersion: TerrainVersion = 1,
+): Point {
   const plots: Point[] = []
   for (let y = 0; y < SIZE; y++)
     for (let x = 0; x < SIZE; x++) {
       const p = { x: sector.x * SIZE + x, y: sector.y * SIZE + y }
       // Preserve the useful meadow neighbours guaranteed for permanent discoveries.
       if (
-        terrain(seed, p.x, p.y) === 'meadow' &&
+        terrain(seed, p.x, p.y, terrainVersion) === 'meadow' &&
         Math.abs(p.x - excluded.x) + Math.abs(p.y - excluded.y) > 1
       )
         plots.push(p)

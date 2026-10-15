@@ -5,9 +5,9 @@ const j = createJiti(import.meta.url)
 const { newKingdom, terrain, resolveTurn } = await j.import(
   '../../src/apps/gry/games/little-kingdom/engine.ts',
 )
-const key = 'zgrana:gry:male-krolestwo:v10'
+const key = 'zgrana:gry:male-krolestwo:v11'
 function fixture() {
-  const s = newKingdom(42)
+  const s = newKingdom(42, 1)
   s.turn = 12
   s.resources = { wood: 100, stone: 100, food: 80, gold: 60 }
   for (let y = 0; y < 7; y++)
@@ -85,10 +85,10 @@ for (const width of [360, 1440])
     await expect(page.locator('.selected-panel h2')).toContainText('Domek leśnika')
     await expect(page.getByTestId('kingdom-turn')).toHaveText('14')
   })
-test('v8 depletion migrates unchanged into v9; broken new save stays protected', async ({
+test('v8 depletion migrates unchanged into v11; broken new save stays protected', async ({
   page,
 }) => {
-  const s = newKingdom(42)
+  const s = newKingdom(42, 1)
   s.deposits['2,3'] = 0
   const raw = encode(s, 8)
   await page.addInitScript((raw) => {
@@ -97,7 +97,10 @@ test('v8 depletion migrates unchanged into v9; broken new save stays protected',
   }, raw)
   await page.goto('/gry/male-krolestwo')
   await expect(page.getByTestId('kingdom-turn')).toHaveText('1')
-  expect(await page.evaluate((k) => JSON.parse(localStorage.getItem(k)).state, key)).toEqual(s)
+  expect(await page.evaluate((k) => JSON.parse(localStorage.getItem(k)).state, key)).toEqual({
+    ...s,
+    landscape: { version: 2, legacySectors: ['0,0'] },
+  })
   expect(await page.evaluate(() => localStorage.getItem('zgrana:gry:male-krolestwo:v8'))).toBe(raw)
   await page.evaluate((k) => localStorage.setItem(k, 'broken'), key)
   await page.reload()

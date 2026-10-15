@@ -37,7 +37,7 @@ test('rank thresholds and gifts are exact; starting rank, hall and upgrades do n
       { wood: 20, stone: 12, food: 12, gold: 12 },
     ],
   )
-  const s = newKingdom()
+  const s = newKingdom(1, 1)
   assert.equal(s.rank, 0)
   assert.deepEqual(s.promotions, [])
   s.buildings['0,0'] = { x: 0, y: 0, kind: 'farm', level: 3 }
@@ -169,14 +169,14 @@ for (const version of [1, 2])
     assert.deepEqual(result.state.resources, s.resources)
     assert.equal(result.state.turn, s.turn)
     assert.equal(data.get(oldKey), raw)
-    assert.equal(JSON.parse(data.get(SAVE_KEY)).version, 10)
+    assert.equal(JSON.parse(data.get(SAVE_KEY)).version, 11)
     assert.deepEqual(load(port(data)).state, result.state)
     assert.equal(resolveTurn(result.state, { type: 'gather' }).state.rank, version === 1 ? 0 : 1)
   })
 
 test('current save then v2 take priority even if corrupt; failed writes preserve old save', () => {
   const data = new Map([
-    [LEGACY_KEY, encode(newKingdom(), 1)],
+    [LEGACY_KEY, encode(newKingdom(1, 1), 1)],
     [PREVIOUS_KEY, encode(developedKingdom(), 2)],
   ])
   assert.equal(load(port(data)).state.turn, 60)

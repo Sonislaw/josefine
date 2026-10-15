@@ -10,7 +10,7 @@ const { planExtraction, depositRemaining, depositCapacity, inExtractionRange } =
 const { save, load, decode, SAVE_KEY, CASTLES_KEY } = await j.import('./storage.ts')
 
 function setup(kind, amount = 2) {
-  const state = newKingdom(42)
+  const state = newKingdom(42, 1)
   const type = kind === 'sawmill' ? 'forest' : 'rock'
   const plots = [],
     sources = []
@@ -102,8 +102,8 @@ test('new builds and repairs extract immediately, upgrades consume faster, inval
   assert.equal(resolveTurn(repaired.state, { type: 'build', kind: 'sawmill', ...source }), null)
   assert.equal(JSON.stringify(repaired.state), before)
 })
-test('v7 migration starts full deposits, preserves old bytes and never falls back from corrupt v10', () => {
-  const old = newKingdom(42)
+test('v7 migration starts full deposits, preserves old bytes and never falls back from corrupt v11', () => {
+  const old = newKingdom(42, 1)
   delete old.deposits
   const raw = encode(old, 7)
   const data = new Map([[CASTLES_KEY, raw]]),
@@ -114,7 +114,7 @@ test('v7 migration starts full deposits, preserves old bytes and never falls bac
   assert.deepEqual(loaded.state.resources, old.resources)
   assert.equal(loaded.state.turn, old.turn)
   assert.equal(data.get(CASTLES_KEY), raw)
-  assert.equal(JSON.parse(data.get(SAVE_KEY)).version, 10)
+  assert.equal(JSON.parse(data.get(SAVE_KEY)).version, 11)
   data.set(SAVE_KEY, 'broken')
   assert.equal(load(port).status, 'corrupt')
   assert.equal(data.get(SAVE_KEY), 'broken')
@@ -136,7 +136,7 @@ test('v7 migration starts full deposits, preserves old bytes and never falls bac
     'unavailable',
   )
 })
-test('v10 validation rejects forged, unknown, fractional and excessive reserves', () => {
+test('v11 validation rejects forged, unknown, fractional and excessive reserves', () => {
   const { state, source } = setup('sawmill')
   for (const change of [
     (s) => delete s.deposits,
@@ -149,7 +149,7 @@ test('v10 validation rejects forged, unknown, fractional and excessive reserves'
   ]) {
     const s = structuredClone(state)
     change(s)
-    assert.equal(decode(JSON.stringify({ version: 10, state: s })), null)
+    assert.equal(decode(JSON.stringify({ version: 11, state: s })), null)
   }
   assert.equal(depositCapacity(state, source), 60)
 })

@@ -18,7 +18,7 @@ const step = (s, action = { type: 'gather' }) => {
   return result
 }
 function setup(level = 1) {
-  const s = newKingdom(42)
+  const s = newKingdom(42, 1)
   s.resources = { wood: 1000, stone: 1000, food: 1000, gold: 1000 }
   for (let y = 0; y < 7; y++)
     for (let x = 0; x < 7; x++) if (terrain(s.seed, x, y) === 'forest') s.deposits[key(x, y)] = 0
@@ -134,7 +134,7 @@ test('damage pauses planting, repair resumes, upgrades keep progress, no room ne
   assert.deepEqual(step(s).forestry.planted, [])
   assert.deepEqual(step(s).state.forests, {})
 })
-test('v8 migration keeps depletion and old bytes; v10 roundtrip saves growth and counters, corrupt saves protected', () => {
+test('v8 migration keeps depletion and old bytes; v11 roundtrip saves growth and counters, corrupt saves protected', () => {
   const old = setup()
   delete old.buildings['2,2']
   delete old.forests
@@ -143,7 +143,11 @@ test('v8 migration keeps depletion and old bytes; v10 roundtrip saves growth and
   const port = { getItem: (k) => values.get(k) ?? null, setItem: (k, v) => values.set(k, v) }
   const loaded = load(port)
   assert.equal(loaded.status, 'saved')
-  assert.deepEqual(loaded.state, { ...old, forests: {} })
+  assert.deepEqual(loaded.state, {
+    ...old,
+    forests: {},
+    landscape: { version: 2, legacySectors: ['0,0'] },
+  })
   assert.equal(values.get(DEPOSITS_KEY), raw)
   const s = setup()
   s.buildings['2,2'].plantingProgress = 3
@@ -185,6 +189,6 @@ test('save validation rejects forged forest ages, terrain, occupied tiles and ha
   ]) {
     const copy = structuredClone(s)
     change(copy)
-    assert.equal(decode(JSON.stringify({ version: 10, state: copy })), null)
+    assert.equal(decode(JSON.stringify({ version: 11, state: copy })), null)
   }
 })

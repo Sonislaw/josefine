@@ -6,9 +6,9 @@ import {
   key,
   neighbors,
   sectorOf,
-  terrain,
   type Kingdom,
 } from './engine'
+import { baseTerrain, terrainVersionAt, type Landscape } from './terrain'
 import { DISCOVERIES, blocksBuilding, discoveryForSector, type Discovery } from './discoveries'
 import { REQUESTS, REQUEST_IDS, emptyRequests } from './requests'
 import { emptyAffairs, settlementPosition } from './neighbours'
@@ -22,7 +22,8 @@ import {
   validateLegacyCampaign,
   type LegacyKingdom,
 } from './legacy-campaign-storage'
-export const SAVE_KEY = 'zgrana:gry:male-krolestwo:v10'
+export const SAVE_KEY = 'zgrana:gry:male-krolestwo:v11'
+export const CATALOG_KEY = 'zgrana:gry:male-krolestwo:v10'
 export const FORESTRY_KEY = 'zgrana:gry:male-krolestwo:v9'
 export const DEPOSITS_KEY = 'zgrana:gry:male-krolestwo:v8'
 export const CASTLES_KEY = 'zgrana:gry:male-krolestwo:v7'
@@ -49,7 +50,7 @@ const coordinate = (v: unknown): v is number =>
   Number.isSafeInteger(v) && Math.abs(v as number) <= Math.floor(Number.MAX_SAFE_INTEGER / 7) - 1
 export function decode(
   raw: string,
-  version: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 = 10,
+  version: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 = 11,
 ): { state: Kingdom; tutorialDismissed: boolean } | null {
   try {
     const data: unknown = JSON.parse(raw)
@@ -145,6 +146,19 @@ export function decode(
     const sectors = s.sectors as Kingdom['sectors'],
       known = new Set(sectors.map((p) => key(p.x, p.y)))
     if (known.size !== sectors.length || !known.has('0,0')) return null
+    // Only future exploration uses the new generator. Existing deposits, buildings,
+    // discoveries and neighbours retain precisely the terrain they were saved on.
+    if (version < 11) s.landscape = { version: 2, legacySectors: [...known] }
+    if (
+      !object(s.landscape) ||
+      ![1, 2].includes(s.landscape.version as number) ||
+      !Array.isArray(s.landscape.legacySectors) ||
+      new Set(s.landscape.legacySectors).size !== s.landscape.legacySectors.length ||
+      !s.landscape.legacySectors.every((k) => typeof k === 'string' && known.has(k)) ||
+      (s.landscape.version === 1 && s.landscape.legacySectors.length > 0)
+    )
+      return null
+    const terrainState = { seed: s.seed, landscape: s.landscape as unknown as Landscape }
     // Existing saves start with full deposits. Migration consumes no turn or resources.
     if (version < 8) s.deposits = {}
     if (version < 9) s.forests = {}
@@ -161,7 +175,7 @@ export function decode(
         !object(forest) ||
         !natural(forest.age) ||
         forest.age > FORESTRY.matureAge ||
-        !['meadow', 'forest'].includes(terrain(s.seed, p.x, p.y))
+        !['meadow', 'forest'].includes(baseTerrain(terrainState, p.x, p.y))
       )
         return null
     }
@@ -240,7 +254,12 @@ export function decode(
         sectorKey = key(sector.x, sector.y)
       if (!known.has(sectorKey) || discoverySectors.has(sectorKey)) return null
       discoverySectors.add(sectorKey)
-      const expected = discoveryForSector(s.seed, sector, d.discoveredTurn)
+      const expected = discoveryForSector(
+        s.seed,
+        sector,
+        d.discoveredTurn,
+        terrainVersionAt(terrainState, sector),
+      )
       if (!expected || expected.kind !== d.kind || expected.x !== d.x || expected.y !== d.y)
         return null
       if (
@@ -352,12 +371,13 @@ export function decode(
         return null
       const sector = sectorOf({ x: c.x, y: c.y }),
         sk = key(sector.x, sector.y)
-      const d = discoveryForSector(s.seed, sector, c.discoveredTurn)
+      const terrainVersion = terrainVersionAt(terrainState, sector)
+      const d = discoveryForSector(s.seed, sector, c.discoveredTurn, terrainVersion)
       if (version >= 7 && i >= 3 && !castleAppears(s.seed, sector)) return null
       if (!d || !known.has(sk) || occupiedSectors.has(sk) || s.buildings[key(c.x, c.y)]) return null
       const storedDiscovery = (s.discoveries as Record<string, Discovery>)[key(d.x, d.y)]
       if (!storedDiscovery || storedDiscovery.discoveredTurn !== c.discoveredTurn) return null
-      const p = settlementPosition(s.seed, sector, d)
+      const p = settlementPosition(s.seed, sector, d, terrainVersion)
       if (p.x !== c.x || p.y !== c.y) return null
       occupiedSectors.add(sk)
       contactTurn = c.discoveredTurn
@@ -402,7 +422,8 @@ export function load(storage: StoragePort): LoadResult {
   try {
     // Presence wins over validity: never silently resurrect an older settlement.
     for (const [key, version] of [
-      [SAVE_KEY, 10],
+      [SAVE_KEY, 11],
+      [CATALOG_KEY, 10],
       [FORESTRY_KEY, 9],
       [DEPOSITS_KEY, 8],
       [CASTLES_KEY, 7],
@@ -417,7 +438,7 @@ export function load(storage: StoragePort): LoadResult {
       if (raw === null) continue
       const result = decode(raw, version)
       if (!result) return { status: 'corrupt', state: null, tutorialDismissed: false }
-      if (version < 10) {
+      if (version < 11) {
         const written = save(storage, result.state, result.tutorialDismissed)
         return { status: 'saved', ...result, migrationSaveFailed: !written }
       }
@@ -430,7 +451,7 @@ export function load(storage: StoragePort): LoadResult {
 }
 export function save(storage: StoragePort, state: Kingdom, tutorialDismissed: boolean): boolean {
   try {
-    storage.setItem(SAVE_KEY, JSON.stringify({ version: 10, state, tutorialDismissed }))
+    storage.setItem(SAVE_KEY, JSON.stringify({ version: 11, state, tutorialDismissed }))
     return true
   } catch {
     return false

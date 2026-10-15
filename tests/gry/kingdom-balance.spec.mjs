@@ -7,7 +7,7 @@ const { newKingdom, resolveTurn } = await j.import(
 )
 const { inventoryLimit } = await j.import('../../src/apps/gry/games/little-kingdom/balance.ts')
 const url = '/gry/male-krolestwo',
-  key = 'zgrana:gry:male-krolestwo:v10'
+  key = 'zgrana:gry:male-krolestwo:v11'
 for (const [width, height] of [
   [360, 640],
   [390, 844],
@@ -27,7 +27,7 @@ for (const [width, height] of [
             sessionStorage.setItem('balance-fixture', '1')
           }
         },
-        { key, raw: encode(newKingdom(42)) },
+        { key, raw: encode(newKingdom(42, 1)) },
       )
       await page.goto(url)
       await expect(page.locator('.stock-limit')).toHaveCount(4)
@@ -38,7 +38,7 @@ for (const [width, height] of [
       await page.getByRole('button', { name: 'Ulepsz do 2' }).click()
       await expect(page.locator('.preview-error')).toContainText('Wioski')
       await expect(page.getByRole('button', { name: 'Zatwierdź turę' })).toBeDisabled()
-      const capped = newKingdom(42)
+      const capped = newKingdom(42, 1)
       capped.resources = inventoryLimit(0)
       capped.buildings['0,0'] = { x: 0, y: 0, kind: 'farm', level: 3 }
       await page.evaluate(({ key, raw }) => localStorage.setItem(key, raw), {

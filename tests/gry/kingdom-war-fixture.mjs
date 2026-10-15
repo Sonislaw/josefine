@@ -19,7 +19,7 @@ export function emptyPlot(s) {
   throw Error('No plot')
 }
 export function warKingdom(seed = 42) {
-  let s = newKingdom(seed)
+  let s = newKingdom(seed, 1)
   s.rank = 1
   s.promotions = [{ rank: 1, turn: 12 }]
   s.turn = 12

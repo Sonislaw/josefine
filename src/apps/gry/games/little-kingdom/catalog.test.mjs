@@ -9,7 +9,7 @@ const { load, SAVE_KEY, FORESTRY_KEY } = await j.import('./storage.ts')
 test('every economic building can be chosen in consecutive turns, independently of the map seed', () => {
   for (const seed of [1, 42, 183])
     for (const kind of ECONOMY_BUILDINGS) {
-      const state = newKingdom(seed)
+      const state = newKingdom(seed, 1)
       state.resources = { wood: 1000, stone: 1000, food: 1000, gold: 1000 }
       const before = structuredClone(state)
       const action = { type: 'build', kind, x: 0, y: 0 }
@@ -24,7 +24,7 @@ test('every economic building can be chosen in consecutive turns, independently 
     }
 })
 test('v9 migration removes dealt cards only, preserving forests, work progress, economy and original bytes', () => {
-  const state = newKingdom(42)
+  const state = newKingdom(42, 1)
   state.turn = 12
   state.buildings['2,2'] = { kind: 'forester', level: 1, x: 2, y: 2, plantingProgress: 3 }
   state.forests['1,1'] = { age: 3 }
@@ -34,9 +34,9 @@ test('v9 migration removes dealt cards only, preserving forests, work progress, 
   const port = { getItem: (k) => values.get(k) ?? null, setItem: (k, v) => values.set(k, v) }
   const result = load(port)
   assert.equal(result.status, 'saved')
-  assert.deepEqual(result.state, state)
+  assert.deepEqual(result.state, { ...state, landscape: { version: 2, legacySectors: ['0,0'] } })
   assert.equal(values.get(FORESTRY_KEY), raw)
-  assert.equal(JSON.parse(values.get(SAVE_KEY)).version, 10)
+  assert.equal(JSON.parse(values.get(SAVE_KEY)).version, 11)
   values.set(SAVE_KEY, '{broken')
   assert.equal(load(port).status, 'corrupt')
   assert.equal(values.get(SAVE_KEY), '{broken')

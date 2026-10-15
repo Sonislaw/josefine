@@ -1,5 +1,11 @@
 /** Pure, deterministic rules. Preview and commit both call resolveTurn; no browser state here. */
-import { SIZE, terrain, type Terrain } from './terrain'
+import {
+  SIZE,
+  terrainVersionAt,
+  type Terrain,
+  type TerrainVersion,
+  type Landscape,
+} from './terrain'
 import { BALANCE, upgradeMultiplier, inventoryLimit } from './balance'
 import { planExtraction, extractor, type ExtractionPlan } from './deposits'
 import { advanceForestry, terrainAt, type PlantedForest, type ForestryReport } from './forestry'
@@ -82,6 +88,7 @@ export interface Kingdom {
   rank: SettlementRank
   promotions: Promotion[]
   seed: number
+  landscape: Landscape
   sectors: Point[]
   buildings: Record<string, Building>
   discoveries: Record<string, Discovery>
@@ -191,13 +198,14 @@ export const discovered = (state: Kingdom, p: Point) => hasSector(state, sectorO
 export const ECONOMY_BUILDINGS = (Object.keys(BUILDINGS) as BuildingKind[]).filter(
   (kind) => !militaryBuilding(kind),
 )
-export function newKingdom(seed = 1): Kingdom {
+export function newKingdom(seed = 1, terrainVersion: TerrainVersion = 2): Kingdom {
   return {
     affairs: emptyAffairs(),
     requests: emptyRequests(),
     rank: 0,
     promotions: [],
     seed: seed >>> 0,
+    landscape: { version: terrainVersion, legacySectors: [] },
     sectors: [{ x: 0, y: 0 }],
     buildings: { '3,3': { x: 3, y: 3, kind: 'hall', level: 1 } },
     discoveries: {},
@@ -407,8 +415,7 @@ export function buildingProduction(
   }
   const r = zero(),
     adjacent = neighbors(b).filter((p) => discovered(state, p))
-  const countTerrain = (t: Terrain) =>
-    adjacent.filter((p) => terrain(state.seed, p.x, p.y) === t).length
+  const countTerrain = (t: Terrain) => adjacent.filter((p) => terrainAt(state, p) === t).length
   if (b.kind === 'hall') return { wood: 1, food: 2, stone: 0, gold: 1 }
   if (b.kind === 'farm') {
     const mills = adjacent.reduce((n, p) => {
@@ -513,7 +520,8 @@ export function resolveTurn(state: Kingdom, action: Action): TurnResult | null {
   const reward = zero()
   if (action.type === 'explore') {
     next.sectors.push({ x: action.x, y: action.y })
-    discovery = discoveryForSector(state.seed, action, state.turn + 1)
+    const terrainVersion = terrainVersionAt(state, action)
+    discovery = discoveryForSector(state.seed, action, state.turn + 1, terrainVersion)
     if (discovery) next.discoveries[key(discovery.x, discovery.y)] = discovery
     if (
       state.rank >= 1 &&
@@ -522,7 +530,7 @@ export function resolveTurn(state: Kingdom, action: Action): TurnResult | null {
     ) {
       const id = next.affairs.settlements.length
       next.affairs.settlements.push({
-        ...settlementPosition(state.seed, action, discovery),
+        ...settlementPosition(state.seed, action, discovery, terrainVersion),
         id,
         discoveredTurn: state.turn + 1,
         relation: id === 0 ? 'friendly' : id === 1 ? 'neutral' : 'hostile',

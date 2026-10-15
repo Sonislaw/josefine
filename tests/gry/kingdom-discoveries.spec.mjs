@@ -11,7 +11,7 @@ const { discoveryForSector, DISCOVERIES } = await j.import(
   '../../src/apps/gry/games/little-kingdom/discoveries.ts',
 )
 const url = '/gry/male-krolestwo',
-  key = 'zgrana:gry:male-krolestwo:v10',
+  key = 'zgrana:gry:male-krolestwo:v11',
   legacy = 'zgrana:gry:male-krolestwo:v1'
 const commit = (page) => page.getByRole('button', { name: 'Zatwierdź turę' })
 const runtimeErrors = new WeakMap()
@@ -22,7 +22,7 @@ test.beforeEach(({ page }) => {
 })
 test.afterEach(({ page }) => expect(runtimeErrors.get(page)).toEqual([]))
 const rich = (seed) => ({
-  ...newKingdom(seed),
+  ...newKingdom(seed, 1),
   resources: { wood: 5000, stone: 5000, food: 5000, gold: 5000 },
 })
 function fixture(kind) {
@@ -32,15 +32,12 @@ function fixture(kind) {
   }
   throw Error('missing fixture')
 }
-async function prepare(page, state, version = 10, raw = encode(state, version)) {
+async function prepare(page, state, version = 11, raw = encode(state, version)) {
   await page.addInitScript(
     ({ version, raw, key, legacy }) => {
       localStorage.setItem('josefine:cookie-notice:dismissed:gry', '1')
       if (!sessionStorage.getItem('discovery-fixture')) {
-        localStorage.setItem(
-          version === 1 ? legacy : key,
-          raw,
-        )
+        localStorage.setItem(version === 1 ? legacy : key, raw)
         sessionStorage.setItem('discovery-fixture', '1')
       }
     },
@@ -166,8 +163,12 @@ test('old osada migrates once, preserving raw v1 and every existing building', a
   await page.goto(url)
   await expect(page.getByTestId('kingdom-turn')).toHaveText('31')
   const result = await stored(page)
-  expect(result.version).toBe(10)
-  expect(result.state).toEqual({ ...state, discoveries: {} })
+  expect(result.version).toBe(11)
+  expect(result.state).toEqual({
+    ...state,
+    discoveries: {},
+    landscape: { version: 2, legacySectors: state.sectors.map((p) => `${p.x},${p.y}`) },
+  })
   expect(await page.evaluate((k) => localStorage.getItem(k), legacy)).toBe(raw)
   await page.reload()
   await expect(page.getByTestId('kingdom-turn')).toHaveText('31')
