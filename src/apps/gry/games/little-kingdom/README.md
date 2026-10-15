@@ -15,7 +15,7 @@ Samodzielna strategia turowa: `/gry/male-krolestwo` lokalnie, `/male-krolestwo` 
 - `requests.ts`: 12 jednorazowych próśb, postęp i polecenia wyboru/odłożenia/przeglądania. `ResidentsPanel.vue` składa panel, a `ResidentPortrait.vue` rysuje portrety SVG.
 - `useKingdom.ts`: stan Vue, wybór akcji, interakcje z pamięcią dopiero po mount. Stan SSR jest stały; nie korzysta z `window`, losowego ziarna ani zapisu gracza.
 - `KingdomBoard.vue`: kamera, gesty, wybór pola i klawiatura. Renderuje tylko komórki przecinające viewport z marginesem. Nie nalicza zasobów ani nie wykonuje tur.
-- `TileArt.vue`, `BuildingOffer.vue`, `ResourceBar.vue`: ilustracje SVG i prezentacja. `KingdomGame.vue` składa ekran, instrukcję i FAQ.
+- `TileArt.vue`: składa warstwy ilustracji 2D, poziomy, stan uszkodzenia i wytrzymałość zamku. `TerrainArt.vue` rysuje ciągły teren z sezonami i brzegami wody, a `BuildingArt.vue` budynki gospodarcze z detalami poziomów. Te same ilustracje są używane na mapie i kartach `BuildingOffer.vue`. Wariant terenu wynika ze współrzędnych i ziarna, bez zużywania RNG gry; brzegi wody uwzględniają wyłącznie odkrytych sąsiadów. Nie zapisujemy danych dekoracyjnych. `ResourceBar.vue` prezentuje zasoby, a `KingdomGame.vue` składa ekran, instrukcję i FAQ.
 - `DiscoveryArt.vue`: cztery ilustracje wektorowe, z wariantami przed/po odnowieniu. `DiscoveryJournal.vue`: zwijana lista, filtry, po 10 wpisów i lokalizacja bez wykonywania tury.
 
 Gra nie współdzieli silnika ani zapisu z Warcabami, Klockami i Kryształem. Wspólny pozostaje katalog, routing, `GameDialog`, layout i infrastruktura Josefine. Brak nowych zależności.

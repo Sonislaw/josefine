@@ -7,6 +7,7 @@ import {
   frontier,
   key,
   sectorOf,
+  season,
   terrain,
   type Kingdom,
   type Point,
@@ -128,6 +129,24 @@ const visible = computed(() => {
         d = blocksBuilding(found) ? found : undefined
       const contact = contacts.value.get(key(x, y))
       const enemy = contact ? props.state.affairs.enemies[contact.id] : undefined
+      // Only visual adjacency: terrain generation and all gameplay remain in the engine.
+      const waterEdges =
+        t === 'water'
+          ? [
+              [0, -1],
+              [1, 0],
+              [0, 1],
+              [-1, 0],
+            ].reduce((mask, offset, i) => {
+              const nx = x + offset[0]!,
+                ny = y + offset[1]!
+              const neighbourSector = sectorOf({ x: nx, y: ny })
+              return known.value.has(key(neighbourSector.x, neighbourSector.y)) &&
+                terrain(props.state.seed, nx, ny) !== 'water'
+                ? mask | (1 << i)
+                : mask
+            }, 0)
+          : 0
       result.push({
         x,
         y,
@@ -135,6 +154,8 @@ const visible = computed(() => {
         building: b,
         settlement: contact,
         enemy,
+        waterEdges,
+        variant: Math.abs((x * 73856093) ^ (y * 19349663) ^ props.state.seed) % 6,
         discovery: d,
         label: `${x}, ${y}: ${contact ? settlementDefinition(contact.id).name + ', ' + RELATIONS[contact.relation] + (enemy ? ', wytrzymałość ' + enemy.health + '%' : '') : d ? DISCOVERIES[d.kind].name + ', ' + discoveryStatus(d) : b ? (b.kind === 'hall' ? 'Ratusz, ' + RANKS[props.state.rank]!.name : BUILDINGS[b.kind].name + ', poziom ' + b.level + (b.damaged ? ', uszkodzony' : '')) : TERRAIN_NAMES[t]}`,
       })
@@ -345,8 +366,15 @@ function wheel(e: WheelEvent) {
           @lostpointercapture="pointers.size && cancel()"
         >
           <defs>
-            <pattern id="kingdom-dots" width="24" height="24" patternUnits="userSpaceOnUse">
-              <circle cx="2" cy="2" r="1" fill="#839777" opacity=".22" />
+            <pattern id="kingdom-dots" width="96" height="96" patternUnits="userSpaceOnUse">
+              <path
+                d="M0 24q24-14 48 0t48 0M0 32q24-14 48 0t48 0M0 80q24-14 48 0t48 0"
+                fill="none"
+                stroke="#82947b"
+                stroke-width=".7"
+                opacity=".14"
+              />
+              <path d="M22 55h6m-3-3v6M70 9h4m-2-2v4" stroke="#b8c7a2" opacity=".18" />
             </pattern>
           </defs>
           <rect :width="width" :height="height" fill="url(#kingdom-dots)" />
@@ -361,15 +389,26 @@ function wheel(e: WheelEvent) {
                 y="8"
                 width="432"
                 height="432"
-                rx="24"
-                fill="#264c3b"
-                fill-opacity=".12"
-                stroke="#84997a"
-                stroke-dasharray="8 10"
+                rx="10"
+                fill="#9aaf8a"
+                fill-opacity=".04"
+                stroke="#a3b38c"
+                stroke-dasharray="4 12"
                 stroke-width="2"
               />
-              <text x="224" y="217" text-anchor="middle" fill="#c8d6a6" font-size="30">✧</text>
-              <text x="224" y="250" text-anchor="middle" fill="#d7dfc7" font-size="18">
+              <g transform="translate(224 192)" fill="none" stroke="#a9bb91">
+                <circle r="27" stroke-opacity=".3" />
+                <path d="M0-22 6-6 22 0 6 6 0 22-6 6-22 0-6-6Z" stroke-width="1.5" />
+                <path d="M0-15 0 0 15 0" fill="#a9bb91" />
+              </g>
+              <text
+                x="224"
+                y="250"
+                text-anchor="middle"
+                fill="#d7dfc7"
+                font-size="17"
+                letter-spacing="1"
+              >
                 Odkryj ziemie
               </text>
             </g>
@@ -389,6 +428,9 @@ function wheel(e: WheelEvent) {
                 :settlement="p.settlement"
                 :enemy="p.enemy"
                 :winter="winter"
+                :season="season(state.turn)"
+                :variant="p.variant"
+                :water-edges="p.waterEdges"
                 :discovery="p.discovery"
               />
               <rect
@@ -399,8 +441,8 @@ function wheel(e: WheelEvent) {
                 height="58"
                 rx="8"
                 fill="none"
-                stroke="#fff7c5"
-                stroke-opacity=".8"
+                stroke="#f5ecc2"
+                stroke-opacity=".9"
                 stroke-dasharray="3 3"
                 stroke-width="2"
               />
@@ -414,6 +456,13 @@ function wheel(e: WheelEvent) {
                 fill="none"
                 stroke="#ffe193"
                 stroke-width="4"
+              />
+              <path
+                v-if="selected?.x === p.x && selected?.y === p.y"
+                d="M2 14V2h12m36 0h12v12m0 36v12H50m-36 0H2V50"
+                fill="none"
+                stroke="#fff3c3"
+                stroke-width="3"
               />
             </g>
           </g>
@@ -445,10 +494,13 @@ function wheel(e: WheelEvent) {
 <style scoped>
 .kingdom-map-wrap {
   min-width: 0;
-  border: 1px solid #4a6250;
+  border: 1px solid #72805b;
   border-radius: 22px;
   overflow: hidden;
   background: #203f33;
+  box-shadow:
+    0 12px 36px #071e2026,
+    inset 0 0 0 3px #c1b47b12;
 }
 .map-toolbar {
   display: flex;
@@ -458,6 +510,8 @@ function wheel(e: WheelEvent) {
   padding: 12px;
   color: #d3ddc3;
   font-size: 12px;
+  background: linear-gradient(110deg, #304d3d, #203c31);
+  border-bottom: 1px solid #b8c19330;
 }
 .map-toolbar > div {
   display: flex;
@@ -479,7 +533,7 @@ function wheel(e: WheelEvent) {
   overflow: hidden;
   touch-action: none;
   position: relative;
-  background: radial-gradient(ellipse at center, #35523d, #18362d);
+  background: radial-gradient(ellipse at center, #3e5a48, #20392f);
   cursor: grab;
 }
 .map-stage {
@@ -519,6 +573,7 @@ svg {
   color: #b7cbb3;
   font-size: 12px;
   line-height: 1.6;
+  border-top: 1px solid #b8c19330;
 }
 button:focus-visible,
 .kingdom-map:focus-visible {

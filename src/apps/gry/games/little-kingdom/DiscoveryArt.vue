@@ -4,6 +4,7 @@ defineProps<{ discovery: Discovery }>()
 </script>
 <template>
   <g aria-hidden="true" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M6 50q6-10 26-7 23-5 27 8l-9 8H16Z" fill="#a5a67b" opacity=".5" />
     <ellipse cx="32" cy="53" rx="24" ry="6" fill="#294b3b" opacity=".2" />
     <g v-if="discovery.kind === 'ruins'">
       <path
@@ -17,6 +18,8 @@ defineProps<{ discovery: Discovery }>()
         stroke="#eee0ba"
         stroke-width="3"
       />
+      <path d="M13 42h7m-7-7h6m10-8h6m9 11h8m-7-8h7M14 48h4" stroke="#928c70" stroke-width="1" />
+      <path d="m6 54 4-6 7 5-2 4m30-2 5-3 8 4" fill="#b6b598" stroke="#7d876d" />
       <path d="M11 39q10-3 10-18m-4 10-6-3m8-2 6-5" fill="none" stroke="#517c43" stroke-width="3" />
       <path d="M37 47h12v8H37z" fill="#a66d3f" stroke="#694b30" /><path
         d="M43 47v8"
@@ -38,6 +41,7 @@ defineProps<{ discovery: Discovery }>()
         stroke-width="2"
       />
       <path d="M17 36h31m-29 7h27" stroke="#e0ae69" stroke-width="2" />
+      <path d="M20 30v7m5-9v9m5-10v10m8 5v3" stroke="#8f653d" stroke-width=".8" />
       <circle cx="22" cy="48" r="7" fill="#5c5941" stroke="#cfb780" stroke-width="2" /><circle
         cx="44"
         cy="48"
@@ -68,6 +72,12 @@ defineProps<{ discovery: Discovery }>()
         fill="none"
         :stroke="discovery.status === 'used' ? '#e2ffef' : '#b1cba0'"
         stroke-width="3"
+      />
+      <path
+        d="M19 46q13 8 28 0M29 27l-2 9m12-7 3 8"
+        fill="none"
+        stroke="#afdad0"
+        stroke-width="1"
       />
       <g v-if="discovery.status === 'available'" fill="none" stroke="#466e42" stroke-width="3"
         ><path d="M11 52q12-16 2-28m4 10 7-8M49 52q-9-17 3-30m-4 13-7-6M25 12l9 9-4 12"
@@ -105,6 +115,7 @@ defineProps<{ discovery: Discovery }>()
         d="M18 47h26"
         stroke="#d9b67a"
       />
+      <path d="M20 44v7m12-7v7m12-7v7" stroke="#795c3d" stroke-width=".8" />
       <g v-if="discovery.status === 'used'"
         ><path d="M22 34h9v8h-9z" fill="#e6bb54" /><path
           d="M36 32q9-3 9 4v6H33v-6z"
