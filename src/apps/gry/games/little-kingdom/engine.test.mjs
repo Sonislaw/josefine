@@ -23,13 +23,14 @@ const {
   load,
   save,
   SAVE_KEY,
+  CASTLES_KEY,
   WARFARE_KEY,
   REQUESTS_KEY,
   PROGRESSION_KEY,
   PREVIOUS_KEY,
   LEGACY_KEY,
 } = await jiti.import('./storage.ts')
-const serialize = (state) => JSON.stringify({ version: 7, state, tutorialDismissed: true })
+const serialize = (state) => JSON.stringify({ version: 8, state, tutorialDismissed: true })
 const rich = () => ({
   ...newKingdom(42),
   resources: { wood: 5000, stone: 5000, food: 5000, gold: 5000 },
@@ -120,14 +121,8 @@ test('tartak, quarry, market, houses and orchard have correct effects', () => {
   put(s, 'house', 0, 1, 3)
   put(s, 'house', 1, 1, 1)
   put(s, 'orchard', 6, 0, 3)
-  assert.equal(buildingProduction(s, s.buildings['2,2']).wood, 3)
-  const quarryNeighbors = [
-    { x: 2, y: 5 },
-    { x: 4, y: 5 },
-    { x: 3, y: 4 },
-    { x: 3, y: 6 },
-  ].filter((p) => terrain(1, p.x, p.y) === 'rock').length
-  assert.equal(buildingProduction(s, s.buildings['3,5']).stone, 1 + Math.min(2, quarryNeighbors))
+  assert.equal(buildingProduction(s, s.buildings['2,2']).wood, 4)
+  assert.equal(buildingProduction(s, s.buildings['3,5']).stone, 3)
   assert.equal(buildingProduction(s, s.buildings['0,0']).gold, 3)
   assert.equal(capacity(s), 17)
   assert.equal(buildingProduction(s, s.buildings['6,0']).food, 4)
@@ -227,7 +222,7 @@ test('valid storage round-trip, unavailable port and corrupted saves', () => {
   const s = newKingdom(123),
     raw = serialize(s)
   assert.deepEqual(decode(raw), { state: s, tutorialDismissed: true })
-  for (const v of ['', '{', '{}', JSON.stringify({ version: 8, state: s })])
+  for (const v of ['', '{', '{}', JSON.stringify({ version: 9, state: s })])
     assert.equal(decode(v), null)
   for (const mutate of [
     (s) => (s.resources.food = -1),
@@ -249,6 +244,7 @@ test('valid storage round-trip, unavailable port and corrupted saves', () => {
         [
           SAVE_KEY,
           'zgrana:gry:male-krolestwo:v6',
+          CASTLES_KEY,
           WARFARE_KEY,
           REQUESTS_KEY,
           PROGRESSION_KEY,

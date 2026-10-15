@@ -1,6 +1,7 @@
 /** Pure, deterministic rules. Preview and commit both call resolveTurn; no browser state here. */
 import { SIZE, terrain, type Terrain } from './terrain'
 import { BALANCE, upgradeMultiplier, inventoryLimit } from './balance'
+import { planExtraction, extractor, type ExtractionPlan } from './deposits'
 import { CASTLES, castleAppears, plunderCastle } from './castles'
 import {
   MILITARY,
@@ -78,6 +79,7 @@ export interface Kingdom {
   sectors: Point[]
   buildings: Record<string, Building>
   discoveries: Record<string, Discovery>
+  deposits: Record<string, number>
   resources: Resources
   population: number
   hunger: number
@@ -129,12 +131,14 @@ export const BUILDINGS: Record<
   sawmill: {
     name: 'Tartak',
     cost: BALANCE.buildings.sawmill,
-    description: '1/2/3 drewna na poziomach 1–3 oraz do +2 od sąsiadujących lasów.',
+    description:
+      'Wydobywa 1/2/3 drewna na poziomach 1–3, do +2 za złoża w zasięgu 3 pól. Bez dostępnego lasu nie pracuje.',
   },
   quarry: {
     name: 'Kamieniołom',
     cost: BALANCE.buildings.quarry,
-    description: '1/2/3 kamienia na poziomach 1–3 oraz do +2 od sąsiadujących skał.',
+    description:
+      'Wydobywa 1/2/3 kamienia na poziomach 1–3, do +2 za złoża w zasięgu 3 pól. Bez dostępnych skał nie pracuje.',
   },
   mill: {
     name: 'Młyn',
@@ -195,6 +199,7 @@ export function newKingdom(seed = 1): Kingdom {
     sectors: [{ x: 0, y: 0 }],
     buildings: { '3,3': { x: 3, y: 3, kind: 'hall', level: 1 } },
     discoveries: {},
+    deposits: {},
     resources: { wood: 20, stone: 12, food: 24, gold: 10 },
     population: 3,
     hunger: 0,
@@ -390,8 +395,18 @@ export function actionError(state: Kingdom, action: Action): string | null {
     : null
 }
 /** The same per-building report drives both UI explanations and the economy. */
-export function buildingProduction(state: Kingdom, b: Building): Resources {
+export function buildingProduction(
+  state: Kingdom,
+  b: Building,
+  extraction?: ExtractionPlan,
+): Resources {
   if (b.damaged || militaryBuilding(b.kind)) return zero()
+  if (extractor(b.kind)) {
+    const r = zero()
+    const report = (extraction ?? planExtraction(state)).buildings[key(b.x, b.y)]
+    if (report) r[report.resource] = report.amount
+    return r
+  }
   const r = zero(),
     adjacent = neighbors(b).filter((p) => discovered(state, p))
   const countTerrain = (t: Terrain) =>
@@ -408,16 +423,6 @@ export function buildingProduction(state: Kingdom, b: Building): Resources {
       (countTerrain('water') ? 1 : 0) +
       Math.min(BALANCE.production.maxMillBonus, mills)
   }
-  if (b.kind === 'sawmill')
-    r.wood =
-      BALANCE.production.extractorBase +
-      (b.level - 1) * BALANCE.production.extractorPerLevel +
-      Math.min(BALANCE.production.maxTerrainBonus, countTerrain('forest'))
-  if (b.kind === 'quarry')
-    r.stone =
-      BALANCE.production.extractorBase +
-      (b.level - 1) * BALANCE.production.extractorPerLevel +
-      Math.min(BALANCE.production.maxTerrainBonus, countTerrain('rock'))
   if (b.kind === 'market')
     r.gold =
       BALANCE.production.marketBase +
@@ -436,15 +441,16 @@ export function buildingProduction(state: Kingdom, b: Building): Resources {
     r.food = Math.floor(r.food / 2)
   return r
 }
-export function production(state: Kingdom): Resources {
+export function production(state: Kingdom, extraction = planExtraction(state)): Resources {
   const result = zero()
   for (const b of Object.values(state.buildings)) {
-    const r = buildingProduction(state, b)
+    const r = buildingProduction(state, b, extraction)
     for (const k of KEYS) result[k] += r[k]
   }
   return result
 }
 export interface TurnResult {
+  extraction: ExtractionPlan
   storageLoss: Resources
   campaignUpdate: CampaignUpdate
   battle: BattleReport | null
@@ -476,6 +482,7 @@ export function resolveTurn(state: Kingdom, action: Action): TurnResult | null {
     resources: { ...state.resources },
     buildings: { ...state.buildings },
     discoveries: { ...state.discoveries },
+    deposits: { ...state.deposits },
     sectors: [...state.sectors],
     offer: [...state.offer],
   }
@@ -657,7 +664,9 @@ export function resolveTurn(state: Kingdom, action: Action): TurnResult | null {
   }
   // A fatal raid cannot be undone by end-of-season population growth.
   if (next.population === 0) next.status = 'gameover'
-  const produced = production(next)
+  const extraction = planExtraction(next)
+  const produced = production(next, extraction)
+  next.deposits = extraction.remaining
   for (const k of KEYS) next.resources[k] += produced[k]
   const shortage = next.resources.food < next.population
   next.resources.food = Math.max(0, next.resources.food - next.population)
@@ -710,6 +719,7 @@ export function resolveTurn(state: Kingdom, action: Action): TurnResult | null {
   }
   return {
     storageLoss,
+    extraction,
     campaignUpdate,
     battle: report,
     armyFood,

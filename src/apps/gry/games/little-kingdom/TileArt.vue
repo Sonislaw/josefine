@@ -18,6 +18,9 @@ withDefaults(
     season?: number
     variant?: number
     waterEdges?: number
+    depositRemaining?: number
+    depositCapacity?: number
+    idle?: boolean
     discovery?: Discovery
     rank?: SettlementRank
     settlement?: Settlement
@@ -34,6 +37,7 @@ withDefaults(
       :variant="variant"
       :water-edges="waterEdges"
       :occupied="!!(building || settlement || discovery)"
+      :depleted="depositRemaining === 0"
     />
     <g v-if="building || settlement" fill="none" stroke="#d5c293" stroke-linejoin="round">
       <path d="M27 64v-9h10v9" stroke-width="5" opacity=".7" />
@@ -106,6 +110,31 @@ withDefaults(
       <text x="53" y="15" text-anchor="middle" font-size="13" font-weight="700" fill="#fff3d2"
         >!</text
       >
+    </g>
+    <g v-if="idle && !building?.damaged" data-extractor-idle="true">
+      <title>Przestój — brak dostępnego surowca</title>
+      <rect
+        x="43"
+        y="42"
+        width="18"
+        height="18"
+        rx="5"
+        fill="#825032"
+        stroke="#ffe4a7"
+        stroke-width="1.5"
+      />
+      <path d="M49 47v8m6-8v8" stroke="#fff0bf" stroke-width="2.5" />
+    </g>
+    <g v-if="depositRemaining !== undefined && depositCapacity" aria-hidden="true">
+      <rect x="12" y="58" width="40" height="3" rx="1.5" fill="#405641" />
+      <rect
+        x="12"
+        y="58"
+        :width="(40 * depositRemaining) / depositCapacity"
+        height="3"
+        rx="1.5"
+        :fill="terrain === 'forest' ? '#f0cd7e' : '#e1e3cc'"
+      />
     </g>
   </g>
 </template>

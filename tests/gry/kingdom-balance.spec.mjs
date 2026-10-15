@@ -7,7 +7,7 @@ const { newKingdom, resolveTurn } = await j.import(
 )
 const { inventoryLimit } = await j.import('../../src/apps/gry/games/little-kingdom/balance.ts')
 const url = '/gry/male-krolestwo',
-  key = 'zgrana:gry:male-krolestwo:v7'
+  key = 'zgrana:gry:male-krolestwo:v8'
 for (const [width, height] of [
   [360, 640],
   [390, 844],

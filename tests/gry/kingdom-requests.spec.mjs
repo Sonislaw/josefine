@@ -10,7 +10,7 @@ const { manageRequest, REQUESTS, REQUEST_IDS } = await j.import(
   '../../src/apps/gry/games/little-kingdom/requests.ts',
 )
 const url = '/gry/male-krolestwo',
-  key = 'zgrana:gry:male-krolestwo:v7',
+  key = 'zgrana:gry:male-krolestwo:v8',
   oldKey = 'zgrana:gry:male-krolestwo:v3'
 const stored = (page) => page.evaluate((k) => JSON.parse(localStorage.getItem(k)), key)
 const commit = (page) => page.getByRole('button', { name: 'Zatwierdź turę' })
@@ -192,7 +192,7 @@ test('corrupt current request data stays protected despite valid v3 until confir
   expect(await page.evaluate((k) => localStorage.getItem(k), key)).toBe(broken)
   await page.getByRole('button', { name: 'Rozpocznij nową osadę' }).click()
   await page.getByRole('button', { name: 'Tak, nowa osada' }).click()
-  expect((await stored(page)).version).toBe(7)
+  expect((await stored(page)).version).toBe(8)
 })
 
 test('finished collection displays history and continuing play without more rewards on mobile', async ({

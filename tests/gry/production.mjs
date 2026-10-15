@@ -139,7 +139,7 @@ try {
   )
   // Verify legacy hydration against built HTML, not only the development server.
   const legacyKingdom = await page.evaluate(() => {
-    const data = JSON.parse(localStorage.getItem('zgrana:gry:male-krolestwo:v7'))
+    const data = JSON.parse(localStorage.getItem('zgrana:gry:male-krolestwo:v8'))
     data.version = 1
     delete data.state.discoveries
     delete data.state.rank
@@ -147,7 +147,7 @@ try {
     delete data.state.requests
     const raw = JSON.stringify(data)
     localStorage.setItem('zgrana:gry:male-krolestwo:v1', raw)
-    localStorage.removeItem('zgrana:gry:male-krolestwo:v7')
+    localStorage.removeItem('zgrana:gry:male-krolestwo:v8')
     return raw
   })
   await page.reload()
@@ -156,9 +156,9 @@ try {
   )
   assert.equal(
     await page.evaluate(
-      () => JSON.parse(localStorage.getItem('zgrana:gry:male-krolestwo:v7')).version,
+      () => JSON.parse(localStorage.getItem('zgrana:gry:male-krolestwo:v8')).version,
     ),
-    7,
+    8,
   )
   assert.equal(
     await page.evaluate(() => localStorage.getItem('zgrana:gry:male-krolestwo:v1')),
@@ -168,7 +168,7 @@ try {
   const previousKingdom = encodeKingdom(developedKingdom(), 2)
   await page.evaluate((raw) => {
     localStorage.setItem('zgrana:gry:male-krolestwo:v2', raw)
-    localStorage.removeItem('zgrana:gry:male-krolestwo:v7')
+    localStorage.removeItem('zgrana:gry:male-krolestwo:v8')
   }, previousKingdom)
   await page.reload()
   await page.waitForFunction(
@@ -191,7 +191,7 @@ try {
   const previousRequests = encodeKingdom(requestsKingdom(), 3)
   await page.evaluate((raw) => {
     localStorage.setItem('zgrana:gry:male-krolestwo:v3', raw)
-    localStorage.removeItem('zgrana:gry:male-krolestwo:v7')
+    localStorage.removeItem('zgrana:gry:male-krolestwo:v8')
   }, previousRequests)
   await page.reload()
   await page.waitForFunction(() =>
@@ -211,7 +211,7 @@ try {
   assert.equal(
     await page.evaluate(
       () =>
-        JSON.parse(localStorage.getItem('zgrana:gry:male-krolestwo:v7')).state.requests.completed
+        JSON.parse(localStorage.getItem('zgrana:gry:male-krolestwo:v8')).state.requests.completed
           .length,
     ),
     1,
@@ -224,7 +224,7 @@ try {
   await page.screenshot({ path: 'test-results/production/kingdom-mobile.png', fullPage: true })
   const raidState = beforeRaid({ spearman: 4, archer: 0 }, true)
   await page.evaluate(
-    (raw) => localStorage.setItem('zgrana:gry:male-krolestwo:v7', raw),
+    (raw) => localStorage.setItem('zgrana:gry:male-krolestwo:v8', raw),
     encodeKingdom(raidState),
   )
   await page.reload()
@@ -238,14 +238,14 @@ try {
   assert.ok(
     (await page.getByRole('region', { name: 'Raport bitwy' }).textContent()).includes('zwycięstwo'),
   )
-  const warSaved = await page.evaluate(() => localStorage.getItem('zgrana:gry:male-krolestwo:v7'))
+  const warSaved = await page.evaluate(() => localStorage.getItem('zgrana:gry:male-krolestwo:v8'))
   await page.reload()
   await page.waitForFunction(
     (turn) => document.querySelector('[data-testid="kingdom-turn"]')?.textContent === String(turn),
     raidState.turn + 2,
   )
   assert.equal(
-    await page.evaluate(() => localStorage.getItem('zgrana:gry:male-krolestwo:v7')),
+    await page.evaluate(() => localStorage.getItem('zgrana:gry:male-krolestwo:v8')),
     warSaved,
   )
   assert.equal(await page.getByRole('region', { name: 'Raport bitwy' }).count(), 0)
@@ -303,7 +303,7 @@ try {
   assert.equal(await staticPage.locator('.board-cell').count(), 64)
   await staticPage.goto(`${base}/male-krolestwo`)
   assert.ok((await staticPage.title()).includes('Małe królestwo'))
-  assert.equal(await staticPage.locator('.kingdom-faq details').count(), 18)
+  assert.equal(await staticPage.locator('.kingdom-faq details').count(), 19)
   assert.ok(await staticPage.locator('.residents-panel > summary').isVisible())
   assert.ok(await staticPage.locator('.progression-panel summary').isVisible())
   assert.ok((await staticPage.locator('.kingdom-faq').textContent()).includes('Jak awansować'))

@@ -14,13 +14,15 @@ import { REQUESTS, REQUEST_IDS, emptyRequests } from './requests'
 import { emptyAffairs, settlementPosition } from './neighbours'
 import { militaryBuilding, WAR } from './military'
 import { castleAppears } from './castles'
+import { depositCapacity } from './deposits'
 import { migrateCastles, validateCampaign } from './campaign-storage'
 import {
   migrateWarfare,
   validateLegacyCampaign,
   type LegacyKingdom,
 } from './legacy-campaign-storage'
-export const SAVE_KEY = 'zgrana:gry:male-krolestwo:v7'
+export const SAVE_KEY = 'zgrana:gry:male-krolestwo:v8'
+export const CASTLES_KEY = 'zgrana:gry:male-krolestwo:v7'
 export const CAMPAIGN_KEY = 'zgrana:gry:male-krolestwo:v6'
 export const WARFARE_KEY = 'zgrana:gry:male-krolestwo:v5'
 export const REQUESTS_KEY = 'zgrana:gry:male-krolestwo:v4'
@@ -44,7 +46,7 @@ const coordinate = (v: unknown): v is number =>
   Number.isSafeInteger(v) && Math.abs(v as number) <= Math.floor(Number.MAX_SAFE_INTEGER / 7) - 1
 export function decode(
   raw: string,
-  version: 1 | 2 | 3 | 4 | 5 | 6 | 7 = 7,
+  version: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 = 8,
 ): { state: Kingdom; tutorialDismissed: boolean } | null {
   try {
     const data: unknown = JSON.parse(raw)
@@ -142,6 +144,24 @@ export function decode(
     const sectors = s.sectors as Kingdom['sectors'],
       known = new Set(sectors.map((p) => key(p.x, p.y)))
     if (known.size !== sectors.length || !known.has('0,0')) return null
+    // Existing saves start with full deposits. Migration consumes no turn or resources.
+    if (version < 8) s.deposits = {}
+    if (!object(s.deposits)) return null
+    for (const [k, amount] of Object.entries(s.deposits)) {
+      const parts = k.split(',')
+      const p = { x: Number(parts[0]), y: Number(parts[1]) }
+      if (
+        parts.length !== 2 ||
+        !coordinate(p.x) ||
+        !coordinate(p.y) ||
+        k !== key(p.x, p.y) ||
+        !natural(amount) ||
+        !known.has(key(sectorOf(p).x, sectorOf(p).y))
+      )
+        return null
+      const capacity = depositCapacity({ seed: s.seed }, p)
+      if (!capacity || amount > capacity) return null
+    }
     // Reject disconnected islands without quadratic scans on large saved maps.
     const visited = new Set(['0,0']),
       queue = [{ x: 0, y: 0 }]
@@ -335,7 +355,8 @@ export function load(storage: StoragePort): LoadResult {
   try {
     // Presence wins over validity: never silently resurrect an older settlement.
     for (const [key, version] of [
-      [SAVE_KEY, 7],
+      [SAVE_KEY, 8],
+      [CASTLES_KEY, 7],
       [CAMPAIGN_KEY, 6],
       [WARFARE_KEY, 5],
       [REQUESTS_KEY, 4],
@@ -347,7 +368,7 @@ export function load(storage: StoragePort): LoadResult {
       if (raw === null) continue
       const result = decode(raw, version)
       if (!result) return { status: 'corrupt', state: null, tutorialDismissed: false }
-      if (version < 7) {
+      if (version < 8) {
         const written = save(storage, result.state, result.tutorialDismissed)
         return { status: 'saved', ...result, migrationSaveFailed: !written }
       }
@@ -360,7 +381,7 @@ export function load(storage: StoragePort): LoadResult {
 }
 export function save(storage: StoragePort, state: Kingdom, tutorialDismissed: boolean): boolean {
   try {
-    storage.setItem(SAVE_KEY, JSON.stringify({ version: 7, state, tutorialDismissed }))
+    storage.setItem(SAVE_KEY, JSON.stringify({ version: 8, state, tutorialDismissed }))
     return true
   } catch {
     return false

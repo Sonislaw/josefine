@@ -8,6 +8,7 @@ withDefaults(
     variant?: number
     occupied?: boolean
     waterEdges?: number
+    depleted?: boolean
   }>(),
   { season: 0, variant: 0, occupied: false, waterEdges: 15 },
 )
@@ -72,7 +73,7 @@ const canopy = ['#487749', '#507745', '#a77c3d', '#728e7c']
           r="1"
         /><circle v-if="variant % 3 === 1" cx="42" cy="45" r="1.5" />
       </g>
-      <g v-if="terrain === 'forest'">
+      <g v-if="terrain === 'forest' && !depleted">
         <ellipse cx="34" cy="48" rx="26" ry="12" fill="#395d41" opacity=".2" />
         <g
           v-for="(tree, i) in [
@@ -103,7 +104,7 @@ const canopy = ['#487749', '#507745', '#a77c3d', '#728e7c']
         </g>
         <path d="m5 57 4-5 3 5m41 2 3-6 4 5" fill="none" stroke="#577c45" stroke-width="1.5" />
       </g>
-      <g v-if="terrain === 'rock'" stroke="#657f78" stroke-width=".8">
+      <g v-if="terrain === 'rock' && !depleted" stroke="#657f78" stroke-width=".8">
         <ellipse cx="33" cy="49" rx="26" ry="9" fill="#3f5b49" opacity=".18" stroke="none" />
         <path d="m6 43 8-20 12-5 10 26-13 9Z" fill="#91a297" /><path
           d="m14 23 12-5-4 23-16 2Z"
@@ -124,6 +125,32 @@ const canopy = ['#487749', '#507745', '#a77c3d', '#728e7c']
         />
       </g>
     </template>
+    <g v-if="depleted" data-depleted="true">
+      <g v-if="terrain === 'forest'" stroke="#795f3c" stroke-width="1">
+        <g
+          v-for="(p, i) in [
+            [16, 24],
+            [43, 28],
+            [29, 45],
+          ]"
+          :key="i"
+          :transform="`translate(${p[0]} ${p[1]})`"
+        >
+          <path d="M-5 0v7l-4 3 8-1 8 1-3-4V0" fill="#927244" /><ellipse
+            rx="5"
+            ry="3"
+            fill="#dfc48c"
+          /><ellipse rx="2.5" ry="1.5" fill="none" stroke-width=".6" />
+        </g>
+      </g>
+      <g v-else fill="#a7b3a0" stroke="#788b78" stroke-width="1">
+        <ellipse cx="32" cy="35" rx="23" ry="15" fill="#83917b" opacity=".45" />
+        <path d="m12 38 5-5 7 3-2 5Zm22 7 4-4 8 2-2 4Zm6-21 4-4 6 3-3 3Z" /><path
+          d="M22 32q10-6 21 1m-18 7h12"
+          fill="none"
+        />
+      </g>
+    </g>
     <path d="M0 64V0H64" fill="none" stroke="#3b6146" stroke-opacity=".13" stroke-width=".8" />
   </g>
 </template>

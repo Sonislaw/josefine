@@ -13,6 +13,13 @@ import {
   type Point,
 } from './engine'
 import TileArt from './TileArt.vue'
+import {
+  depositCapacity,
+  depositRemaining,
+  planExtraction,
+  extractor,
+  inExtractionRange,
+} from './deposits'
 import BuildingUpgradePopover from './BuildingUpgradePopover.vue'
 import { CELL, MIN_ZOOM, MAX_ZOOM, placeBuildingPopover } from './building-popover'
 import { settlementDefinition, RELATIONS } from './neighbours'
@@ -24,6 +31,7 @@ const props = defineProps<{
   winter: boolean
   disabled?: boolean
   upgradePlan?: Point | null
+  buildKind?: string | null
 }>()
 const emit = defineEmits<{ select: [Point]; explore: [Point]; upgrade: [Point] }>()
 const host = ref<HTMLElement>(),
@@ -41,6 +49,11 @@ const selectedBuilding = computed(() =>
 )
 const showPopover = computed(
   () => !dismissed.value && selectedBuilding.value && selectedBuilding.value.kind !== 'hall',
+)
+const extraction = computed(() => planExtraction(props.state))
+const rangeKind = computed(() => selectedBuilding.value?.kind ?? props.buildKind)
+const showRange = computed(
+  () => !!props.selected && !!rangeKind.value && extractor(rangeKind.value),
 )
 const placement = computed(() =>
   props.selected
@@ -129,6 +142,13 @@ const visible = computed(() => {
         d = blocksBuilding(found) ? found : undefined
       const contact = contacts.value.get(key(x, y))
       const enemy = contact ? props.state.affairs.enemies[contact.id] : undefined
+      const amount = depositRemaining(props.state, { x, y })
+      const capacity = depositCapacity(props.state, { x, y })
+      const idle =
+        !!b &&
+        extractor(b.kind) &&
+        !b.damaged &&
+        extraction.value.buildings[key(x, y)]?.amount === 0
       // Only visual adjacency: terrain generation and all gameplay remain in the engine.
       const waterEdges =
         t === 'water'
@@ -154,6 +174,9 @@ const visible = computed(() => {
         building: b,
         settlement: contact,
         enemy,
+        amount,
+        capacity,
+        idle,
         waterEdges,
         variant: Math.abs((x * 73856093) ^ (y * 19349663) ^ props.state.seed) % 6,
         discovery: d,
@@ -418,7 +441,11 @@ function wheel(e: WheelEvent) {
               :data-tile="key(p.x, p.y)"
               :transform="`translate(${p.x * 64} ${p.y * 64})`"
               role="img"
-              :aria-label="p.label"
+              :aria-label="
+                p.label +
+                (p.capacity ? ', zasób ' + p.amount + ' / ' + p.capacity : '') +
+                (p.idle ? ', przestój — brak dostępnego surowca' : '')
+              "
             >
               <title>{{ p.label }}</title>
               <TileArt
@@ -431,7 +458,26 @@ function wheel(e: WheelEvent) {
                 :season="season(state.turn)"
                 :variant="p.variant"
                 :water-edges="p.waterEdges"
+                :deposit-remaining="p.capacity ? p.amount : undefined"
+                :deposit-capacity="p.capacity"
+                :idle="p.idle"
                 :discovery="p.discovery"
+              />
+              <rect
+                v-if="showRange && selected && inExtractionRange(selected, p)"
+                x="2"
+                y="2"
+                width="60"
+                height="60"
+                rx="4"
+                fill="#ffe193"
+                fill-opacity=".12"
+                stroke="#ffe193"
+                stroke-opacity=".65"
+                stroke-dasharray="3 3"
+                stroke-width="1.5"
+                pointer-events="none"
+                data-extraction-range="true"
               />
               <rect
                 v-if="selected && Math.abs(selected.x - p.x) + Math.abs(selected.y - p.y) === 1"
@@ -486,6 +532,9 @@ function wheel(e: WheelEvent) {
       </div>
     </div>
     <p class="map-hint">
+      <template v-if="showRange"
+        >Zasięg wydobycia: 3 pola w pionie i poziomie. Złoża są wspólne dla budynków.<br
+      /></template>
       Dotknij pola · przeciągnij mapę · rozsuń palce, aby przybliżyć. Sąsiadujące pola są
       obrysowane.
     </p>

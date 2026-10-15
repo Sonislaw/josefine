@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { BALANCE, inventoryLimit } from './balance'
+import { depositCapacity, depositRemaining, extractionFor } from './deposits'
 import GameDialog from '../../components/GameDialog.vue'
 import KingdomBoard from './KingdomBoard.vue'
 import ResourceBar from './ResourceBar.vue'
@@ -124,6 +125,17 @@ const selectedOutput = computed(() =>
 )
 const selectedBonus = computed(() =>
   selectedBuilding.value ? discoveryBonus(state.value, selectedBuilding.value) : null,
+)
+const selectedExtraction = computed(() =>
+  selectedBuilding.value ? extractionFor(state.value, selectedBuilding.value) : undefined,
+)
+const selectedDeposit = computed(() =>
+  selected.value && depositCapacity(state.value, selected.value)
+    ? {
+        capacity: depositCapacity(state.value, selected.value),
+        remaining: depositRemaining(state.value, selected.value),
+      }
+    : null,
 )
 const previewBonuses = computed(() => {
   const a = action.value,
@@ -300,6 +312,7 @@ function compass(p: Point) {
             :winter="seasonIndex === 3"
             :disabled="blocked"
             :upgrade-plan="action?.type === 'upgrade' ? action : null"
+            :build-kind="card"
             @select="select"
             @explore="explore"
             @upgrade="choose({ type: 'upgrade', ...$event })"
@@ -348,6 +361,32 @@ function compass(p: Point) {
               <p v-if="selectedOutput && KEYS.some((k) => selectedOutput![k])">
                 Produkcja teraz: <strong>{{ priceText(selectedOutput) }}</strong>
               </p>
+              <p v-if="selectedDeposit" class="deposit-details">
+                Pozostały zasób:
+                <strong>{{ selectedDeposit.remaining }} / {{ selectedDeposit.capacity }}</strong
+                >.
+                {{
+                  selectedDeposit.remaining
+                    ? 'Wydobycie pomniejsza ten wspólny zapas. Złoże nie odnawia się.'
+                    : 'Złoże wyczerpane. Pole pozostaje niezabudowane.'
+                }}
+              </p>
+              <p v-if="selectedExtraction" class="deposit-details">
+                W zasięgu 3 pól:
+                <strong
+                  >{{ selectedExtraction.sources.length }} złóż ·
+                  {{ selectedExtraction.available }} jednostek</strong
+                >. Wydobycie w następnej turze: <strong>{{ selectedExtraction.amount }}</strong
+                >.
+                <span v-if="!selectedExtraction.amount"
+                  >Przestój —
+                  {{
+                    selectedBuilding?.damaged
+                      ? 'budynek wymaga naprawy'
+                      : 'brak dostępnego surowca; odkryj nowe ziemie lub wybierz inne miejsce pod budynek'
+                  }}.</span
+                >
+              </p>
               <p v-if="selectedBonus" class="discovery-bonus">
                 ✧ Premia: {{ DISCOVERIES[selectedBonus.source.kind].name }} ({{
                   selectedBonus.source.x
@@ -379,8 +418,8 @@ function compass(p: Point) {
                   terrain(state.seed, selected.x, selected.y) !== 'meadow'
                 "
               >
-                Zachowujemy naturalny teren. Wykorzystaj go, stawiając odpowiedni budynek na
-                sąsiedniej łące.
+                Tartaki i kamieniołomy stawiaj na łąkach w zasięgu 3 pól od złóż. Woda nadal daje
+                premię farmom na sąsiednich polach.
               </p>
             </div>
             <div
@@ -500,6 +539,14 @@ function compass(p: Point) {
             <p v-if="error" class="preview-error" role="status">{{ error }}</p>
             <template v-if="preview"
               ><p>Koszt: {{ priceText(preview.cost) }}</p>
+              <p v-if="preview.produced.wood || preview.produced.stone">
+                Produkcja drewna: {{ preview.produced.wood }} · kamienia:
+                {{ preview.produced.stone }}. Wydobycie z lasów i skał pomniejsza ich zapasy.
+              </p>
+              <p v-if="preview.extraction.exhausted.length" class="preview-error">
+                W tej turze wyczerpią się złoża:
+                {{ preview.extraction.exhausted.map((p) => `(${p.x}, ${p.y})`).join(', ') }}.
+              </p>
               <p v-if="Object.values(preview.storageLoss).some(Boolean)" class="preview-error">
                 Nadwyżka poza limitem zapasów: {{ priceText(preview.storageLoss) }}. Końcowy bilans
                 już to uwzględnia.
@@ -650,9 +697,9 @@ function compass(p: Point) {
           <span>01 / BLISKOŚĆ MA ZNACZENIE</span>
           <h3>Nie tylko co, ale gdzie.</h3>
           <p>
-            Tartak przy lesie, farma przy wodzie, młyn między polami. Sąsiednie kafelki potrafią
-            zmienić skromną osadę w dobrze działające królestwo. Liczą się wspólne krawędzie, nie
-            przekątne.
+            Tartak do 3 pól od lasu, farma przy wodzie, młyn między polami. Okoliczne kafelki
+            potrafią zmienić skromną osadę w dobrze działające królestwo. Liczą się wspólne
+            krawędzie, nie przekątne.
           </p>
         </article>
         <article>
@@ -675,6 +722,21 @@ function compass(p: Point) {
       </div>
     </section>
     <section class="kingdom-faq">
+      <details>
+        <summary>Czy drewno i kamień mogą się skończyć?</summary>
+        <p>
+          Każdy las ma 60 drewna, a pole skał 80 kamienia. Tartak i kamieniołom sięgają do 3 pól,
+          licząc kroki w pionie i poziomie. Wydobywają tylko z odkrytych złóż, najpierw
+          najbliższych. Jeden wydobyty surowiec zabiera jedną jednostkę ze złoża. Wspólne złoża są
+          dzielone między budynki; poziom zwiększa tempo wydobycia, nie ilość surowca w terenie.
+        </p>
+        <p>
+          Po wyczerpaniu pozostają pnie lub wyrobisko. Złoża nie odnawiają się, a budynek bez
+          dostępnego surowca pokazuje znak pauzy i nie produkuje. Wybierz go, aby zobaczyć zasięg i
+          pozostałe zapasy. Ratusz i zbieranie zapasów nadal dostarczają drewno niezależnie od złóż.
+          Nadwyżka wydobycia ponad limit magazynu przepada, tak jak pozostała nadprodukcja.
+        </p>
+      </details>
       <h2>Pytania przed pierwszą wyprawą</h2>
       <details>
         <summary>Skąd biorą się kolejne wrogie zamki?</summary>

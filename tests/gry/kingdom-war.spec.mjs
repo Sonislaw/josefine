@@ -6,12 +6,12 @@ const j = createJiti(import.meta.url)
 const { resolveTurn, newKingdom } = await j.import(
   '../../src/apps/gry/games/little-kingdom/engine.ts',
 )
-const key = 'zgrana:gry:male-krolestwo:v7',
+const key = 'zgrana:gry:male-krolestwo:v8',
   oldKey = 'zgrana:gry:male-krolestwo:v5',
   url = '/gry/male-krolestwo'
 const stored = (page) => page.evaluate((k) => JSON.parse(localStorage.getItem(k)), key)
 const commit = (page) => page.getByRole('button', { name: 'Zatwierdź turę' })
-async function prepare(page, state, version = 7) {
+async function prepare(page, state, version = 8) {
   await page.addInitScript(
     ({ raw, k }) => {
       localStorage.setItem('josefine:cookie-notice:dismissed:gry', '1')
@@ -249,7 +249,7 @@ test('quota failure allows in-memory combat and preserves stored campaign', asyn
   await page.addInitScript(() => {
     const write = Storage.prototype.setItem
     Storage.prototype.setItem = function (k, v) {
-      if (k === 'zgrana:gry:male-krolestwo:v7' && sessionStorage.getItem('war-fixture'))
+      if (k === 'zgrana:gry:male-krolestwo:v8' && sessionStorage.getItem('war-fixture'))
         throw Error('quota')
       return write.call(this, k, v)
     }
