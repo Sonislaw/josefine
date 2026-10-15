@@ -148,6 +148,12 @@ export function useKingdom() {
     card.value = null
     persist()
   }
+  function gatherNow() {
+    if (blocked.value) return
+    // Use the same turn resolution, tactic, reports and persistence as other actions.
+    choose({ type: 'gather' })
+    commit()
+  }
   function startNew() {
     state.value = newKingdom(seed())
     corrupt.value = false
@@ -213,6 +219,7 @@ export function useKingdom() {
     explore,
     choose,
     commit,
+    gatherNow,
     startNew,
     dismissTutorial,
   }

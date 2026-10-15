@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 import type { Kingdom } from './engine'
 import { RANKS, rankProgress } from './progression'
-import { resourceList } from './format'
+import ResourceList from './ResourceList.vue'
 import HallArt from './HallArt.vue'
 const props = defineProps<{ state: Kingdom }>()
 const next = computed(() => RANKS[props.state.rank + 1])
@@ -19,8 +19,7 @@ const progress = computed(() => rankProgress(props.state))
       <div v-if="next">
         <h2>Następny krok: {{ next.name }}</h2>
         <p>
-          Jednorazowy prezent: <strong>{{ resourceList(next.gift) }}</strong
-          >.
+          Jednorazowy prezent: <strong><ResourceList :resources="next.gift" /></strong>.
         </p>
         <p>Spełnij wszystkie wymagania jednocześnie. Awans nastąpi po zatwierdzeniu tury.</p>
       </div>

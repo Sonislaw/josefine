@@ -2,7 +2,7 @@
 import type { BattleReport } from './battle'
 import MilitaryArt from './MilitaryArt.vue'
 import { TACTICS } from './military'
-import { resourceList } from './format'
+import ResourceList from './ResourceList.vue'
 import { settlementDefinition } from './neighbours'
 defineProps<{ report: BattleReport; preview?: boolean }>()
 </script>
@@ -74,10 +74,10 @@ defineProps<{ report: BattleReport; preview?: boolean }>()
       wyłączone do naprawy.
     </p>
     <p v-if="Object.values(report.plunder).some(Boolean)">
-      Grabież: {{ resourceList(report.plunder) }}.
+      Grabież: <ResourceList :resources="report.plunder" />.
     </p>
     <p v-if="Object.values(report.loot).some(Boolean)">
-      Łupy po wyżywieniu: {{ resourceList(report.loot) }}.
+      Łupy po wyżywieniu: <ResourceList :resources="report.loot" />.
     </p>
   </section>
 </template>

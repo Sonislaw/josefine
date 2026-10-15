@@ -6,12 +6,12 @@ const j = createJiti(import.meta.url)
 const { resolveTurn, newKingdom } = await j.import(
   '../../src/apps/gry/games/little-kingdom/engine.ts',
 )
-const key = 'zgrana:gry:male-krolestwo:v9',
+const key = 'zgrana:gry:male-krolestwo:v10',
   oldKey = 'zgrana:gry:male-krolestwo:v5',
   url = '/gry/male-krolestwo'
 const stored = (page) => page.evaluate((k) => JSON.parse(localStorage.getItem(k)), key)
 const commit = (page) => page.getByRole('button', { name: 'Zatwierdź turę' })
-async function prepare(page, state, version = 9) {
+async function prepare(page, state, version = 10) {
   await page.addInitScript(
     ({ raw, k }) => {
       localStorage.setItem('josefine:cookie-notice:dismissed:gry', '1')
@@ -182,8 +182,8 @@ test('gifts, two battles, cooldown and forcePeace pay once, with persistent temp
       await openPanel(page, 'Obrona osady')
       await page.getByRole('button', { name: 'Rekrutuj: Włócznik', exact: true }).click()
       await openPanel(page, 'Obrona osady')
+      await commit(page).click()
     } else await page.getByRole('button', { name: /Zbierz zapasy/ }).click()
-    await commit(page).click()
   }
   await setTroops(page, (await stored(page)).state.affairs.army)
   await page.getByRole('button', { name: 'Wyprawa na garnizon', exact: true }).click()
@@ -211,9 +211,7 @@ test('negotiation expires with new campaign and full four-turn warning', async (
   await prepare(page, s)
   await page.goto(url)
   await page.getByRole('button', { name: /Zbierz zapasy/ }).click()
-  await expect(page.locator('.turn-preview')).toContainText('Pokój się kończy')
-  await expect(page.locator('.turn-preview')).toContainText('za 4 tur')
-  await commit(page).click()
+  await expect(commit(page)).toBeDisabled()
   expect((await stored(page)).state.affairs.enemies[2].campaign).toBe(2)
   expect((await stored(page)).state.affairs.raid.dueTurn).toBe(s.turn + 5)
   await page.reload()
@@ -249,14 +247,13 @@ test('quota failure allows in-memory combat and preserves stored campaign', asyn
   await page.addInitScript(() => {
     const write = Storage.prototype.setItem
     Storage.prototype.setItem = function (k, v) {
-      if (k === 'zgrana:gry:male-krolestwo:v9' && sessionStorage.getItem('war-fixture'))
+      if (k === 'zgrana:gry:male-krolestwo:v10' && sessionStorage.getItem('war-fixture'))
         throw Error('quota')
       return write.call(this, k, v)
     }
   })
   await page.goto(url)
   await page.getByRole('button', { name: /Zbierz zapasy/ }).click()
-  await commit(page).click()
   await expect(page.getByRole('region', { name: 'Raport bitwy' })).toContainText('zwycięstwo')
   await expect(page.getByText('Zapis lokalny jest niedostępny.', { exact: false })).toBeVisible()
   expect((await stored(page)).state).toEqual(s)

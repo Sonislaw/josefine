@@ -5,7 +5,7 @@ const j = createJiti(import.meta.url)
 const { newKingdom, terrain, resolveTurn } = await j.import(
   '../../src/apps/gry/games/little-kingdom/engine.ts',
 )
-const key = 'zgrana:gry:male-krolestwo:v9'
+const key = 'zgrana:gry:male-krolestwo:v10'
 for (const width of [360, 1440])
   test(`finite extraction, range, exhaustion graphics and reload ${width}`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 })
@@ -33,12 +33,13 @@ for (const width of [360, 1440])
     await expect(page.locator('[data-extraction-range]').first()).toBeVisible()
     await page.getByRole('button', { name: 'Zamknij dymek budynku' }).click()
     await expect(page.locator('.deposit-details')).toContainText('Wydobycie w następnej turze: 2')
-    await page.getByRole('button', { name: /Zbierz zapasy/ }).click()
+    await page.locator('[data-building-card="farm"]').click()
+    await page.locator('[data-tile="0,1"]').click()
     await expect(page.locator('.turn-preview')).toContainText('W tej turze wyczerpią się złoża')
     expect(
       await page.evaluate((k) => JSON.parse(localStorage.getItem(k)).state.deposits['1,4'], key),
     ).toBe(2)
-    await page.getByRole('button', { name: 'Zatwierdź turę' }).click()
+    await page.getByRole('button', { name: /Zbierz zapasy/ }).click()
     expect(await page.evaluate((k) => JSON.parse(localStorage.getItem(k)).state, key)).toEqual(
       resolveTurn(s, { type: 'gather' }).state,
     )
@@ -50,7 +51,7 @@ for (const width of [360, 1440])
       await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
     ).toBeTruthy()
   })
-test('v7 migration is non-destructive and corrupt v9 is protected', async ({ page }) => {
+test('v7 migration is non-destructive and corrupt v10 is protected', async ({ page }) => {
   const raw = encode(newKingdom(42), 7)
   await page.addInitScript((raw) => {
     localStorage.setItem('josefine:cookie-notice:dismissed:gry', '1')

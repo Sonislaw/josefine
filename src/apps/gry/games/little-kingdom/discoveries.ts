@@ -65,7 +65,7 @@ export const DISCOVERIES: Record<
   },
 }
 const kinds: DiscoveryKind[] = ['ruins', 'wagon', 'spring', 'tradingPost']
-/** Domain-separated hashes: discoveries never consume the building-offer RNG. */
+/** Domain-separated hashes keep discoveries independent of other map features. */
 export function discoveryForSector(
   seed: number,
   sector: Point,

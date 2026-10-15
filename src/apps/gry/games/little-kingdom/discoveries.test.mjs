@@ -1,13 +1,14 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { createJiti } from 'jiti'
+import { encode } from '../../../../../tests/gry/kingdom-progression-fixture.mjs'
 const j = createJiti(import.meta.url)
 const { newKingdom, terrain, key, resolveTurn, buildingProduction, actionError } =
   await j.import('./engine.ts')
 const { DISCOVERIES, discoveryForSector, discoveryBonus, blocksBuilding } =
   await j.import('./discoveries.ts')
 const { decode, load, save, SAVE_KEY, LEGACY_KEY } = await j.import('./storage.ts')
-const serialize = (state) => JSON.stringify({ version: 9, state, tutorialDismissed: true })
+const serialize = (state) => JSON.stringify({ version: 10, state, tutorialDismissed: true })
 const rich = (seed) => ({
   ...newKingdom(seed),
   resources: { wood: 5000, stone: 5000, food: 5000, gold: 5000 },
@@ -69,8 +70,7 @@ test('exploration preview matches commit, does not mutate input or spend offer R
   const p = resolveTurn(s, a)
   assert.equal(serialize(s), before)
   assert.deepEqual(p, resolveTurn(s, a))
-  assert.equal(p.state.rng, s.rng)
-  assert.deepEqual(p.state.offer, s.offer)
+  assert.equal(p.state.seed, s.seed)
   assert.deepEqual(p.cost, { wood: 18, stone: 10, food: 0, gold: 8 })
   assert.equal(Object.keys(p.state.discoveries).length, 1)
   assert.equal(p.discovery.discoveredTurn, 1)
@@ -165,7 +165,7 @@ test('restoration immediately changes this turn production without mutating prev
     assert.equal(result.produced[resource], before[resource] + (resource === 'food' ? 2 : 1) + 1)
     assert.equal(s.discoveries[key(d.x, d.y)].status, 'available')
     assert.equal(result.state.discoveries[key(d.x, d.y)].usedTurn, 2)
-    assert.equal(result.state.rng, s.rng)
+    assert.equal(result.state.seed, s.seed)
   }
 })
 
@@ -173,7 +173,7 @@ test('v1 migrates once without retroactive places, resources or turn changes, pr
   const old = rich(7)
   old.sectors.push({ x: 1, y: 0 })
   delete old.discoveries
-  const raw = JSON.stringify({ version: 1, state: old, tutorialDismissed: true }),
+  const raw = encode(old, 1),
     data = new Map([[LEGACY_KEY, raw]])
   const port = { getItem: (k) => data.get(k) ?? null, setItem: (k, v) => data.set(k, v) }
   const result = load(port)
@@ -181,7 +181,7 @@ test('v1 migrates once without retroactive places, resources or turn changes, pr
   assert.equal(result.migrationSaveFailed, false)
   assert.deepEqual(result.state, { ...old, discoveries: {} })
   assert.equal(data.get(LEGACY_KEY), raw)
-  assert.equal(JSON.parse(data.get(SAVE_KEY)).version, 9)
+  assert.equal(JSON.parse(data.get(SAVE_KEY)).version, 10)
   assert.deepEqual(load(port).state, result.state)
   const explored = resolveTurn(result.state, { type: 'explore', x: 2, y: 0 })
   assert.equal(Object.keys(explored.state.discoveries).length, 1)
@@ -189,7 +189,7 @@ test('v1 migrates once without retroactive places, resources or turn changes, pr
 })
 
 test('existing or corrupt current save takes precedence; failed migration preserves v1', () => {
-  const legacy = JSON.stringify({ version: 1, state: rich(5), tutorialDismissed: false }),
+  const legacy = encode(rich(5), 1),
     data = new Map([
       [LEGACY_KEY, legacy],
       [SAVE_KEY, '{broken'],

@@ -1,6 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { createJiti } from 'jiti'
+import { encode } from '../../../../../tests/gry/kingdom-progression-fixture.mjs'
 const j = createJiti(import.meta.url)
 const { newKingdom, resolveTurn, key, terrain, actionError, BUILDINGS } =
   await j.import('./engine.ts')
@@ -24,10 +25,9 @@ function setup(level = 1) {
   s.buildings['2,2'] = { kind: 'forester', level, x: 2, y: 2 }
   return s
 }
-test('forester construction uses the shared offer, costs and normal upgrade requirements', () => {
+test('forester construction uses the shared catalog, costs and normal upgrade requirements', () => {
   const s = setup()
   delete s.buildings['2,2']
-  s.offer = ['farm', 'forester', 'quarry']
   const r = step(s, { type: 'build', kind: 'forester', x: 2, y: 2 })
   assert.deepEqual(r.cost, BUILDINGS.forester.cost)
   assert.equal(r.state.buildings['2,2'].plantingProgress, 1)
@@ -37,8 +37,6 @@ test('forester construction uses the shared offer, costs and normal upgrade requ
 for (const level of [1, 2, 3])
   test(`forester level ${level}: one planting every ${plantingInterval(level)} turns, no card RNG`, () => {
     let s = setup(level)
-    const initialOffer = structuredClone(s.offer),
-      rng = s.rng
     for (let i = 1; i <= plantingInterval(level); i++) {
       const r = step(s)
       assert.equal(r.forestry.planted.length, i === plantingInterval(level) ? 1 : 0)
@@ -47,8 +45,6 @@ for (const level of [1, 2, 3])
     const site = Object.keys(s.forests)[0]
     assert.equal(s.forests[site].age, 0)
     assert.equal(s.deposits[site], FORESTRY.woodReserve)
-    assert.deepEqual(s.offer, initialOffer)
-    assert.equal(s.rng, rng)
   })
 test('three stages, six full growth turns, and extraction starts in the maturation turn', () => {
   let s = setup()
@@ -83,7 +79,6 @@ test('meadow forests override terrain, block construction at every stage and can
   s = r.state
   assert.equal(terrain(s.seed, p.x, p.y), 'meadow')
   assert.equal(terrainAt(s, p), 'forest')
-  s.offer = ['farm', 'house', 'quarry']
   for (const age of [0, 3, 6]) {
     s.forests[k] = { age }
     assert.match(actionError(s, { type: 'build', kind: 'house', ...p }), /pustej łące/)
@@ -139,11 +134,11 @@ test('damage pauses planting, repair resumes, upgrades keep progress, no room ne
   assert.deepEqual(step(s).forestry.planted, [])
   assert.deepEqual(step(s).state.forests, {})
 })
-test('v8 migration keeps depletion and old bytes; v9 roundtrip saves growth and counters, corrupt saves protected', () => {
+test('v8 migration keeps depletion and old bytes; v10 roundtrip saves growth and counters, corrupt saves protected', () => {
   const old = setup()
   delete old.buildings['2,2']
   delete old.forests
-  const raw = JSON.stringify({ version: 8, state: old, tutorialDismissed: true })
+  const raw = encode(old, 8)
   const values = new Map([[DEPOSITS_KEY, raw]])
   const port = { getItem: (k) => values.get(k) ?? null, setItem: (k, v) => values.set(k, v) }
   const loaded = load(port)
@@ -190,6 +185,6 @@ test('save validation rejects forged forest ages, terrain, occupied tiles and ha
   ]) {
     const copy = structuredClone(s)
     change(copy)
-    assert.equal(decode(JSON.stringify({ version: 9, state: copy })), null)
+    assert.equal(decode(JSON.stringify({ version: 10, state: copy })), null)
   }
 })

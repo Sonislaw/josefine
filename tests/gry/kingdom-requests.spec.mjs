@@ -10,7 +10,7 @@ const { manageRequest, REQUESTS, REQUEST_IDS } = await j.import(
   '../../src/apps/gry/games/little-kingdom/requests.ts',
 )
 const url = '/gry/male-krolestwo',
-  key = 'zgrana:gry:male-krolestwo:v9',
+  key = 'zgrana:gry:male-krolestwo:v10',
   oldKey = 'zgrana:gry:male-krolestwo:v3'
 const stored = (page) => page.evaluate((k) => JSON.parse(localStorage.getItem(k)), key)
 const commit = (page) => page.getByRole('button', { name: 'Zatwierdź turę' })
@@ -49,7 +49,7 @@ for (const [width, height] of [
     await page.goto(url)
     await open(page)
     await expect(page.locator('[data-request-card]')).toHaveCount(3)
-    await expect(page.locator('[data-request-card] svg')).toHaveCount(3)
+    await expect(page.locator('[data-request-card] .resident-portrait')).toHaveCount(3)
     await page
       .locator('.residents-panel')
       .screenshot({ path: info.outputPath('request-offers.png') })
@@ -71,11 +71,9 @@ for (const [width, height] of [
       'data-active-request',
       'water-farm',
     )
-    await page.getByRole('button', { name: /Zbierz zapasy/ }).click()
-    await expect(page.locator('.request-preview')).toContainText('Pole przy strumieniu')
     expect((await stored(page)).state).toEqual(chosen)
     const forecast = resolveTurn(chosen, { type: 'gather' })
-    await commit(page).click()
+    await page.getByRole('button', { name: /Zbierz zapasy/ }).click()
     expect((await stored(page)).state).toEqual(forecast.state)
     await expect(page.locator('.request-announcement')).toContainText('Zosia')
     await expect(page.locator('[data-request-card="water-farm"]')).toHaveCount(0)
@@ -123,7 +121,6 @@ test('fresh settlement builds its goal, deferral is free and locked goals wait f
   await expect(page.locator('.request-announcement')).toContainText('Pole przy strumieniu')
   await page.getByRole('button', { name: /Zbierz zapasy/ }).click()
   await expect(page.locator('.request-preview')).toHaveCount(0)
-  await commit(page).click()
   expect((await stored(page)).state.requests.completed).toHaveLength(1)
 })
 
@@ -144,7 +141,6 @@ test('v3 retains rank and old bytes; migration does not complete requests or adv
   await open(page)
   await expect(page.locator('[data-active-request]')).toContainText('Cel gotowy')
   await page.getByRole('button', { name: /Zbierz zapasy/ }).click()
-  await commit(page).click()
   expect((await stored(page)).state.requests.completed).toHaveLength(1)
   expect(await page.evaluate((k) => localStorage.getItem(k), oldKey)).toBe(raw)
 })
@@ -166,7 +162,6 @@ test('quota during migration remains playable with active goal and completion in
   await open(page)
   await page.getByRole('button', { name: 'Przyjmij prośbę: Pole przy strumieniu' }).click()
   await page.getByRole('button', { name: /Zbierz zapasy/ }).click()
-  await commit(page).click()
   await expect(page.locator('.request-announcement')).toContainText('Pole przy strumieniu')
   expect(await stored(page)).toBeNull()
   expect(await page.evaluate((k) => localStorage.getItem(k), oldKey)).toBe(raw)
@@ -192,7 +187,7 @@ test('corrupt current request data stays protected despite valid v3 until confir
   expect(await page.evaluate((k) => localStorage.getItem(k), key)).toBe(broken)
   await page.getByRole('button', { name: 'Rozpocznij nową osadę' }).click()
   await page.getByRole('button', { name: 'Tak, nowa osada' }).click()
-  expect((await stored(page)).version).toBe(8)
+  expect((await stored(page)).version).toBe(10)
 })
 
 test('finished collection displays history and continuing play without more rewards on mobile', async ({
@@ -210,7 +205,6 @@ test('finished collection displays history and continuing play without more rewa
   await expect(page.locator('.resident-history li')).toHaveCount(12)
   await page.getByRole('button', { name: /Zbierz zapasy/ }).click()
   await expect(page.locator('.request-preview')).toHaveCount(0)
-  await commit(page).click()
   expect((await stored(page)).state.requests.completed).toEqual(s.requests.completed)
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
   await page

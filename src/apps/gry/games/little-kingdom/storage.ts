@@ -22,7 +22,8 @@ import {
   validateLegacyCampaign,
   type LegacyKingdom,
 } from './legacy-campaign-storage'
-export const SAVE_KEY = 'zgrana:gry:male-krolestwo:v9'
+export const SAVE_KEY = 'zgrana:gry:male-krolestwo:v10'
+export const FORESTRY_KEY = 'zgrana:gry:male-krolestwo:v9'
 export const DEPOSITS_KEY = 'zgrana:gry:male-krolestwo:v8'
 export const CASTLES_KEY = 'zgrana:gry:male-krolestwo:v7'
 export const CAMPAIGN_KEY = 'zgrana:gry:male-krolestwo:v6'
@@ -48,7 +49,7 @@ const coordinate = (v: unknown): v is number =>
   Number.isSafeInteger(v) && Math.abs(v as number) <= Math.floor(Number.MAX_SAFE_INTEGER / 7) - 1
 export function decode(
   raw: string,
-  version: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 = 9,
+  version: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 = 10,
 ): { state: Kingdom; tutorialDismissed: boolean } | null {
   try {
     const data: unknown = JSON.parse(raw)
@@ -67,8 +68,6 @@ export function decode(
     if (
       !natural(s.seed) ||
       s.seed > 0xffffffff ||
-      !natural(s.rng) ||
-      s.rng > 0xffffffff ||
       !natural(s.turn) ||
       !natural(s.population) ||
       !natural(s.hunger)
@@ -200,16 +199,24 @@ export function decode(
         }
       }
     if (visited.size !== known.size) return null
-    if (
-      !Array.isArray(s.offer) ||
-      s.offer.length !== 3 ||
-      s.offer[0] !== 'farm' ||
-      new Set(s.offer).size !== 3 ||
-      !s.offer.every(
-        (k) => typeof k === 'string' && Object.hasOwn(BUILDINGS, k) && !militaryBuilding(k),
+    if (version < 10) {
+      // Validate obsolete fields before removing them. Migration changes no turns,
+      // resources or buildings, and the original save remains at its legacy key.
+      if (
+        !natural(s.rng) ||
+        s.rng > 0xffffffff ||
+        !Array.isArray(s.offer) ||
+        s.offer.length !== 3 ||
+        s.offer[0] !== 'farm' ||
+        new Set(s.offer).size !== 3 ||
+        !s.offer.every(
+          (k) => typeof k === 'string' && Object.hasOwn(BUILDINGS, k) && !militaryBuilding(k),
+        )
       )
-    )
-      return null
+        return null
+      delete s.rng
+      delete s.offer
+    } else if (s.rng !== undefined || s.offer !== undefined) return null
     if (!object(s.buildings)) return null
     // Old sectors deliberately stay as they were. Never backfill onto existing buildings.
     if (version === 1) s.discoveries = {}
@@ -395,7 +402,8 @@ export function load(storage: StoragePort): LoadResult {
   try {
     // Presence wins over validity: never silently resurrect an older settlement.
     for (const [key, version] of [
-      [SAVE_KEY, 9],
+      [SAVE_KEY, 10],
+      [FORESTRY_KEY, 9],
       [DEPOSITS_KEY, 8],
       [CASTLES_KEY, 7],
       [CAMPAIGN_KEY, 6],
@@ -409,7 +417,7 @@ export function load(storage: StoragePort): LoadResult {
       if (raw === null) continue
       const result = decode(raw, version)
       if (!result) return { status: 'corrupt', state: null, tutorialDismissed: false }
-      if (version < 9) {
+      if (version < 10) {
         const written = save(storage, result.state, result.tutorialDismissed)
         return { status: 'saved', ...result, migrationSaveFailed: !written }
       }
@@ -422,7 +430,7 @@ export function load(storage: StoragePort): LoadResult {
 }
 export function save(storage: StoragePort, state: Kingdom, tutorialDismissed: boolean): boolean {
   try {
-    storage.setItem(SAVE_KEY, JSON.stringify({ version: 9, state, tutorialDismissed }))
+    storage.setItem(SAVE_KEY, JSON.stringify({ version: 10, state, tutorialDismissed }))
     return true
   } catch {
     return false

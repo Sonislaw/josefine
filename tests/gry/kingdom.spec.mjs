@@ -1,9 +1,11 @@
 import { test, expect } from '@playwright/test'
 import { createJiti } from 'jiti'
 const jiti = createJiti(import.meta.url)
-const { newKingdom } = await jiti.import('../../src/apps/gry/games/little-kingdom/engine.ts')
+const { newKingdom, resolveTurn } = await jiti.import(
+  '../../src/apps/gry/games/little-kingdom/engine.ts',
+)
 const url = '/gry/male-krolestwo',
-  key = 'zgrana:gry:male-krolestwo:v9'
+  key = 'zgrana:gry:male-krolestwo:v10'
 async function prepare(page, state = newKingdom(42)) {
   await page.addInitScript(
     ({ state, key }) => {
@@ -13,7 +15,7 @@ async function prepare(page, state = newKingdom(42)) {
           key,
           typeof state === 'string'
             ? state
-            : JSON.stringify({ version: 9, state, tutorialDismissed: true }),
+            : JSON.stringify({ version: 10, state, tutorialDismissed: true }),
         )
         sessionStorage.setItem('kingdom-fixture', '1')
       }
@@ -104,17 +106,22 @@ test('insufficient funds and natural terrain do not spend turns; gathering resto
   s.resources.wood = 0
   await prepare(page, s)
   await page.goto(url)
+  await expect(page.locator('.offer-panel h2')).toHaveCount(0)
+  await expect(page.locator('.gather')).toHaveText('♧ Zbierz zapasy')
+  await expect(page.locator('.gather .resource-list')).toHaveCount(0)
   await page.locator('[data-building-card="farm"]').click()
   await tile(page, '0,1').click()
   await expect(page.locator('.preview-error')).toContainText('Brakuje zasobów')
   await expect(commit(page)).toBeDisabled()
   await expect(turn(page)).toHaveText('1')
   await page.getByRole('button', { name: /Zbierz zapasy/ }).click()
-  await commit(page).click()
+  await expect(turn(page)).toHaveText('2')
+  await expect(page.locator('.gather-feedback')).toHaveCount(1)
+  await expect(commit(page)).toBeDisabled()
+  expect(JSON.parse(await stored(page)).state).toEqual(resolveTurn(s, { type: 'gather' }).state)
   await expect(page.locator('[data-resource="wood"]')).toHaveText('2')
   for (let i = 1; i < 6; i++) {
     await page.getByRole('button', { name: /Zbierz zapasy/ }).click()
-    await commit(page).click()
   }
   await page.locator('[data-building-card="farm"]').click()
   await tile(page, '0,1').click()
@@ -228,7 +235,6 @@ test('corrupt save untouched until explicit restart; denied storage remains play
   await page.reload()
   await expect(page.locator('.kingdom-notice')).toContainText('niedostępny')
   await page.getByRole('button', { name: /Zbierz zapasy/ }).click()
-  await commit(page).click()
   await expect(turn(page)).toHaveText('2')
 })
 test('100 sectors render only visible tiles; camera, resize and navigation remain usable', async ({

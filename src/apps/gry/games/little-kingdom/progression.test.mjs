@@ -80,8 +80,7 @@ test('preview equals commit, gifts are separate, ranks advance once per turn and
     assert.deepEqual(result.reward, { wood: 0, stone: 0, food: 0, gold: 0 })
     assert.deepEqual(result.produced, production(s))
     assert.equal(result.delta.wood, 1 + result.produced.wood + RANKS[rank].gift.wood)
-    assert.deepEqual(result.state.offer, s.offer)
-    assert.equal(result.state.rng, s.rng)
+    assert.equal(result.state.seed, s.seed)
     assert.deepEqual(buildingProduction(result.state, result.state.buildings['3,3']), {
       wood: 1,
       stone: 0,
@@ -170,7 +169,7 @@ for (const version of [1, 2])
     assert.deepEqual(result.state.resources, s.resources)
     assert.equal(result.state.turn, s.turn)
     assert.equal(data.get(oldKey), raw)
-    assert.equal(JSON.parse(data.get(SAVE_KEY)).version, 9)
+    assert.equal(JSON.parse(data.get(SAVE_KEY)).version, 10)
     assert.deepEqual(load(port(data)).state, result.state)
     assert.equal(resolveTurn(result.state, { type: 'gather' }).state.rank, version === 1 ? 0 : 1)
   })

@@ -20,8 +20,7 @@ test('further exploration finds many unique deterministic castles without consum
   assert.equal(Object.keys(a.affairs.enemies).length, 6)
   assert.equal(a.affairs.settlements.length, 8)
   const original = warKingdom(42)
-  assert.deepEqual(a.offer, original.offer)
-  assert.equal(a.rng, original.rng)
+  assert.equal(a.seed, original.seed)
   for (const c of a.affairs.settlements.filter((c) => c.id >= 3)) {
     assert.ok(castleAppears(a.seed, sectorOf(c)))
     assert.equal(terrain(a.seed, c.x, c.y), 'meadow')
@@ -182,10 +181,10 @@ test('v6 active wave and peaceful campaign migrate without advancing or altering
     assert.equal(n.affairs.enemies[2].health, 100)
     assert.deepEqual(n.affairs.enemies[2].treasury, CASTLES.treasury)
     assert.equal(values.get(CAMPAIGN_KEY), raw)
-    assert.equal(JSON.parse(values.get(SAVE_KEY)).version, 9)
+    assert.equal(JSON.parse(values.get(SAVE_KEY)).version, 10)
   }
 })
-test('corrupt v9 blocks valid v6 fallback; denied writes keep migrated gameplay in memory', () => {
+test('corrupt v10 blocks valid v6 fallback; denied writes keep migrated gameplay in memory', () => {
   const s = warKingdom(),
     raw = encode(s, 6)
   const values = new Map([

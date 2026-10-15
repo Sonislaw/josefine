@@ -13,6 +13,7 @@ import {
 import GameDialog from '../../components/GameDialog.vue'
 import KingdomBoard from './KingdomBoard.vue'
 import ResourceBar from './ResourceBar.vue'
+import SettlementStatus from './SettlementStatus.vue'
 import BuildingOffer from './BuildingOffer.vue'
 import DiscoveryJournal from './DiscoveryJournal.vue'
 import DiscoveryArt from './DiscoveryArt.vue'
@@ -24,7 +25,6 @@ import BattleSummary from './BattleSummary.vue'
 import {
   TACTICS,
   militaryBuilding,
-  upkeep,
   upkeepGold,
   armySize,
   UNITS,
@@ -37,21 +37,22 @@ import { RANKS } from './progression'
 import { DISCOVERIES, discoveryStatus, discoveryBonus } from './discoveries'
 import {
   BUILDINGS,
+  ECONOMY_BUILDINGS,
   KEYS,
   RESOURCE_NAMES,
   SEASONS,
   TERRAIN_NAMES,
   buildingProduction,
-  capacity,
   explorationCost,
   frontier,
   production,
   season,
-  year,
   type Point,
 } from './engine'
 import { useKingdom } from './useKingdom'
-import { resourceList as priceText } from './format'
+import ResourceList from './ResourceList.vue'
+import ResourceAmount from './ResourceAmount.vue'
+import ResourceIcon from './ResourceIcon.vue'
 const {
   tactic,
   latestBattle,
@@ -81,10 +82,20 @@ const {
   explore,
   choose,
   commit,
+  gatherNow,
   startNew,
   dismissTutorial,
 } = useKingdom()
 const board = ref<InstanceType<typeof KingdomBoard>>()
+const dockHeight = ref(160)
+const gatherEffect = ref(0)
+function gatherWithFeedback() {
+  if (blocked.value) return
+  const previousTurn = state.value.turn
+  gatherNow()
+  // Restart only the visual feedback on each completed turn; never delay the engine.
+  if (state.value.turn !== previousTurn) gatherEffect.value++
+}
 const buildTab = ref<'economy' | 'defence'>('economy')
 function changeBuildTab(tab: 'economy' | 'defence') {
   buildTab.value = tab
@@ -195,6 +206,7 @@ function exploreFromList(p: Point) {
 }
 function reset() {
   startNew()
+  gatherEffect.value = 0
   buildTab.value = 'economy'
   board.value?.locate({ x: 3, y: 3 })
 }
@@ -203,7 +215,7 @@ function compass(p: Point) {
 }
 </script>
 <template>
-  <div class="kingdom-game">
+  <div class="kingdom-game" :style="{ '--kingdom-dock-height': `${dockHeight}px` }">
     <header class="kingdom-heading">
       <div>
         <p class="eyebrow">ZGRANA / STRATEGIA TUROWA</p>
@@ -224,7 +236,9 @@ function compass(p: Point) {
       :resources="state.resources"
       :delta="preview?.delta"
       :limits="inventoryLimit(state.rank)"
-    />
+      @resize="dockHeight = $event"
+      ><SettlementStatus :state="state" :production="output"
+    /></ResourceBar>
     <div v-if="corrupt" class="kingdom-notice danger" role="alert">
       <strong>Nie możemy odczytać zapisanej osady.</strong>
       <p>Dotychczasowy zapis pozostaje nietknięty. Rozpoczęcie nowej osady go zastąpi.</p>
@@ -244,19 +258,6 @@ function compass(p: Point) {
       <button type="button" :disabled="!ready || corrupt" @click="dismissTutorial">Rozumiem</button>
     </section>
     <section aria-label="Twoja osada" class="kingdom-play">
-      <div class="season-row">
-        <span class="season-badge" :class="{ winter: seasonIndex === 3 }"
-          >{{ ['❀', '☀', '❧', '❄'][seasonIndex] }} {{ SEASONS[seasonIndex] }}</span
-        ><span
-          >Rok {{ year(state.turn) }}
-          <span class="muted"
-            >/ Tura <b data-testid="kingdom-turn">{{ state.turn + 1 }}</b></span
-          ></span
-        ><span class="population"
-          >♙ {{ state.population }} / {{ capacity(state) }}
-          <span class="muted">mieszkańców</span></span
-        >
-      </div>
       <p v-if="state.affairs.raid" class="kingdom-notice danger" role="status">
         ⚑ {{ settlementDefinition(state.affairs.raid.enemyId).name }}: najazd za
         {{ state.affairs.raid.dueTurn - state.turn }} tur! Wróg:
@@ -267,20 +268,9 @@ function compass(p: Point) {
         ⚐ Zamki objęte pokojem: {{ peacefulCastles }}. Terminy i relacje znajdziesz w panelu
         sąsiadów; pozostali wrogowie nadal mogą zaatakować.
       </p>
-      <p class="rank-badge" data-testid="kingdom-rank">♜ {{ RANKS[state.rank]!.name }}</p>
-      <div class="economy-line">
-        <span>Produkcja / turę: {{ priceText(output) }}</span
-        ><span
-          >Wyżywienie: {{ state.population }} + wojsko {{ upkeep(state.affairs.army) }} · Bilans
-          żywności:
-          <b :class="{ deficit: output.food < state.population + upkeep(state.affairs.army) }"
-            >{{ output.food - state.population - upkeep(state.affairs.army) >= 0 ? '+' : ''
-            }}{{ output.food - state.population - upkeep(state.affairs.army) }}</b
-          ></span
-        >
-      </div>
       <p v-if="armySize(state.affairs.army)" class="winter-warning">
-        Żołd: {{ upkeepGold(state.affairs.army) }} monet / turę. Zadbaj o targi przed rekrutacją.
+        Żołd: <ResourceAmount resource="gold" :amount="upkeepGold(state.affairs.army)" /> / turę.
+        Zadbaj o targi przed rekrutacją.
       </p>
       <p v-if="seasonIndex === 2" class="winter-warning">
         ❄ Zima za {{ 9 - (state.turn % 12) }} {{ 9 - (state.turn % 12) === 1 ? 'turę' : 'tury' }}.
@@ -296,7 +286,8 @@ function compass(p: Point) {
           <small>NOWY ROZDZIAŁ TWOJEJ OSADY</small>
           <strong>Awans: {{ RANKS[latestPromotion.rank]!.name }}!</strong>
           <span
-            >Prezent dodany do zapasów: {{ priceText(RANKS[latestPromotion.rank]!.gift) }}.</span
+            >Prezent dodany do zapasów:
+            <ResourceList :resources="RANKS[latestPromotion.rank]!.gift" />.</span
           >
         </div>
         <button
@@ -388,7 +379,7 @@ function compass(p: Point) {
                 wymaga osobnego ulepszania.
               </p>
               <p v-if="selectedOutput && KEYS.some((k) => selectedOutput![k])">
-                Produkcja teraz: <strong>{{ priceText(selectedOutput) }}</strong>
+                Produkcja teraz: <strong><ResourceList :resources="selectedOutput" /></strong>
               </p>
               <p v-if="selectedDeposit" class="deposit-details">
                 Pozostały zasób:
@@ -444,18 +435,19 @@ function compass(p: Point) {
                 ✧ Premia: {{ DISCOVERIES[selectedBonus.source.kind].name }} ({{
                   selectedBonus.source.x
                 }}, {{ selectedBonus.source.y }}) ·
-                {{
-                  selectedBonus.resource === 'food'
-                    ? '+1 żywności przed zimowym zmniejszeniem plonów'
-                    : '+1 moneta'
-                }}. Nie mnoży się przez poziom ani liczbę miejsc.
+                <ResourceAmount :resource="selectedBonus.resource" :amount="1" signed /><template
+                  v-if="selectedBonus.resource === 'food'"
+                >
+                  przed zimowym zmniejszeniem plonów</template
+                >. Nie mnoży się przez poziom ani liczbę miejsc.
               </p>
               <div v-if="selectedDiscovery && !selectedBuilding" class="discovery-description">
                 <span>{{ discoveryStatus(selectedDiscovery) }}</span>
                 <p>{{ DISCOVERIES[selectedDiscovery.kind].description }}</p>
                 <p>{{ DISCOVERIES[selectedDiscovery.kind].benefit }}</p>
                 <p v-if="selectedDiscovery.status === 'available'">
-                  Koszt: {{ priceText(DISCOVERIES[selectedDiscovery.kind].cost) }} · jedna tura.
+                  Koszt: <ResourceList :resources="DISCOVERIES[selectedDiscovery.kind].cost" /> ·
+                  jedna tura.
                 </p>
                 <p v-else-if="!DISCOVERIES[selectedDiscovery.kind].permanent">
                   Nagroda została już odebrana. To pole jest dostępne pod zabudowę.
@@ -503,7 +495,7 @@ function compass(p: Point) {
           </div>
           <details class="exploration">
             <summary>
-              ✧ Nowe ziemie <span>{{ priceText(explorationCost(state)) }}</span>
+              ✧ Nowe ziemie <span><ResourceList :resources="explorationCost(state)" /></span>
             </summary>
             <p>
               Wybierz sąsiedni sektor. Każdy odkrywa 49 pól i jedno wyjątkowe miejsce; samo
@@ -542,24 +534,26 @@ function compass(p: Point) {
               </button>
             </div>
             <p class="eyebrow">CO ZBUDUJESZ?</p>
-            <h2>{{ buildTab === 'economy' ? 'Trzy możliwości.' : 'Bezpieczna osada.' }}</h2>
+            <h2 v-if="buildTab === 'defence'">Bezpieczna osada.</h2>
             <p v-if="buildTab === 'defence' && state.rank < 1">
               Obrona odblokuje się na randze Wioska.
             </p>
             <BuildingOffer
-              :offer="buildTab === 'economy' ? state.offer : state.rank >= 1 ? militaryOffer : []"
+              :buildings="
+                buildTab === 'economy' ? ECONOMY_BUILDINGS : state.rank >= 1 ? militaryOffer : []
+              "
               :selected="card"
               :resources="state.resources"
               :disabled="blocked"
               @choose="chooseCard"
-            /><button
-              class="gather"
-              type="button"
-              :disabled="blocked"
-              :aria-pressed="action?.type === 'gather'"
-              @click="choose({ type: 'gather' })"
-            >
-              ♧ Zbierz zapasy <small>{{ priceText(BALANCE.gather) }} · jedna tura</small>
+            /><button class="gather" type="button" :disabled="blocked" @click="gatherWithFeedback">
+              ♧ Zbierz zapasy
+              <span
+                v-if="gatherEffect"
+                :key="gatherEffect"
+                class="gather-feedback"
+                aria-hidden="true"
+              />
             </button>
           </div>
           <div class="turn-preview" :class="{ 'has-action': action }">
@@ -585,10 +579,12 @@ function compass(p: Point) {
             </p>
             <p v-if="error" class="preview-error" role="status">{{ error }}</p>
             <template v-if="preview"
-              ><p>Koszt: {{ priceText(preview.cost) }}</p>
+              ><p>Koszt: <ResourceList :resources="preview.cost" /></p>
               <p v-if="preview.produced.wood || preview.produced.stone">
-                Produkcja drewna: {{ preview.produced.wood }} · kamienia:
-                {{ preview.produced.stone }}. Wydobycie z lasów i skał pomniejsza ich zapasy.
+                Produkcja:
+                <ResourceList
+                  :resources="{ wood: preview.produced.wood, stone: preview.produced.stone }"
+                />. Wydobycie z lasów i skał pomniejsza ich zapasy.
               </p>
               <p v-if="preview.extraction.exhausted.length" class="preview-error">
                 W tej turze wyczerpią się złoża:
@@ -605,8 +601,8 @@ function compass(p: Point) {
                 zasięgu mogą już z niego korzystać.
               </p>
               <p v-if="Object.values(preview.storageLoss).some(Boolean)" class="preview-error">
-                Nadwyżka poza limitem zapasów: {{ priceText(preview.storageLoss) }}. Końcowy bilans
-                już to uwzględnia.
+                Nadwyżka poza limitem zapasów: <ResourceList :resources="preview.storageLoss" />.
+                Końcowy bilans już to uwzględnia.
               </p>
               <BattleSummary v-if="preview.battle" :report="preview.battle" preview />
               <p v-if="preview.state.affairs.raid">
@@ -614,7 +610,8 @@ function compass(p: Point) {
                 {{ preview.state.affairs.raid.dueTurn - preview.state.turn }} tur.
               </p>
               <p v-if="preview.armyFood || preview.armyGold || armySize(preview.deserters)">
-                Wojsko zużyje {{ preview.armyFood }} żywności i {{ preview.armyGold }} monet.
+                Wojsko zużyje
+                <ResourceList :resources="{ food: preview.armyFood, gold: preview.armyGold }" />.
                 Odejścia z braku racji lub żołdu: {{ preview.deserters.spearman }} włóczników i
                 {{ preview.deserters.archer }} łuczników i
                 {{ preview.deserters.shieldbearer }} tarczowników.
@@ -654,38 +651,38 @@ function compass(p: Point) {
                 >
               </p>
               <p v-if="Object.values(preview.diplomaticReward).some(Boolean)">
-                Dar po wyżywieniu: {{ priceText(preview.diplomaticReward) }}.
+                Dar po wyżywieniu: <ResourceList :resources="preview.diplomaticReward" />.
               </p>
               <p v-if="preview.state.affairs.settlements.length > state.affairs.settlements.length">
                 Poznasz osadę: {{ settlementDefinition(state.affairs.settlements.length).name }}.
                 Kontakt znajdziesz w panelu sąsiadów.
               </p>
               <p v-if="KEYS.some((k) => preview!.reward[k])" class="discovery-reward">
-                Jednorazowa nagroda: <strong>{{ priceText(preview.reward) }}</strong>
+                Jednorazowa nagroda: <strong><ResourceList :resources="preview.reward" /></strong>
               </p>
               <p v-if="preview.promotion" class="promotion-preview">
                 <strong>Awans: {{ RANKS[preview.promotion.rank]!.name }}!</strong><br />
-                Prezent: {{ priceText(preview.promotionGift) }}. Trafi do zapasów po wyżywieniu i
-                zmianie populacji. Poniższy bilans już go uwzględnia.
+                Prezent: <ResourceList :resources="preview.promotionGift" />. Trafi do zapasów po
+                wyżywieniu i zmianie populacji. Poniższy bilans już go uwzględnia.
               </p>
               <p v-if="preview.completedRequest" class="promotion-preview request-preview">
                 <strong>Prośba wykonana: {{ REQUESTS[preview.completedRequest.id].title }}</strong
                 ><br />
-                Nagroda: {{ priceText(preview.requestReward) }}. Poniższy bilans już ją uwzględnia;
-                otrzymasz ją po wyżywieniu i sprawdzeniu awansu osady.
+                Nagroda: <ResourceList :resources="preview.requestReward" />. Poniższy bilans już ją
+                uwzględnia; otrzymasz ją po wyżywieniu i sprawdzeniu awansu osady.
               </p>
-              <p>Produkcja w tej turze: {{ priceText(preview.produced) }}</p>
+              <p>Produkcja w tej turze: <ResourceList :resources="preview.produced" /></p>
               <p v-if="action?.type === 'explore'">
                 Nowy sektor ujawni wyjątkowe miejsce. Jego zbadanie lub odnowienie będzie osobną
                 decyzją.
               </p>
               <p v-for="b in previewBonuses" :key="`${b.x},${b.y}`" class="discovery-bonus">
                 {{ b.building }} ({{ b.x }}, {{ b.y }}): {{ DISCOVERIES[b.source.kind].name }} daje
-                {{
-                  b.resource === 'food'
-                    ? '+1 żywności przed zimowym zmniejszeniem plonów'
-                    : '+1 monetę'
-                }}. Premia jest już ujęta w produkcji.
+                <ResourceAmount :resource="b.resource" :amount="1" signed /><template
+                  v-if="b.resource === 'food'"
+                >
+                  przed zimowym zmniejszeniem plonów</template
+                >. Premia jest już ujęta w produkcji.
               </p>
               <p v-if="action?.type === 'demolish'">
                 {{
@@ -696,7 +693,11 @@ function compass(p: Point) {
               </p>
               <dl>
                 <div v-for="r in KEYS" :key="r">
-                  <dt>{{ RESOURCE_NAMES[r] }}</dt>
+                  <dt :title="RESOURCE_NAMES[r]">
+                    <ResourceIcon :resource="r" /><span class="sr-only">{{
+                      RESOURCE_NAMES[r]
+                    }}</span>
+                  </dt>
                   <dd>
                     {{ state.resources[r] }} → <strong>{{ preview.state.resources[r] }}</strong>
                     <small :class="{ deficit: preview.delta[r] < 0 }"
@@ -811,7 +812,7 @@ function compass(p: Point) {
           Po Wiosce trzy pierwsze kontakty to Brzeziny, Kamienny Bród i Czerwone Wzgórze. Potem
           każdy nowo odkrywany sektor ma około jedną trzecią szansy na kolejną warownię. Typ terenu,
           zamek i miejsce specjalne wynikają z ziarna mapy; odświeżenie nie zmienia odkrycia ani
-          kart budynków. Starsze sektory pozostają bez zmian.
+          możliwości budowania. Starsze sektory pozostają bez zmian.
         </p>
         <p>
           Każdy wróg ma własną armię, skarbiec, przewagę i terminy pokoju. Pokój z jednym zamkiem
@@ -928,10 +929,10 @@ function compass(p: Point) {
       <details>
         <summary>Dlaczego nie mogę postawić budynku?</summary>
         <p>
-          Wybierz kartę z aktualnej oferty, pustą łąkę i sprawdź koszt. Na wodzie, skałach i w lesie
-          nie budujemy. Wciąż możesz zebrać zapasy — ta akcja nie wymaga zasobów, lecz zużywa turę i
-          mieszkańcy nadal potrzebują jedzenia. Wyjątkowe miejsca także zajmują pole. Zbadane ruiny
-          i opróżniony wóz je zwalniają, a odnowione źródło i punkt handlowy pozostają częścią
+          Wybierz dowolny budynek z katalogu, pustą łąkę i sprawdź koszt. Na wodzie, skałach i w
+          lesie nie budujemy. Wciąż możesz zebrać zapasy — ta akcja nie wymaga zasobów, lecz zużywa
+          turę i mieszkańcy nadal potrzebują jedzenia. Wyjątkowe miejsca także zajmują pole. Zbadane
+          ruiny i opróżniony wóz je zwalniają, a odnowione źródło i punkt handlowy pozostają częścią
           krajobrazu.
         </p>
       </details>
@@ -983,7 +984,7 @@ function compass(p: Point) {
           sektory (ze startowym): {{ r.requirements.sectors }}
           <template v-if="r.requirements.discoveries"
             >; wykorzystane odkrycia: {{ r.requirements.discoveries }}</template
-          >. Prezent: {{ priceText(r.gift) }}.
+          >. Prezent: <ResourceList :resources="r.gift" />.
         </p>
       </details>
       <details>
@@ -1049,8 +1050,8 @@ function compass(p: Point) {
           zmienia.
         </li>
         <li>
-          Zbieranie daje {{ priceText(BALANCE.gather) }}, ale także zużywa turę. Pozwala odzyskać
-          materiały, gdy nie stać Cię na budowę.
+          Zbieranie daje <ResourceList :resources="BALANCE.gather" />. Kliknięcie „Zbierz zapasy” od
+          razu wykonuje jedną turę. Pozwala odzyskać materiały, gdy nie stać Cię na budowę.
         </li>
         <li>
           Nowy sektor kryje jedno wyjątkowe miejsce. Wybierz je, sprawdź koszt i osobno zatwierdź
@@ -1139,16 +1140,6 @@ function compass(p: Point) {
 .battle-result > button:focus-visible {
   outline: 3px solid #bb9237;
   outline-offset: 3px;
-}
-.rank-badge {
-  display: inline-block;
-  border: 1px solid #bba467;
-  border-radius: 30px;
-  padding: 6px 13px;
-  margin: 12px 0 0;
-  color: #f5dda3;
-  background: #3b4c32;
-  font-size: 12px;
 }
 .promotion-announcement {
   display: flex;
@@ -1319,7 +1310,7 @@ function compass(p: Point) {
 :deep(select),
 :deep(summary),
 :deep([tabindex]) {
-  scroll-margin-top: calc(100px + env(safe-area-inset-top, 0px));
+  scroll-margin-top: calc(var(--kingdom-dock-height, 160px) + 12px);
 }
 .eyebrow {
   font-size: 10px;
@@ -1413,42 +1404,6 @@ summary:focus-visible {
   border-radius: 26px;
   background: linear-gradient(145deg, #1b3229, #11271f);
 }
-.season-row {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  font-size: 14px;
-  margin-bottom: 18px;
-  flex-wrap: wrap;
-}
-.season-badge {
-  color: #e1e9ac;
-  background: #425937;
-  border: 1px solid #69814d;
-  padding: 8px 13px;
-  border-radius: 30px;
-}
-.season-badge.winter {
-  background: #36585c;
-  border-color: #7daba4;
-  color: #d3e7e0;
-}
-.population {
-  margin-left: auto;
-}
-.muted {
-  color: #a2b79e;
-}
-.economy-line {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  color: #b4c5a9;
-  font-size: 11px;
-  line-height: 1.8;
-  margin: 13px 2px 20px;
-  flex-wrap: wrap;
-}
 .deficit {
   color: #ffbc94;
 }
@@ -1482,6 +1437,8 @@ summary:focus-visible {
   padding: 18px;
 }
 .gather {
+  position: relative;
+  overflow: hidden;
   display: block;
   width: 100%;
   margin-top: 14px;
@@ -1490,15 +1447,50 @@ summary:focus-visible {
   border-style: dashed;
   color: #e8dcaf;
 }
-.gather[aria-pressed='true'] {
-  border-color: #e8c66e;
-  background: #405238;
+.gather-feedback {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: #e8c66e38;
+  box-shadow: inset 0 0 0 1px #e8c66e;
+  animation: gather-confirm 550ms ease-out both;
 }
-.gather small {
-  display: block;
-  font-size: 10px;
-  color: #b7c79c;
-  margin-top: 5px;
+.gather-feedback::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 3px;
+  background: #e8c66e;
+  transform-origin: left;
+  animation: gather-progress 550ms ease-out both;
+}
+@keyframes gather-confirm {
+  0%,
+  20% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes gather-progress {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .gather-feedback {
+    animation-duration: 180ms;
+  }
+  .gather-feedback::after {
+    animation: none;
+  }
 }
 .turn-preview {
   background: #ece6d3;
@@ -1747,14 +1739,6 @@ summary:focus-visible {
   .kingdom-planning {
     grid-template-columns: 1fr;
   }
-  .season-row {
-    font-size: 12px;
-    gap: 8px;
-  }
-  .population {
-    margin-left: 0;
-    width: 100%;
-  }
   .kingdom-workspace {
     gap: 14px;
   }
@@ -1764,9 +1748,6 @@ summary:focus-visible {
   }
   .kingdom-guide > h2 {
     font-size: 30px;
-  }
-  .economy-line {
-    font-size: 10px;
   }
   .kingdom-heading h1 {
     font-size: 43px;

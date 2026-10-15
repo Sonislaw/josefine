@@ -12,7 +12,7 @@ export interface RankDefinition {
   requirements: Record<Metric, number>
   gift: Resources
 }
-// Type-only engine dependency: progression is pure and never draws from the offer RNG.
+// Type-only engine dependency: progression depends only on the current settlement.
 export const RANKS: readonly RankDefinition[] = [
   {
     name: 'Osada',
@@ -46,7 +46,7 @@ const METRICS: Record<Metric, { label: string; hint: string }> = {
   },
   kinds: {
     label: 'Rodzaje budynków',
-    hint: 'Sięgnij po inny rodzaj budynku z oferty. Ratusz nie jest wliczany.',
+    hint: 'Wybierz inny rodzaj budynku z katalogu. Ratusz nie jest wliczany.',
   },
   sectors: {
     label: 'Odkryte sektory',

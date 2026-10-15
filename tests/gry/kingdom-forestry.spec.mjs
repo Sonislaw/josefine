@@ -5,7 +5,7 @@ const j = createJiti(import.meta.url)
 const { newKingdom, terrain, resolveTurn } = await j.import(
   '../../src/apps/gry/games/little-kingdom/engine.ts',
 )
-const key = 'zgrana:gry:male-krolestwo:v9'
+const key = 'zgrana:gry:male-krolestwo:v10'
 function fixture() {
   const s = newKingdom(42)
   s.turn = 12
@@ -56,13 +56,14 @@ for (const width of [360, 1440])
     await expect(page.locator('.map-hint')).toContainText('Zasięg sadzenia: 3 pola')
     await expect(page.locator('[data-extraction-range]').first()).toBeVisible()
     await page.getByRole('button', { name: 'Zamknij dymek budynku' }).click()
-    await page.getByRole('button', { name: /Zbierz zapasy/ }).click()
+    await page.locator('[data-building-card="farm"]').click()
+    await page.locator('[data-tile="0,1"]').click()
     await expect(page.locator('.forestry-preview')).toHaveCount(2)
     await expect(page.locator('.turn-preview')).toContainText('W tej turze dojrzeje las: (1, 1)')
     expect(
       await page.evaluate((k) => JSON.parse(localStorage.getItem(k)).state.forests['1,1'].age, key),
     ).toBe(5)
-    await page.getByRole('button', { name: 'Zatwierdź turę' }).click()
+    await page.getByRole('button', { name: /Zbierz zapasy/ }).click()
     const expected = resolveTurn(s, { type: 'gather' }).state
     expect(await page.evaluate((k) => JSON.parse(localStorage.getItem(k)).state, key)).toEqual(
       expected,

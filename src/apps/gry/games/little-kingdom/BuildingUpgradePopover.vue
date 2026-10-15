@@ -3,7 +3,7 @@ import { computed } from 'vue'
 import { BUILDINGS, actionCost, actionError, type Building, type Kingdom } from './engine'
 import { militaryBuilding } from './military'
 import { RANKS } from './progression'
-import { resourceList } from './format'
+import ResourceList from './ResourceList.vue'
 const props = defineProps<{
   state: Kingdom
   building: Building
@@ -50,7 +50,7 @@ const requiredRank = computed(
     <p v-else-if="building.level >= 3">Najwyższy poziom. Ten budynek nie wymaga już ulepszania.</p>
     <template v-else>
       <p>
-        Koszt: <strong>{{ resourceList(cost) }}</strong>
+        Koszt: <strong><ResourceList :resources="cost" /></strong>
       </p>
       <p>Wymagana ranga: {{ requiredRank }}.</p>
       <p v-if="error" class="upgrade-error" role="status">{{ error }}</p>

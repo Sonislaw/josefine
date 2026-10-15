@@ -82,7 +82,6 @@ export interface Kingdom {
   rank: SettlementRank
   promotions: Promotion[]
   seed: number
-  rng: number
   sectors: Point[]
   buildings: Record<string, Building>
   discoveries: Record<string, Discovery>
@@ -92,7 +91,6 @@ export interface Kingdom {
   population: number
   hunger: number
   turn: number
-  offer: BuildingKind[]
   status: 'playing' | 'gameover'
 }
 export type Action = (
@@ -189,19 +187,10 @@ export const capacity = (state: Kingdom) =>
 export const hasSector = (state: Kingdom, p: Point) =>
   state.sectors.some((s) => s.x === p.x && s.y === p.y)
 export const discovered = (state: Kingdom, p: Point) => hasSector(state, sectorOf(p))
-function random(seed: number) {
-  return (Math.imul(seed, 1664525) + 1013904223) >>> 0
-}
-export function deal(seed: number) {
-  const kinds = (Object.keys(BUILDINGS) as BuildingKind[]).filter(
-    (k) => k !== 'farm' && !militaryBuilding(k),
-  )
-  const r1 = random(seed),
-    first = kinds.splice(r1 % kinds.length, 1)[0]!
-  const r2 = random(r1),
-    second = kinds[r2 % kinds.length]!
-  return { rng: r2, offer: ['farm', first, second] as BuildingKind[] }
-}
+/** The catalog is derived from definitions, not dealt or stored per settlement. */
+export const ECONOMY_BUILDINGS = (Object.keys(BUILDINGS) as BuildingKind[]).filter(
+  (kind) => !militaryBuilding(kind),
+)
 export function newKingdom(seed = 1): Kingdom {
   return {
     affairs: emptyAffairs(),
@@ -209,7 +198,6 @@ export function newKingdom(seed = 1): Kingdom {
     rank: 0,
     promotions: [],
     seed: seed >>> 0,
-    ...deal(seed >>> 0),
     sectors: [{ x: 0, y: 0 }],
     buildings: { '3,3': { x: 3, y: 3, kind: 'hall', level: 1 } },
     discoveries: {},
@@ -369,11 +357,7 @@ export function actionError(state: Kingdom, action: Action): string | null {
         if (settlementAt(state, action)) return 'To pole należy do sąsiedniej osady.'
         if (blocksBuilding(d))
           return 'To pole zajmuje wyjątkowe miejsce. Wybierz je, aby poznać dostępne działania.'
-        if (
-          !Object.hasOwn(BUILDINGS, action.kind) ||
-          (!militaryBuilding(action.kind) && !state.offer.includes(action.kind))
-        )
-          return 'Tego budynku nie ma w bieżącej ofercie.'
+        if (!Object.hasOwn(BUILDINGS, action.kind)) return 'Nieznany rodzaj budynku.'
         if (
           militaryBuilding(action.kind) &&
           (state.rank < 1 || Object.values(state.buildings).some((b) => b.kind === action.kind))
@@ -500,7 +484,6 @@ export function resolveTurn(state: Kingdom, action: Action): TurnResult | null {
     deposits: { ...state.deposits },
     forests: { ...state.forests },
     sectors: [...state.sectors],
-    offer: [...state.offer],
   }
   for (const k of KEYS) next.resources[k] -= price[k]
   if (action.type === 'build') {
@@ -510,7 +493,6 @@ export function resolveTurn(state: Kingdom, action: Action): TurnResult | null {
       kind: action.kind,
       level: 1,
     }
-    if (!militaryBuilding(action.kind)) Object.assign(next, deal(state.rng))
   }
   if (action.type === 'repair') {
     const k = key(action.x, action.y)

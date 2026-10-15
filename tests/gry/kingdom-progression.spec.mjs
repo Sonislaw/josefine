@@ -4,7 +4,7 @@ import { developedKingdom, encode } from './kingdom-progression-fixture.mjs'
 const jiti = createJiti(import.meta.url)
 const { resolveTurn } = await jiti.import('../../src/apps/gry/games/little-kingdom/engine.ts')
 const url = '/gry/male-krolestwo',
-  key = 'zgrana:gry:male-krolestwo:v9',
+  key = 'zgrana:gry:male-krolestwo:v10',
   previous = 'zgrana:gry:male-krolestwo:v2'
 const stored = (page) => page.evaluate((k) => JSON.parse(localStorage.getItem(k)), key)
 const runtimeErrors = new WeakMap()
@@ -52,11 +52,9 @@ for (const [width, height] of [
       '0',
     )
     for (const [index, name] of ['Wioska', 'Miasteczko', 'Małe królestwo'].entries()) {
-      await gather(page)
-      await expect(page.locator('.promotion-preview')).toContainText(`Awans: ${name}`)
-      expect((await stored(page)).state).toEqual(state) // preview is read-only
+      expect((await stored(page)).state).toEqual(state)
       const expected = resolveTurn(state, { type: 'gather' })
-      await commit(page).click()
+      await gather(page)
       await expect(page.getByTestId('kingdom-rank')).toContainText(name)
       expect((await stored(page)).state).toEqual(expected.state)
       state = expected.state
@@ -81,7 +79,6 @@ for (const [width, height] of [
     await expect(page.locator('.promotion-announcement')).toHaveCount(0)
     await gather(page)
     await expect(page.locator('.promotion-preview')).toHaveCount(0)
-    await commit(page).click()
     expect((await stored(page)).state.promotions).toEqual(state.promotions)
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
     await page.getByRole('button', { name: 'Nowa osada', exact: true }).click()
@@ -105,7 +102,6 @@ test('v2 migration preserves discoveries and bytes; old settlement earns its fir
   await expect(page.locator('.promotion-announcement')).toHaveCount(0)
   expect(await page.evaluate((k) => localStorage.getItem(k), previous)).toBe(raw)
   await gather(page)
-  await commit(page).click()
   await expect(page.getByTestId('kingdom-rank')).toContainText('Wioska')
   await page.reload()
   await expect(page.getByTestId('kingdom-rank')).toContainText('Wioska')
@@ -113,14 +109,14 @@ test('v2 migration preserves discoveries and bytes; old settlement earns its fir
   expect(await page.evaluate((k) => localStorage.getItem(k), previous)).toBe(raw)
 })
 
-for (const brokenVersion of [2, 9])
+for (const brokenVersion of [2, 10])
   test(`corrupt v${brokenVersion} stays protected despite an older valid save`, async ({
     page,
   }) => {
-    const brokenKey = brokenVersion === 9 ? key : previous
+    const brokenKey = brokenVersion === 10 ? key : previous
     await prepare(page, [
       ['zgrana:gry:male-krolestwo:v1', encode(developedKingdom(), 1)],
-      ...(brokenVersion === 9 ? [[previous, encode(developedKingdom(), 2)]] : []),
+      ...(brokenVersion === 10 ? [[previous, encode(developedKingdom(), 2)]] : []),
       [brokenKey, '{broken'],
     ])
     await page.goto(url)
@@ -132,7 +128,7 @@ for (const brokenVersion of [2, 9])
     expect(await page.evaluate((k) => localStorage.getItem(k), brokenKey)).toBe('{broken')
     await page.getByRole('button', { name: 'Rozpocznij nową osadę' }).click()
     await page.getByRole('button', { name: 'Tak, nowa osada' }).click()
-    expect((await stored(page)).version).toBe(8)
+    expect((await stored(page)).version).toBe(10)
     expect((await stored(page)).state.rank).toBe(0)
   })
 
@@ -151,7 +147,6 @@ test('quota failure keeps migration and promotions playable in memory with a war
   await page.goto(url)
   await expect(page.locator('.kingdom-notice')).toContainText('niedostępny')
   await gather(page)
-  await commit(page).click()
   await expect(page.getByTestId('kingdom-rank')).toContainText('Wioska')
   expect(await stored(page)).toBeNull()
   expect(await page.evaluate((k) => localStorage.getItem(k), previous)).toBe(raw)
@@ -170,7 +165,6 @@ test('insufficient present-day requirements never revoke a saved rank', async ({
     'Zapewnij miejsce',
   )
   await gather(page)
-  await commit(page).click()
   expect((await stored(page)).state.rank).toBe(2)
   expect((await stored(page)).state.promotions).toEqual(s.promotions)
 })

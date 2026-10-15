@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test'
 import { createJiti } from 'jiti'
+import { encode } from './kingdom-progression-fixture.mjs'
 const j = createJiti(import.meta.url)
 const {
   newKingdom,
@@ -10,7 +11,7 @@ const { discoveryForSector, DISCOVERIES } = await j.import(
   '../../src/apps/gry/games/little-kingdom/discoveries.ts',
 )
 const url = '/gry/male-krolestwo',
-  key = 'zgrana:gry:male-krolestwo:v9',
+  key = 'zgrana:gry:male-krolestwo:v10',
   legacy = 'zgrana:gry:male-krolestwo:v1'
 const commit = (page) => page.getByRole('button', { name: 'Zatwierdź turę' })
 const runtimeErrors = new WeakMap()
@@ -31,19 +32,19 @@ function fixture(kind) {
   }
   throw Error('missing fixture')
 }
-async function prepare(page, state, version = 9, raw) {
+async function prepare(page, state, version = 10, raw = encode(state, version)) {
   await page.addInitScript(
-    ({ state, version, raw, key, legacy }) => {
+    ({ version, raw, key, legacy }) => {
       localStorage.setItem('josefine:cookie-notice:dismissed:gry', '1')
       if (!sessionStorage.getItem('discovery-fixture')) {
         localStorage.setItem(
           version === 1 ? legacy : key,
-          raw ?? JSON.stringify({ version, state, tutorialDismissed: true }),
+          raw,
         )
         sessionStorage.setItem('discovery-fixture', '1')
       }
     },
-    { state, version, raw, key, legacy },
+    { version, raw, key, legacy },
   )
 }
 const stored = (page) => page.evaluate((key) => JSON.parse(localStorage.getItem(key)), key)
@@ -160,12 +161,12 @@ test('old osada migrates once, preserving raw v1 and every existing building', a
   delete state.discoveries
   const d = discoveryForSector(state.seed, { x: 1, y: 0 }, 1)
   state.buildings[xy(d.x, d.y)] = { x: d.x, y: d.y, kind: 'farm', level: 2 }
-  const raw = JSON.stringify({ version: 1, state, tutorialDismissed: true })
+  const raw = encode(state, 1)
   await prepare(page, state, 1, raw)
   await page.goto(url)
   await expect(page.getByTestId('kingdom-turn')).toHaveText('31')
   const result = await stored(page)
-  expect(result.version).toBe(8)
+  expect(result.version).toBe(10)
   expect(result.state).toEqual({ ...state, discoveries: {} })
   expect(await page.evaluate((k) => localStorage.getItem(k), legacy)).toBe(raw)
   await page.reload()
@@ -211,7 +212,6 @@ test('failed migration write keeps old state playable; quota failure and restart
   await expect(page.getByTestId('kingdom-turn')).toHaveText('10')
   await expect(page.locator('.kingdom-notice')).toContainText('niedostępny')
   await page.getByRole('button', { name: /Zbierz zapasy/ }).click()
-  await commit(page).click()
   await expect(page.getByTestId('kingdom-turn')).toHaveText('11')
   expect(await page.evaluate((k) => localStorage.getItem(k), key)).toBeNull()
   await page.getByRole('button', { name: 'Nowa osada', exact: true }).click()

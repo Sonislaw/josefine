@@ -100,7 +100,8 @@ watch(popover, (el) => {
   popoverFrame = undefined
   if (!el) return
   const measure = () => {
-    popoverHeight.value = el.offsetHeight
+    // Inline icons can produce fractional heights; rounding up preserves the map gap.
+    popoverHeight.value = Math.ceil(el.getBoundingClientRect().height)
     fitPopover()
   }
   measure()
@@ -608,7 +609,7 @@ function wheel(e: WheelEvent) {
 .popover-anchor {
   position: absolute;
   z-index: 5;
-  scroll-margin-top: calc(100px + env(safe-area-inset-top, 0px));
+  scroll-margin-top: calc(var(--kingdom-dock-height, 160px) + 12px);
   scroll-margin-bottom: 12px;
 }
 .popover-anchor::after {

@@ -5,7 +5,7 @@ const j = createJiti(import.meta.url)
 const { newKingdom, resolveTurn } = await j.import(
   '../../src/apps/gry/games/little-kingdom/engine.ts',
 )
-const key = 'zgrana:gry:male-krolestwo:v9'
+const key = 'zgrana:gry:male-krolestwo:v10'
 
 for (const [width, height] of [
   [360, 640],
@@ -34,11 +34,18 @@ for (const [width, height] of [
     const dock = page.getByRole('region', { name: 'Zapasy osady' })
     await expect(dock.locator('[data-resource]')).toHaveCount(4)
     await expect(dock.locator('.stock-limit')).toHaveCount(4)
+    await expect(dock.getByRole('group', { name: 'Stan osady' })).toBeVisible()
+    await expect(dock.locator('.season-badge')).toContainText('Wiosna')
+    await expect(dock.getByTestId('kingdom-turn')).toHaveText('1')
+    await expect(dock.getByTestId('kingdom-rank')).toContainText('Osada')
+    await expect(dock.locator('.population')).toContainText('3 / 5')
+    await expect(dock.locator('.economy-line')).toContainText('Produkcja / turę')
+    await expect(dock.locator('.economy-line')).toContainText('Bilans żywności: -1')
     await expect(dock.locator('[data-resource="wood"]')).toHaveText(
       state.resources.wood.toLocaleString('pl-PL'),
     )
     const original = await dock.boundingBox()
-    expect(original.height).toBeLessThan(100)
+    expect(original.height).toBeLessThan(200)
     expect(original.y + original.height).toBeLessThan(height)
     expect((await dock.locator('[data-resource="wood"]').boundingBox()).height).toBeLessThan(25)
     for (const target of ['.kingdom-map', '.turn-preview', '.kingdom-faq']) {
@@ -52,8 +59,10 @@ for (const [width, height] of [
       ).toBe(true)
     }
     await page.getByRole('button', { name: /Zbierz zapasy/ }).click()
-    await expect(dock.locator('.delta')).toHaveCount(4)
-    await page.getByRole('button', { name: 'Zatwierdź turę' }).click()
+    await expect(dock.getByTestId('kingdom-turn')).toHaveText('2')
+    await expect(page.locator('.gather-feedback')).toHaveCount(1)
+    await expect(dock.locator('.delta')).toHaveCount(0)
+    await expect(page.getByRole('button', { name: 'Zatwierdź turę' })).toBeDisabled()
     const expected = resolveTurn(state, { type: 'gather' })
     for (const r of ['wood', 'stone', 'food', 'gold'])
       await expect(dock.locator(`[data-resource="${r}"]`)).toHaveText(

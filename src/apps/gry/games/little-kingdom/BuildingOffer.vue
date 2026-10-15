@@ -1,22 +1,19 @@
 <script setup lang="ts">
 import { BUILDINGS, KEYS, type BuildingKind, type Resources } from './engine'
-import { resourceList } from './format'
+import ResourceList from './ResourceList.vue'
 import TileArt from './TileArt.vue'
 defineProps<{
-  offer: BuildingKind[]
+  buildings: BuildingKind[]
   selected: BuildingKind | null
   resources: Resources
   disabled: boolean
 }>()
 const emit = defineEmits<{ choose: [BuildingKind] }>()
-function price(kind: BuildingKind) {
-  return resourceList(BUILDINGS[kind].cost)
-}
 </script>
 <template>
   <div class="building-offer">
     <button
-      v-for="kind in offer"
+      v-for="kind in buildings"
       :key="kind"
       type="button"
       :data-building-card="kind"
@@ -32,8 +29,8 @@ function price(kind: BuildingKind) {
         <TileArt :building="{ x: 0, y: 0, kind, level: 1 }" /></svg
       ><span
         ><strong>{{ BUILDINGS[kind].name }}</strong
-        ><small>{{ price(kind) }}</small></span
-      >
+        ><small><ResourceList :resources="BUILDINGS[kind].cost" /></small
+      ></span>
     </button>
   </div>
   <p v-if="selected" class="offer-description">
@@ -43,17 +40,20 @@ function price(kind: BuildingKind) {
 <style scoped>
 .building-offer {
   display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
 }
 .building-offer button {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 13px;
+  justify-content: flex-start;
+  gap: 5px;
   border: 1px solid #566149;
   border-radius: 13px;
   background: #f0ead7;
   color: #294a39;
-  text-align: left;
+  text-align: center;
   padding: 8px;
   cursor: pointer;
   font: inherit;
@@ -64,12 +64,17 @@ function price(kind: BuildingKind) {
   background: #fff3c9;
 }
 .building-offer svg {
-  width: 50px;
+  width: 36px;
   flex-shrink: 0;
+}
+.building-offer button > span {
+  min-width: 0;
+  width: 100%;
+  overflow-wrap: anywhere;
 }
 .building-offer strong {
   display: block;
-  font-size: 15px;
+  font-size: 13px;
 }
 .building-offer small {
   display: block;

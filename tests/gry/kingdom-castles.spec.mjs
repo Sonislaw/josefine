@@ -5,11 +5,11 @@ import { beforeRaid } from './kingdom-war-fixture.mjs'
 import { encode } from './kingdom-progression-fixture.mjs'
 const j = createJiti(import.meta.url)
 const { resolveTurn } = await j.import('../../src/apps/gry/games/little-kingdom/engine.ts')
-const key = 'zgrana:gry:male-krolestwo:v9',
+const key = 'zgrana:gry:male-krolestwo:v10',
   previous = 'zgrana:gry:male-krolestwo:v6'
 const stored = (page) => page.evaluate((k) => JSON.parse(localStorage.getItem(k)), key)
 const commit = (page) => page.getByRole('button', { name: 'Zatwierdź turę' })
-async function prepare(page, state, version = 9) {
+async function prepare(page, state, version = 10) {
   await page.route('**/*googletagmanager.com/**', (r) => r.abort())
   await page.addInitScript(
     ({ key, raw }) => {
@@ -70,9 +70,8 @@ for (const [width, height] of [
       castle.getByRole('button', { name: 'Wyprawa na garnizon', exact: true }),
     ).toBeDisabled()
     await page.getByRole('button', { name: /Zbierz zapasy/ }).click()
-    await expect(page.locator('.turn-preview')).toContainText('Odbudowa zamków po turze')
     state = resolveTurn(state, { type: 'gather' }).state
-    await commit(page).click()
+    expect((await stored(page)).state).toEqual(state)
     await expect(castle.getByTestId('castle-health')).toHaveText('28%')
     await castle.getByRole('button', { name: 'Wyprawa na garnizon', exact: true }).click()
     const final = resolveTurn(state, {
@@ -112,7 +111,7 @@ for (const [width, height] of [
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
     expect(errors).toEqual([])
   })
-test('v6 ongoing raid migrates without changing old bytes and corrupt v9 never falls back', async ({
+test('v6 ongoing raid migrates without changing old bytes and corrupt v10 never falls back', async ({
   page,
 }) => {
   const state = beforeRaid(),
@@ -134,7 +133,7 @@ test('v6 ongoing raid migrates without changing old bytes and corrupt v9 never f
   expect(await page.evaluate((k) => localStorage.getItem(k), key)).toBe('{broken')
   await page.getByRole('button', { name: 'Rozpocznij nową osadę' }).click()
   await page.getByRole('button', { name: 'Tak, nowa osada' }).click()
-  expect((await stored(page)).version).toBe(8)
+  expect((await stored(page)).version).toBe(10)
   expect(await page.evaluate((k) => localStorage.getItem(k), previous)).toBe(raw)
 })
 test('100 discovered castles paginate contacts and render only the visible map on mobile', async ({

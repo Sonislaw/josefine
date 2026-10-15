@@ -5,20 +5,43 @@ Samodzielna strategia turowa: `/gry/male-krolestwo` lokalnie, `/male-krolestwo` 
 ## Podział odpowiedzialności
 
 - `balance.ts`: koszty budynków i ulepszeń, ograniczenia produkcji, limity zapasów, utrzymanie wojska i parametry strat. Zmiany balansu nie tworzą drugiego silnika ani osobnego poziomu trudności.
-- `engine.ts`: czyste typy i reguły, oferta, gospodarka i sezonowość. `resolveTurn(state, action)` zwraca nowy stan, koszt, produkcję, jednorazową nagrodę, nowe odkrycie, bilans oraz zmianę populacji. Nigdy nie mutuje wejścia. Ten sam wynik służy prognozie i zatwierdzeniu.
+- `engine.ts`: czyste typy i reguły, katalog budynków, gospodarka i sezonowość. `resolveTurn(state, action)` zwraca nowy stan, koszt, produkcję, jednorazową nagrodę, nowe odkrycie, bilans oraz zmianę populacji. Nigdy nie mutuje wejścia. Ten sam wynik służy prognozie i zatwierdzeniu.
 - `terrain.ts`: dotychczasowy, niezmieniony generator terenu. Wspólny dla silnika i odkryć, bez cyklicznych importów reguł.
-- `discoveries.ts`: definicje miejsc, koszty, nagrody, rozmieszczenie i premie. Osobne hashe nie zużywają RNG oferty budynków.
-- `storage.ts`: wersjonowany format `{ version: 9, state, tutorialDismissed }`, walidacja i obsługa braku pamięci. Klucz `zgrana:gry:male-krolestwo:v9`. Uszkodzony zapis jest chroniony do jawnego potwierdzenia nowej osady.
+- `discoveries.ts`: definicje miejsc, koszty, nagrody, rozmieszczenie i premie. Rozmieszczenie wynika z osobnych hashy współrzędnych i ziarna.
+- `storage.ts`: wersjonowany format `{ version: 10, state, tutorialDismissed }`, walidacja i obsługa braku pamięci. Klucz `zgrana:gry:male-krolestwo:v10`. Uszkodzony zapis jest chroniony do jawnego potwierdzenia nowej osady.
 - `campaign.ts`, `campaign-storage.ts`: niezależne garnizony, odbudowa, najazdy, przewaga, pokój i migracja. Cała symulacja pozostaje czysta i bez zegara przeglądarki.
 - `military.ts`, `neighbours.ts`, `battle.ts`: konfiguracja wojska, kontakty i czysta prognoza walki. `DefencePanel.vue`, `BattleSummary.vue`, `MilitaryArt.vue`: panele oraz własne SVG.
 - `progression.ts`: definicje rang, wymagania, prezenty i czyste sprawdzanie awansu. `ProgressionPanel.vue` pokazuje postęp, a `HallArt.vue` cztery sylwetki ratusza w tym samym polu mapy.
 - `requests.ts`: 12 jednorazowych próśb, postęp i polecenia wyboru/odłożenia/przeglądania. `ResidentsPanel.vue` składa panel, a `ResidentPortrait.vue` rysuje portrety SVG.
 - `useKingdom.ts`: stan Vue, wybór akcji, interakcje z pamięcią dopiero po mount. Stan SSR jest stały; nie korzysta z `window`, losowego ziarna ani zapisu gracza.
 - `KingdomBoard.vue`: kamera, gesty, wybór pola i klawiatura. Renderuje tylko komórki przecinające viewport z marginesem. Nie nalicza zasobów ani nie wykonuje tur.
-- `TileArt.vue`: składa warstwy ilustracji 2D, poziomy, stan uszkodzenia i wytrzymałość zamku. `TerrainArt.vue` rysuje ciągły teren z sezonami i brzegami wody, a `BuildingArt.vue` budynki gospodarcze z detalami poziomów. Te same ilustracje są używane na mapie i kartach `BuildingOffer.vue`. Wariant terenu wynika ze współrzędnych i ziarna, bez zużywania RNG gry; brzegi wody uwzględniają wyłącznie odkrytych sąsiadów. Nie zapisujemy danych dekoracyjnych. `ResourceBar.vue` prezentuje zasoby, a `KingdomGame.vue` składa ekran, instrukcję i FAQ.
+- `TileArt.vue`: składa warstwy ilustracji 2D, poziomy, stan uszkodzenia i wytrzymałość zamku. `TerrainArt.vue` rysuje ciągły teren z sezonami i brzegami wody, a `BuildingArt.vue` budynki gospodarcze z detalami poziomów. Te same ilustracje są używane na mapie i kartach `BuildingOffer.vue`. Wariant terenu wynika ze współrzędnych i ziarna; brzegi wody uwzględniają wyłącznie odkrytych sąsiadów. Nie zapisujemy danych dekoracyjnych. `ResourceBar.vue` prezentuje zasoby, a `KingdomGame.vue` składa ekran, instrukcję i FAQ.
 - `DiscoveryArt.vue`: cztery ilustracje wektorowe, z wariantami przed/po odnowieniu. `DiscoveryJournal.vue`: zwijana lista, filtry, po 10 wpisów i lokalizacja bez wykonywania tury.
+- `ResourceIcon.vue`, `ResourceAmount.vue`, `ResourceList.vue`: wspólne ikony SVG i zwarte wartości dla kosztów, produkcji, nagród i dyplomacji. Liczby z ikonami mają pełne polskie etykiety dla czytników ekranu i podpowiedzi przy najechaniu; `format.ts` odmienia nazwy wyłącznie na potrzeby tych opisów.
+- `SettlementStatus.vue`: pora roku, rok i tura, mieszkańcy, ranga, produkcja oraz wyżywienie w slocie przyklejonego `ResourceBar.vue`. Pasek mierzy swoją wysokość przez `ResizeObserver`; odziedziczona zmienna CSS dopasowuje odstępy przewijania przycisków i dymków, również po zmianie szerokości i przy odczycie zapisu.
 
 Gra nie współdzieli silnika ani zapisu z Warcabami, Klockami i Kryształem. Wspólny pozostaje katalog, routing, `GameDialog`, layout i infrastruktura Josefine. Brak nowych zależności.
+
+Przycisk „Zbierz zapasy” natychmiast rozlicza jedną turę przez `useKingdom.gatherNow`,
+korzystając z tego samego `commit`, taktyki, raportów i zapisu co pozostałe akcje.
+Zastępuje niezrealizowany plan budowy, ale go nie wykonuje. Zablokowana lub zakończona
+rozgrywka nie przyjmuje tej akcji; pozostałe decyzje nadal wymagają osobnego zatwierdzenia.
+Po wykonaniu zbierania przycisk rozświetla się na 550 ms i pokazuje krótki pasek postępu.
+Każde kliknięcie ponawia wyłącznie animację CSS, bez blokowania sterowania i opóźniania tury.
+Przy `prefers-reduced-motion` pozostaje krótkie podświetlenie bez ruchomego paska.
+
+## Stały katalog budynków (v10)
+
+`ECONOMY_BUILDINGS` pochodzi z definicji `BUILDINGS`. Każdy budynek gospodarczy można
+wybrać w każdej turze, bez losowania i odświeżania kart. Zakładka „Obrona” nadal wymaga
+Wioski i pozwala mieć po jednych koszarach i wieży. Koszty, wymagania rang, legalność
+pola i oddzielne zatwierdzenie tury pozostają sprawdzane przez silnik.
+
+Stan osady nie zawiera już `offer` ani `rng`; wybór budynku nie jest częścią zapisu.
+Migracja v9 i starszych do v10 waliduje stare pola, następnie je usuwa, zachowując
+zasoby, budynki, lasy, postęp leśników, historię i turę. Oryginalne zapisy pozostają
+pod dawnymi kluczami. `catalog.test.mjs` oraz `kingdom-catalog.spec.mjs` sprawdzają
+swobodny wybór w kolejnych turach i kontynuację starej osady.
 
 ## Wyczerpywalne złoża (v8)
 
@@ -48,12 +71,12 @@ Tartak może korzystać z lasu już w turze dojrzenia. Wyczerpane pole może zos
 
 `Kingdom.forests` to nakładka na stały generator terenu, a `terrainAt` wspólnie obsługuje
 budowanie, wydobycie, prośby i mapę. Posadzony las blokuje budowę na łące. Licznik sadzenia
-jest zapisany przy budynku; RNG kart pozostaje niezależne od leśnictwa. `TurnResult.forestry`
+jest zapisany przy budynku; wybór budynku pozostaje niezależny od leśnictwa. `TurnResult.forestry`
 pokazuje pola posadzone i dojrzałe. `ForestGrowthArt.vue` rysuje sadzonki i młode drzewa,
 `TerrainArt.vue` dojrzałe korony, a `ForesterArt.vue` domek na mapie i karcie.
 
 Migracja v8 → v9 dodaje pustą kolekcję nasadzeń, zachowując wyczerpanie złóż, budynki,
-zasoby, ofertę i turę. Nie obsadza wcześniejszych pól i zachowuje oryginał zapisu v8.
+zasoby i turę. Nie obsadza wcześniejszych pól i zachowuje oryginał zapisu v8.
 Uszkodzony v9 blokuje cofnięcie do starszego zapisu; błędy pamięci pozwalają grać bez zapisu.
 `forestry.test.mjs` sprawdza wzrost, wycinkę, cykl odnowienia, kolizje, poziomy, uszkodzenia,
 zgodność prognozy oraz migrację. Test przeglądarkowy obejmuje trzy grafiki, zasięg, prognozę i odświeżenie.
@@ -122,7 +145,7 @@ Po produkcji, wyżywieniu, zmianie populacji i zwiększeniu numeru tury sprawdza
 najbliższy awans. Maksymalnie jeden na turę; nigdy nie cofamy rangi. `TurnResult`
 zwraca `promotion` i `promotionGift`, osobno od `produced` i nagrody odkrycia `reward`.
 Prezent dodajemy na samym końcu: nie ratuje niedoboru ani nie uruchamia przyrostu w tej
-samej turze. Końcowy bilans zawiera prezent. Nie ma nowych akcji ani zmian w ofercie RNG.
+samej turze. Końcowy bilans zawiera prezent. Nie ma nowych akcji ani zmian w katalogu budynków.
 
 Zwijany panel pokazuje wymagania, podpowiedzi, prezent i historię. Po ostatnim awansie
 gra trwa dalej. Komunikat można zamknąć; nie blokuje mapy i nie pojawia się ponownie
@@ -131,7 +154,7 @@ po odświeżeniu. Ratusz zmienia tylko wygląd, nie produkcję i pojemność.
 ## Głos mieszkańców
 
 Trzy prośby odblokowują się na każdej randze. Gracz wybiera jedną z maksymalnie trzech
-widocznych; „Inne prośby” przegląda pozostałe w stałej kolejności, bez RNG i zmiany kart
+widocznych; „Inne prośby” przegląda pozostałe w stałej kolejności, bez losowania i zmiany katalogu
 budynków. Nie ma terminów, kar ani nowych zasobów. Każde zlecenie można ukończyć raz.
 
 | Ranga          | Prośba / cel                                                                 | Nagroda                          |
@@ -173,7 +196,7 @@ zamknąć. Nowe prośby po odświeżeniu nie zastępują aktywnego celu.
 
 ## Reguły
 
-Jedna zatwierdzona akcja = jedna tura. Gospodarka rozlicza koszt, akcję, produkcję (również nowego budynku), wyżywienie, niedobór i przyrost ludności. Pełna kolejność z bitwą i utrzymaniem wojska jest opisana poniżej. Oferta zawiera farmę i dwa różne inne budynki gospodarcze; zmienia się tylko po budowie gospodarczej. Stan generatora i oferta są zapisywane.
+Jedna zatwierdzona akcja = jedna tura. Gospodarka rozlicza koszt, akcję, produkcję (również nowego budynku), wyżywienie, niedobór i przyrost ludności. Pełna kolejność z bitwą i utrzymaniem wojska jest opisana poniżej. Wszystkie budynki gospodarcze są dostępne w stałym katalogu w każdej turze.
 
 Rok ma 12 tur, każda pora roku 3. Na końcu pory roku przybywa jedna osoba, jeśli jest miejsce, nie było niedoboru i po wyżywieniu zostały zapasy >= 2 × populacja. Pierwszy kolejny niedobór ostrzega, następne odbierają po jednej osobie; pełne wyżywienie zeruje serię.
 
@@ -196,7 +219,7 @@ Sektory 7×7 zapisujemy jako współrzędne, nie tablicę nieograniczonego świa
 
 Limit sprawdzamy na końcu tury, po wszystkich nagrodach i awansie, z uwzględnieniem nowej rangi. `TurnResult.storageLoss` pokazuje niezmagazynowaną nadwyżkę, również w prognozie. Produkcja bieżącej tury może wyżywić ludzi i wojsko, zanim ograniczymy magazyn.
 
-Format zapisu to v9. Nie kasujemy istniejących zasobów, budynków, poziomów ani osiągniętych rang. Gdy zapasy sprzed aktualizacji przekraczają limit, dozwolony stan końcowy to większa z wartości: limit i zapasy na początku tury. Dzięki temu stare bogactwo pozostaje dostępne, ale nie może już rosnąć ponad limit. Wyższe ceny i nowa produkcja obowiązują od następnej akcji. Walidacja dopuszcza dawny licznik odbudowy wroga równy 2; następna tura rozlicza go według nowego okresu, bez cofania zapisu.
+Format zapisu to v10. Nie kasujemy istniejących zasobów, budynków, poziomów ani osiągniętych rang. Gdy zapasy sprzed aktualizacji przekraczają limit, dozwolony stan końcowy to większa z wartości: limit i zapasy na początku tury. Dzięki temu stare bogactwo pozostaje dostępne, ale nie może już rosnąć ponad limit. Wyższe ceny i nowa produkcja obowiązują od następnej akcji. Walidacja dopuszcza dawny licznik odbudowy wroga równy 2; następna tura rozlicza go według nowego okresu, bez cofania zapisu.
 
 ## Sterowanie i zapis
 
@@ -206,16 +229,16 @@ Dotknięcie wybiera pole. Przeciąganie przesuwa mapę; dwa palce lub przyciski 
 
 Zapis po każdej turze jest synchroniczny; nie zapisujemy zaznaczenia, kamery ani rozpoczętych gestów. Zamknięcie strony nie zmienia gospodarki. Gra działa bez storage, ale bez gwarancji wznowienia. Karty przeglądarki nie są synchronizowane — ostatni zapis wygrywa. Zapis ma ograniczenia pojemności localStorage; błąd zapisu jest widoczny, a rozgrywka trwa w pamięci.
 
-Odczytujemy kolejno v9 → v8 → v7 → v6 → v5 → v4 → v3 → v2 → v1, wyłącznie przy braku nowszego klucza. Poprawny
-starszy zapis migrujemy do v9, zachowując oryginalne bajty kopii. Z v5 zachowujemy wojsko, kontakty, uszkodzenia i terminy najazdów;
+Odczytujemy kolejno v10 → v9 → v8 → v7 → v6 → v5 → v4 → v3 → v2 → v1, wyłącznie przy braku nowszego klucza. Poprawny
+starszy zapis migrujemy do v10, zachowując oryginalne bajty kopii. Z v5 zachowujemy wojsko, kontakty, uszkodzenia i terminy najazdów;
 dodajemy zero tarczowników i stan kampanii. Starszym zapisom dodajemy pustą armię,
 brak kontaktów i najazdu. Z v4 zachowujemy prośby; starszym wersjom dodajemy pusty stan
-próśb, bez nagród ani zmiany zasobów, tury, budynków, terenu i oferty. Z v3 zachowujemy
+próśb, bez nagród ani zmiany zasobów, tury, budynków i terenu. Z v3 zachowujemy
 rangę i historię awansów. W v1/v2 ustawiamy rangę Osada i pustą historię awansów;
 z v1 dodatkowo tworzymy pustą kolekcję odkryć. Duża istniejąca osada może zdobywać
 kolejne rangi w następnych zatwierdzonych turach. Uszkodzony nowszy zapis zawsze
 blokuje cofnięcie do starszej kopii. Błąd zapisu migracji pozwala grać w pamięci
-z ostrzeżeniem. Potwierdzony restart zastępuje v9; stare kopie pozostają.
+z ostrzeżeniem. Potwierdzony restart zastępuje v10; stare kopie pozostają.
 
 Walidacja sprawdza rodzaj, deterministyczne położenie, odkryty sektor, unikalność
 miejsca w sektorze, chronologię tur oraz zakaz zabudowy zajętego miejsca. Historia
@@ -230,7 +253,7 @@ stanu próśb w v4/v5/v6/v7 nie jest cicho naprawiane, aby nie umożliwiać pono
 Po Wiosce trzy kolejne eksploracje poznają Brzeziny (dar 8 żywności/4 monety),
 Kamienny Bród (10 drewna/5 kamienia za przyjaźń i 12 monet) i Czerwone Wzgórze.
 Przyjazne wymiany są jednorazowe i zajmują turę. Położenie osad jest deterministyczne,
-poza miejscem specjalnym oraz jego sąsiednimi polami; nie zmienia RNG kart. Kolejne eksploracje mogą odkryć następne zamki, według reguł opisanych powyżej.
+poza miejscem specjalnym oraz jego sąsiednimi polami; nie zmienia katalogu budynków. Kolejne eksploracje mogą odkryć następne zamki, według reguł opisanych powyżej.
 
 Wojsko wroga jest rzeczywiste. Docelowa armia zależy od rangi:
 Wioska 4 włóczników/3 łuczników/1 tarczownik; Miasteczko 5/4/2; Małe królestwo 6/5/3.
@@ -250,7 +273,7 @@ Zwykła wyprawa nie wydłuża ochrony.
 Koszary kosztują 30 drewna/20 kamienia/16 monet; wieża 24 drewna/30 kamienia/12 monet.
 Poziomy koszar dają limit 6/9/12, wieży premię obrony 4/6/8.
 Ulepszenie kosztuje podstawowy koszt ×3/×6; poziom 2 wymaga
-Miasteczka, poziom 3 Małego królestwa. Po jednym budynku; bez wpływu na karty
+Miasteczka, poziom 3 Małego królestwa. Po jednym budynku; bez wpływu na katalog
 gospodarcze i wymagania awansów. Koszar nie wyburzamy z armią.
 
 Włócznik: 6 drewna/3 kamienia/2 żywności/6 monet, siła 4. Łucznik: 8 drewna/2 kamienia/3 żywności/8 monet, siła 3.
@@ -306,7 +329,7 @@ pomniejszony o najazd, więc nie dublujemy żołnierzy. Dawny trwały pokój zas
 
 `balance.test.mjs` sprawdza trudniejszy start, ceny, limity premii i magazynów, żołd, dezerterów, obronę garnizonu oraz zgodność wcześniejszych zapisów. `tests/gry/kingdom-balance.spec.mjs` sprawdza te informacje i prognozę nadwyżek w UI na 360/390/1440 px.
 
-`tests/gry/kingdom-balance-simulation.mjs` prowadzi osadę wyłącznie legalnymi akcjami i kartami z oferty, bez dopisywania zasobów. Ziarna 1/42/183 osiągnęły Wioskę po 65/126/67 turach, a Małe królestwo po 138/246/126 turach. To kontrola osiągalności i tempa, nie deklaracja czasu gry człowieka ani wynik dla wszystkich map.
+`tests/gry/kingdom-balance-simulation.mjs` prowadzi osadę legalnymi akcjami i budynkami z pełnego katalogu, bez dopisywania zasobów. Sprawdza osiągalność wszystkich rang na ziarnach 1/42/183; nie określa czasu rozgrywki człowieka.
 
 Aktualizacja „Wojna na pograniczu” jest pokryta przez `war.test.mjs` i `kingdom-war.spec.mjs`:
 kontakty, najazdy, taktyki obu stron, odbudowa, przechwycenia, rozejmy, czasowy pokój, migracja v5 → v6, pamięć

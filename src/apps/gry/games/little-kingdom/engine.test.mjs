@@ -4,7 +4,7 @@ import { createJiti } from 'jiti'
 const jiti = createJiti(import.meta.url)
 const {
   newKingdom,
-  deal,
+  ECONOMY_BUILDINGS,
   terrain,
   key,
   capacity,
@@ -15,7 +15,6 @@ const {
   actionCost,
   actionError,
   resolveTurn,
-  BUILDINGS,
   KEYS,
 } = await jiti.import('./engine.ts')
 const {
@@ -30,7 +29,7 @@ const {
   PREVIOUS_KEY,
   LEGACY_KEY,
 } = await jiti.import('./storage.ts')
-const serialize = (state) => JSON.stringify({ version: 9, state, tutorialDismissed: true })
+const serialize = (state) => JSON.stringify({ version: 10, state, tutorialDismissed: true })
 const rich = () => ({
   ...newKingdom(42),
   resources: { wood: 5000, stone: 5000, food: 5000, gold: 5000 },
@@ -40,17 +39,16 @@ const put = (s, kind, x, y, level = 1) => {
   return s
 }
 
-test('starting resources, hall, capacity and seeded unique offers', () => {
+test('starting resources, hall, capacity and full building catalog', () => {
   const s = newKingdom(42)
   assert.equal(capacity(s), 5)
   assert.equal(s.population, 3)
   assert.deepEqual(s.resources, { wood: 20, stone: 12, food: 24, gold: 10 })
   assert.deepEqual(production(s), { wood: 1, stone: 0, food: 2, gold: 1 })
   for (let seed = 0; seed < 1000; seed++) {
-    const d = deal(seed)
-    assert.equal(d.offer[0], 'farm')
-    assert.equal(new Set(d.offer).size, 3)
-    assert.deepEqual(deal(seed), d)
+    assert.equal(ECONOMY_BUILDINGS.length, 8)
+    assert.equal(Object.hasOwn(newKingdom(seed), 'offer'), false)
+    assert.equal(Object.hasOwn(newKingdom(seed), 'rng'), false)
     assert.equal(decode(serialize(newKingdom(seed))).state.seed, seed)
   }
 })
@@ -75,18 +73,16 @@ test('preview/commit deterministic, immutable; build costs precede immediate pro
   assert.deepEqual(resolveTurn(s, a), p)
   assert.deepEqual(p.state.resources, { wood: 9, stone: 9, food: 26, gold: 9 })
   assert.equal(p.state.turn, 1)
-  assert.deepEqual(p.state.offer, deal(s.rng).offer)
-  assert.deepEqual(resolveTurn(s, { type: 'gather' }).state.offer, s.offer)
+  assert.equal(Object.hasOwn(p.state, 'offer'), false)
 })
-test('reject occupied, natural, unknown, unaffordable and unavailable offer without mutation', () => {
+test('reject occupied, natural, unknown, unaffordable buildings without mutation', () => {
   const s = newKingdom(3),
     initial = serialize(s)
-  const absent = Object.keys(BUILDINGS).find((k) => !s.offer.includes(k))
   for (const a of [
     { type: 'build', kind: 'farm', x: 3, y: 3 },
     { type: 'build', kind: 'farm', x: 2, y: 3 },
     { type: 'build', kind: 'farm', x: -1, y: 0 },
-    { type: 'build', kind: absent, x: 0, y: 0 },
+    { type: 'build', kind: 'unknown', x: 0, y: 0 },
     { type: 'demolish', x: 3, y: 3 },
     { type: 'build', kind: 'farm', x: 0.5, y: 0 },
     { type: 'explore', x: 8, y: 8 },
@@ -148,7 +144,7 @@ test('upgrades use target-level price; maximum level and demolition refund', () 
   s.population = 6
   assert.match(actionError(s, { type: 'demolish', x: 0, y: 0 }), /mieszkańcom/)
 })
-test('exploration must touch known sectors, increases price and keeps offer', () => {
+test('exploration must touch known sectors and increases price', () => {
   let s = rich()
   assert.equal(frontier(s).length, 4)
   assert.deepEqual(actionCost(s, { type: 'explore', x: -1, y: 0 }), {
@@ -157,10 +153,8 @@ test('exploration must touch known sectors, increases price and keeps offer', ()
     food: 0,
     gold: 8,
   })
-  const originalOffer = s.offer
   s = resolveTurn(s, { type: 'explore', x: -1, y: 0 }).state
   assert.equal(s.sectors.length, 2)
-  assert.deepEqual(s.offer, originalOffer)
   assert.deepEqual(actionCost(s, { type: 'explore', x: -2, y: 0 }), {
     wood: 26,
     stone: 15,
@@ -222,7 +216,7 @@ test('valid storage round-trip, unavailable port and corrupted saves', () => {
   const s = newKingdom(123),
     raw = serialize(s)
   assert.deepEqual(decode(raw), { state: s, tutorialDismissed: true })
-  for (const v of ['', '{', '{}', JSON.stringify({ version: 10, state: s })])
+  for (const v of ['', '{', '{}', JSON.stringify({ version: 11, state: s })])
     assert.equal(decode(v), null)
   for (const mutate of [
     (s) => (s.resources.food = -1),
@@ -243,6 +237,7 @@ test('valid storage round-trip, unavailable port and corrupted saves', () => {
       assert.ok(
         [
           SAVE_KEY,
+          'zgrana:gry:male-krolestwo:v9',
           'zgrana:gry:male-krolestwo:v8',
           'zgrana:gry:male-krolestwo:v6',
           CASTLES_KEY,
@@ -301,7 +296,7 @@ test('20 years of legal decisions remain playable, deterministic and saveable', 
         if (b.kind !== 'hall' && b.level < 3) candidates.push({ type: 'upgrade', x: b.x, y: b.y })
       for (let y = 0; y < 3; y++)
         for (let x = 0; x < 7; x++)
-          for (const kind of s.offer.filter((k) => k !== 'house'))
+          for (const kind of ECONOMY_BUILDINGS.filter((k) => k !== 'house'))
             candidates.push({ type: 'build', kind, x, y })
       candidates.push({ type: 'gather' })
       const a =

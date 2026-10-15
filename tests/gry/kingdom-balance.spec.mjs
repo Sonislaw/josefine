@@ -7,7 +7,7 @@ const { newKingdom, resolveTurn } = await j.import(
 )
 const { inventoryLimit } = await j.import('../../src/apps/gry/games/little-kingdom/balance.ts')
 const url = '/gry/male-krolestwo',
-  key = 'zgrana:gry:male-krolestwo:v9'
+  key = 'zgrana:gry:male-krolestwo:v10'
 for (const [width, height] of [
   [360, 640],
   [390, 844],
@@ -47,9 +47,8 @@ for (const [width, height] of [
       })
       await page.reload()
       await page.getByRole('button', { name: /Zbierz zapasy/ }).click()
-      await expect(page.locator('.turn-preview')).toContainText('Nadwyżka poza limitem')
+      await expect(page.locator('.kingdom-message')).toContainText('Nadwyżka poza limitem')
       const expected = resolveTurn(capped, { type: 'gather' })
-      await page.getByRole('button', { name: 'Zatwierdź turę' }).click()
       expect(await page.evaluate((k) => JSON.parse(localStorage.getItem(k)).state, key)).toEqual(
         expected.state,
       )

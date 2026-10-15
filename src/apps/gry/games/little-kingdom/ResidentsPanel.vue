@@ -12,7 +12,7 @@ import {
   type CompletedRequest,
 } from './requests'
 import ResidentPortrait from './ResidentPortrait.vue'
-import { resourceList } from './format'
+import ResourceList from './ResourceList.vue'
 const props = defineProps<{ state: Kingdom; disabled: boolean; latest: CompletedRequest | null }>()
 const emit = defineEmits<{
   command: [command: RequestCommand]
@@ -34,7 +34,7 @@ const locked = computed(() => REQUEST_IDS.filter((id) => REQUESTS[id].minRank > 
       <div>
         <small>{{ REQUESTS[latest.id].resident }} · DZIĘKUJĘ ZA POMOC!</small
         ><strong>{{ REQUESTS[latest.id].title }} — wykonano</strong>
-        <p>Nagroda dodana do zapasów: {{ resourceList(REQUESTS[latest.id].reward) }}.</p>
+        <p>Nagroda dodana do zapasów: <ResourceList :resources="REQUESTS[latest.id].reward" />.</p>
       </div>
       <button type="button" aria-label="Zamknij podziękowanie mieszkańca" @click="emit('dismiss')">
         Zamknij
@@ -88,8 +88,7 @@ const locked = computed(() => REQUEST_IDS.filter((id) => REQUESTS[id].minRank > 
           }}
         </p>
         <p class="request-prize">
-          Nagroda: <strong>{{ resourceList(REQUESTS[active.id].reward) }}</strong
-          >.
+          Nagroda: <strong><ResourceList :resources="REQUESTS[active.id].reward" /></strong>.
         </p>
         <div class="resident-actions">
           <button v-if="progress.location" type="button" @click="emit('locate', progress.location)">
@@ -111,8 +110,7 @@ const locked = computed(() => REQUEST_IDS.filter((id) => REQUESTS[id].minRank > 
           <blockquote>„{{ REQUESTS[id].quote }}”</blockquote>
           <p class="request-goal">{{ REQUESTS[id].goal }}</p>
           <p class="request-prize">
-            Nagroda: <strong>{{ resourceList(REQUESTS[id].reward) }}</strong
-            >.
+            Nagroda: <strong><ResourceList :resources="REQUESTS[id].reward" /></strong>.
           </p>
           <button
             type="button"

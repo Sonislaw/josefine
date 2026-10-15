@@ -1,7 +1,7 @@
 import type { Kingdom, Point } from './engine'
 import { SIZE, terrain, type Terrain } from './terrain'
 
-/** Forestry uses coordinates and turn counters, never the building-card RNG. */
+/** Forestry uses coordinates and turn counters, independently of UI selection. */
 export const FORESTRY = {
   radius: 3,
   stageTurns: 3,

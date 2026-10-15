@@ -1,6 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { createJiti } from 'jiti'
+import { encode } from '../../../../../tests/gry/kingdom-progression-fixture.mjs'
 const j = createJiti(import.meta.url)
 const { newKingdom, terrain, key, resolveTurn, buildingProduction, production } =
   await j.import('./engine.ts')
@@ -89,7 +90,6 @@ test('new builds and repairs extract immediately, upgrades consume faster, inval
   const { state, b, source } = setup('sawmill', 60)
   state.resources = { wood: 500, stone: 500, food: 500, gold: 500 }
   delete state.buildings[key(b.x, b.y)]
-  state.offer = ['farm', 'sawmill', 'quarry']
   const built = resolveTurn(state, { type: 'build', kind: b.kind, x: b.x, y: b.y })
   assert.equal(depositRemaining(built.state, source), 58)
   built.state.rank = 1
@@ -102,10 +102,10 @@ test('new builds and repairs extract immediately, upgrades consume faster, inval
   assert.equal(resolveTurn(repaired.state, { type: 'build', kind: 'sawmill', ...source }), null)
   assert.equal(JSON.stringify(repaired.state), before)
 })
-test('v7 migration starts full deposits, preserves old bytes and never falls back from corrupt v9', () => {
+test('v7 migration starts full deposits, preserves old bytes and never falls back from corrupt v10', () => {
   const old = newKingdom(42)
   delete old.deposits
-  const raw = JSON.stringify({ version: 7, state: old, tutorialDismissed: true })
+  const raw = encode(old, 7)
   const data = new Map([[CASTLES_KEY, raw]]),
     port = { getItem: (k) => data.get(k) ?? null, setItem: (k, v) => data.set(k, v) }
   const loaded = load(port)
@@ -114,7 +114,7 @@ test('v7 migration starts full deposits, preserves old bytes and never falls bac
   assert.deepEqual(loaded.state.resources, old.resources)
   assert.equal(loaded.state.turn, old.turn)
   assert.equal(data.get(CASTLES_KEY), raw)
-  assert.equal(JSON.parse(data.get(SAVE_KEY)).version, 9)
+  assert.equal(JSON.parse(data.get(SAVE_KEY)).version, 10)
   data.set(SAVE_KEY, 'broken')
   assert.equal(load(port).status, 'corrupt')
   assert.equal(data.get(SAVE_KEY), 'broken')
@@ -136,7 +136,7 @@ test('v7 migration starts full deposits, preserves old bytes and never falls bac
     'unavailable',
   )
 })
-test('v9 validation rejects forged, unknown, fractional and excessive reserves', () => {
+test('v10 validation rejects forged, unknown, fractional and excessive reserves', () => {
   const { state, source } = setup('sawmill')
   for (const change of [
     (s) => delete s.deposits,
@@ -149,7 +149,7 @@ test('v9 validation rejects forged, unknown, fractional and excessive reserves',
   ]) {
     const s = structuredClone(state)
     change(s)
-    assert.equal(decode(JSON.stringify({ version: 9, state: s })), null)
+    assert.equal(decode(JSON.stringify({ version: 10, state: s })), null)
   }
   assert.equal(depositCapacity(state, source), 60)
 })

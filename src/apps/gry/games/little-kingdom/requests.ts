@@ -41,7 +41,7 @@ export interface RequestDefinition {
   reward: Resources
 }
 const gift = (wood = 0, stone = 0, food = 0, gold = 0): Resources => ({ wood, stone, food, gold })
-// Curated, finite requests. Neither the offer nor completion consumes building-card RNG.
+// Curated, finite requests. Their rotation is independent of the building catalog.
 export const REQUESTS: Record<RequestId, RequestDefinition> = {
   'water-farm': {
     title: 'Pole przy strumieniu',
@@ -59,7 +59,7 @@ export const REQUESTS: Record<RequestId, RequestDefinition> = {
     profession: 'Drwal',
     quote: 'Krótsza droga do lasu to więcej drewna na nasze domy.',
     goal: 'Tartak przy wspólnej krawędzi z lasem.',
-    hint: 'Postaw tartak na łące obok lasu. Poczekaj na jego kartę w ofercie.',
+    hint: 'Wybierz tartak z katalogu budynków i postaw go na łące obok dojrzałego lasu.',
     minRank: 0,
     reward: gift(0, 3, 0, 2),
   },

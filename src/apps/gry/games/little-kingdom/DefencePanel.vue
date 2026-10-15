@@ -4,7 +4,7 @@ import { type Kingdom, type Action, type Point } from './engine'
 import { UNITS, UNIT_IDS, armySize, upkeep, upkeepGold, armyCapacity } from './military'
 import { settlementDefinition, RELATIONS } from './neighbours'
 import EnemyCastlePanel from './EnemyCastlePanel.vue'
-import { resourceList } from './format'
+import ResourceList from './ResourceList.vue'
 import MilitaryArt from './MilitaryArt.vue'
 const props = defineProps<{ state: Kingdom; disabled: boolean }>()
 const emit = defineEmits<{ choose: [Action]; locate: [Point] }>()
@@ -26,9 +26,11 @@ const limit = computed(() => armyCapacity(barracks.value?.level ?? 0))
       <p v-if="state.rank < 1">Koszary i wieża odblokują się po osiągnięciu rangi Wioska.</p>
       <template v-else>
         <p>
-          Utrzymanie: {{ upkeep(state.affairs.army) }} żywności i
-          {{ upkeepGold(state.affairs.army) }} monet / turę, po wyżywieniu mieszkańców. Najemnicy
-          nie zajmują domów.
+          Utrzymanie:
+          <ResourceList
+            :resources="{ food: upkeep(state.affairs.army), gold: upkeepGold(state.affairs.army) }"
+          />
+          / turę, po wyżywieniu mieszkańców. Najemnicy nie zajmują domów.
         </p>
         <p v-if="!barracks">Postaw koszary z zakładki „Obrona”, aby rekrutować.</p>
         <p v-else>
@@ -39,7 +41,7 @@ const limit = computed(() => armyCapacity(barracks.value?.level ?? 0))
           <article v-for="unit in UNIT_IDS" :key="unit">
             <svg viewBox="0 0 64 64"><MilitaryArt :kind="unit" /></svg>
             <strong>{{ UNITS[unit].name }} · {{ state.affairs.army[unit] }}</strong>
-            <p>Siła {{ UNITS[unit].strength }} · {{ resourceList(UNITS[unit].cost) }}</p>
+            <p>Siła {{ UNITS[unit].strength }} · <ResourceList :resources="UNITS[unit].cost" /></p>
             <p v-if="unit === 'shieldbearer'">
               Każdych trzech tarczowników zmniejsza straty oddziału o jedną jednostkę.
             </p>
@@ -95,8 +97,8 @@ const limit = computed(() => armyCapacity(barracks.value?.level ?? 0))
         <button type="button" @click="emit('locate', s)">Pokaż na mapie ↗</button>
         <template v-if="s.id < 2 && !s.giftTaken">
           <p>
-            Koszt: {{ resourceList(settlementDefinition(s.id).cost) }}. Otrzymasz:
-            {{ resourceList(settlementDefinition(s.id).reward) }}.
+            Koszt: <ResourceList :resources="settlementDefinition(s.id).cost" />. Otrzymasz:
+            <ResourceList :resources="settlementDefinition(s.id).reward" />.
           </p>
           <button
             type="button"

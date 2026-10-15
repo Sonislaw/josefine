@@ -132,22 +132,24 @@ try {
     'https://gry.zgrana.pl/og/little-kingdom.png',
   )
   await page.getByRole('button', { name: /Zbierz zapasy/ }).click()
-  await page.getByRole('button', { name: 'Zatwierdź turę' }).click()
   await page.reload()
   await page.waitForFunction(
     () => document.querySelector('[data-testid="kingdom-turn"]')?.textContent === '2',
   )
   // Verify legacy hydration against built HTML, not only the development server.
   const legacyKingdom = await page.evaluate(() => {
-    const data = JSON.parse(localStorage.getItem('zgrana:gry:male-krolestwo:v9'))
+    const data = JSON.parse(localStorage.getItem('zgrana:gry:male-krolestwo:v10'))
     data.version = 1
+    // Recreate the real legacy format: v10 no longer saves dealt cards or their RNG.
+    data.state.rng = data.state.seed
+    data.state.offer = ['farm', 'house', 'quarry']
     delete data.state.discoveries
     delete data.state.rank
     delete data.state.promotions
     delete data.state.requests
     const raw = JSON.stringify(data)
     localStorage.setItem('zgrana:gry:male-krolestwo:v1', raw)
-    localStorage.removeItem('zgrana:gry:male-krolestwo:v9')
+    localStorage.removeItem('zgrana:gry:male-krolestwo:v10')
     return raw
   })
   await page.reload()
@@ -156,9 +158,9 @@ try {
   )
   assert.equal(
     await page.evaluate(
-      () => JSON.parse(localStorage.getItem('zgrana:gry:male-krolestwo:v9')).version,
+      () => JSON.parse(localStorage.getItem('zgrana:gry:male-krolestwo:v10')).version,
     ),
-    9,
+    10,
   )
   assert.equal(
     await page.evaluate(() => localStorage.getItem('zgrana:gry:male-krolestwo:v1')),
@@ -168,7 +170,7 @@ try {
   const previousKingdom = encodeKingdom(developedKingdom(), 2)
   await page.evaluate((raw) => {
     localStorage.setItem('zgrana:gry:male-krolestwo:v2', raw)
-    localStorage.removeItem('zgrana:gry:male-krolestwo:v9')
+    localStorage.removeItem('zgrana:gry:male-krolestwo:v10')
   }, previousKingdom)
   await page.reload()
   await page.waitForFunction(
@@ -176,8 +178,7 @@ try {
   )
   assert.ok((await page.getByTestId('kingdom-rank').textContent()).includes('Osada'))
   await page.getByRole('button', { name: /Zbierz zapasy/ }).click()
-  assert.ok((await page.locator('.promotion-preview').textContent()).includes('Wioska'))
-  await page.getByRole('button', { name: 'Zatwierdź turę' }).click()
+  assert.ok((await page.locator('.promotion-announcement').textContent()).includes('Wioska'))
   assert.ok((await page.getByTestId('kingdom-rank').textContent()).includes('Wioska'))
   await page.reload()
   await page.waitForFunction(() =>
@@ -191,7 +192,7 @@ try {
   const previousRequests = encodeKingdom(requestsKingdom(), 3)
   await page.evaluate((raw) => {
     localStorage.setItem('zgrana:gry:male-krolestwo:v3', raw)
-    localStorage.removeItem('zgrana:gry:male-krolestwo:v9')
+    localStorage.removeItem('zgrana:gry:male-krolestwo:v10')
   }, previousRequests)
   await page.reload()
   await page.waitForFunction(() =>
@@ -201,8 +202,6 @@ try {
   await page.getByRole('button', { name: 'Przyjmij prośbę: Pole przy strumieniu' }).click()
   assert.equal(await page.getByTestId('kingdom-turn').textContent(), '61')
   await page.getByRole('button', { name: /Zbierz zapasy/ }).click()
-  assert.ok((await page.locator('.request-preview').textContent()).includes('Pole przy strumieniu'))
-  await page.getByRole('button', { name: 'Zatwierdź turę' }).click()
   assert.ok((await page.locator('.request-announcement').textContent()).includes('Zosia'))
   await page.reload()
   await page.waitForFunction(
@@ -211,7 +210,7 @@ try {
   assert.equal(
     await page.evaluate(
       () =>
-        JSON.parse(localStorage.getItem('zgrana:gry:male-krolestwo:v9')).state.requests.completed
+        JSON.parse(localStorage.getItem('zgrana:gry:male-krolestwo:v10')).state.requests.completed
           .length,
     ),
     1,
@@ -224,28 +223,22 @@ try {
   await page.screenshot({ path: 'test-results/production/kingdom-mobile.png', fullPage: true })
   const raidState = beforeRaid({ spearman: 4, archer: 0 }, true)
   await page.evaluate(
-    (raw) => localStorage.setItem('zgrana:gry:male-krolestwo:v9', raw),
+    (raw) => localStorage.setItem('zgrana:gry:male-krolestwo:v10', raw),
     encodeKingdom(raidState),
   )
   await page.reload()
   await page.getByRole('button', { name: /Zbierz zapasy/ }).click()
   assert.ok(
-    (await page.getByRole('region', { name: 'Prognoza bitwy' }).textContent()).includes(
-      'zwycięstwo',
-    ),
-  )
-  await page.getByRole('button', { name: 'Zatwierdź turę' }).click()
-  assert.ok(
     (await page.getByRole('region', { name: 'Raport bitwy' }).textContent()).includes('zwycięstwo'),
   )
-  const warSaved = await page.evaluate(() => localStorage.getItem('zgrana:gry:male-krolestwo:v9'))
+  const warSaved = await page.evaluate(() => localStorage.getItem('zgrana:gry:male-krolestwo:v10'))
   await page.reload()
   await page.waitForFunction(
     (turn) => document.querySelector('[data-testid="kingdom-turn"]')?.textContent === String(turn),
     raidState.turn + 2,
   )
   assert.equal(
-    await page.evaluate(() => localStorage.getItem('zgrana:gry:male-krolestwo:v9')),
+    await page.evaluate(() => localStorage.getItem('zgrana:gry:male-krolestwo:v10')),
     warSaved,
   )
   assert.equal(await page.getByRole('region', { name: 'Raport bitwy' }).count(), 0)

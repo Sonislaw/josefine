@@ -1,8 +1,16 @@
-// Test-only strategy: uses dealt cards, legal actions and earned resources throughout.
+// Test-only strategy: uses the full catalog, legal actions and earned resources throughout.
 import { createJiti } from 'jiti'
 const j = createJiti(import.meta.url)
-const { newKingdom, resolveTurn, actionError, key, production, capacity, buildingProduction } =
-  await j.import('../../src/apps/gry/games/little-kingdom/engine.ts')
+const {
+  newKingdom,
+  resolveTurn,
+  actionError,
+  key,
+  production,
+  capacity,
+  buildingProduction,
+  ECONOMY_BUILDINGS,
+} = await j.import('../../src/apps/gry/games/little-kingdom/engine.ts')
 const { terrainAt, plantingSites, inForestRange } = await j.import(
   '../../src/apps/gry/games/little-kingdom/forestry.ts',
 )
@@ -51,7 +59,7 @@ export function simulateDevelopment(seed, maxTurns = 700) {
     if (s.affairs.raid) add(200, { type: 'truce', enemyId: s.affairs.raid.enemyId })
     for (const b of Object.values(s.buildings))
       if (b.damaged) add(120, { type: 'repair', x: b.x, y: b.y })
-    for (const kind of s.offer) {
+    for (const kind of ECONOMY_BUILDINGS) {
       if (counts[kind] >= targets[kind]) continue
       const resource =
         kind === 'sawmill'
@@ -87,13 +95,12 @@ export function simulateDevelopment(seed, maxTurns = 700) {
       else if (kind === 'house' && capacity(s) < 23) urgency = 55
       else if (!counts[kind]) urgency = 54
       const planned = { type: 'build', kind, ...p }
-      // Save for an important card instead of buying the cheaper farm every time.
+      // Save for an important building instead of buying the cheaper farm every time.
       add(urgency, planned)
     }
     for (const d of Object.values(s.discoveries))
       if (d.status === 'available') add(52, { type: 'landmark', x: d.x, y: d.y })
-    // Establish coin income before discovering hostile neighbours: a different card
-    // pool must not leave the strategy waiting forever to afford repeated truces.
+    // Establish coin income before discovering hostile neighbours and paying for truces.
     if (
       counts.sawmill &&
       counts.quarry &&

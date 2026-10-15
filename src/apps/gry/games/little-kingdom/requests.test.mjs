@@ -45,8 +45,6 @@ test('rank offers have at most three distinct goals; rotation, acceptance and de
   current = manageRequest(current, { type: 'defer' })
   for (const field of [
     'resources',
-    'rng',
-    'offer',
     'turn',
     'rank',
     'promotions',
@@ -209,8 +207,7 @@ test('promotion and request can complete together, with independent rewards and 
   assert.equal(r.promotion.rank, 1)
   assert.equal(r.promotionGift.gold, 3)
   assert.equal(r.requestReward.gold, 2)
-  assert.equal(r.state.rng, s.rng)
-  assert.deepEqual(r.state.offer, s.offer)
+  assert.equal(r.state.seed, s.seed)
 })
 
 test('all requests can be completed once; history and total reward remain bounded', () => {
@@ -255,7 +252,7 @@ for (const version of [1, 2, 3])
     assert.equal(result.state.rank, version === 3 ? 3 : 0)
     assert.deepEqual(result.state.promotions, version === 3 ? old.promotions : [])
     assert.equal(data.get(oldKey), raw)
-    assert.equal(JSON.parse(data.get(SAVE_KEY)).version, 9)
+    assert.equal(JSON.parse(data.get(SAVE_KEY)).version, 10)
     assert.deepEqual(load(port(data)).state, result.state)
   })
 

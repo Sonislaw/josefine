@@ -1,14 +1,26 @@
 <script setup lang="ts">
+import { onBeforeUnmount, onMounted, ref } from 'vue'
 import { KEYS, RESOURCE_NAMES, type Resources } from './engine'
+import ResourceIcon from './ResourceIcon.vue'
 defineProps<{ resources: Resources; delta?: Resources; limits?: Resources }>()
-const icons = { wood: '♧', stone: '◆', food: '♨', gold: '●' }
+const emit = defineEmits<{ resize: [height: number] }>()
+const host = ref<HTMLElement>()
+let observer: ResizeObserver | undefined
+onMounted(() => {
+  if (!host.value) return
+  const measure = () => emit('resize', Math.ceil(host.value!.getBoundingClientRect().height))
+  measure()
+  observer = new ResizeObserver(measure)
+  observer.observe(host.value)
+})
+onBeforeUnmount(() => observer?.disconnect())
 </script>
 <template>
-  <div class="kingdom-resources" role="region" aria-label="Zapasy osady">
+  <div ref="host" class="kingdom-resources" role="region" aria-label="Zapasy osady">
     <div v-for="r in KEYS" :key="r" class="resource">
-      <span class="resource-label">
-        <span class="resource-icon" :class="r" aria-hidden="true">{{ icons[r] }}</span>
-        <span class="resource-name">{{ RESOURCE_NAMES[r] }}</span>
+      <span class="resource-label" :title="RESOURCE_NAMES[r]">
+        <ResourceIcon class="resource-icon" :resource="r" />
+        <span class="resource-name sr-only">{{ RESOURCE_NAMES[r] }}</span>
       </span>
       <div class="resource-amount">
         <strong :data-resource="r" :class="{ 'large-value': resources[r] >= 100000 }">{{
@@ -20,6 +32,7 @@ const icons = { wood: '♧', stone: '◆', food: '♨', gold: '●' }
       </div>
       <small v-if="limits" class="stock-limit">Limit {{ limits[r] }}</small>
     </div>
+    <div v-if="$slots.default" class="resource-status"><slot /></div>
   </div>
 </template>
 <style scoped>
@@ -28,6 +41,10 @@ const icons = { wood: '♧', stone: '◆', food: '♨', gold: '●' }
   font-size: 10px;
   line-height: 1.2;
   color: #b7c6ac;
+}
+.resource-status {
+  grid-column: 1 / -1;
+  min-width: 0;
 }
 .kingdom-resources {
   display: grid;

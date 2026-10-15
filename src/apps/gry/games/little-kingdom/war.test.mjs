@@ -12,7 +12,7 @@ const {
   production,
   buildingProduction,
   actionCost,
-  deal,
+  ECONOMY_BUILDINGS,
 } = await j.import('./engine.ts')
 const { WAR, armySize, addArmy, emptyArmy, armyCapacity, militaryBuilding, towerStrength } =
   await j.import('./military.ts')
@@ -41,27 +41,22 @@ const withArmy = (rank = 1) => {
   return s
 }
 
-test('three contacts stay deterministic, outside discovery neighbours, without changing cards', () => {
+test('three contacts stay deterministic and outside discovery neighbours', () => {
   const s = warKingdom()
   assert.deepEqual(
     s.affairs.settlements.map((c) => c.relation),
     ['friendly', 'neutral', 'hostile'],
   )
   assert.deepEqual(s.affairs.settlements, warKingdom().affairs.settlements)
-  assert.equal(s.rng, newKingdom(42).rng)
   for (const c of s.affairs.settlements)
     assert.equal(resolveTurn(s, { type: 'build', kind: 'farm', x: c.x, y: c.y }), null)
   assert.equal(go(s, { type: 'explore', x: 4, y: 0 }).affairs.settlements.length, 3)
-  for (let i = 0; i < 100; i++) assert.ok(!deal(i).offer.some(militaryBuilding))
+  assert.ok(!ECONOMY_BUILDINGS.some(militaryBuilding))
 })
-test('barracks and tower have rank-gated levels, exact costs, six/nine/twelve capacity and no offer changes', () => {
+test('barracks and tower have rank-gated levels, exact costs and six/nine/twelve capacity', () => {
   let s = warKingdom(),
     p = emptyPlot(s)
-  const offer = [...s.offer],
-    rng = s.rng
   s = go(s, { type: 'build', kind: 'barracks', ...p })
-  assert.deepEqual(s.offer, offer)
-  assert.equal(s.rng, rng)
   assert.equal(resolveTurn(s, { type: 'upgrade', ...p }), null)
   s.rank = 2
   s.promotions.push({ rank: 2, turn: 13 })
@@ -382,7 +377,7 @@ test('v5 active raid migration preserves deadline, army, ranks, damage and origi
     armySize(addArmy(migrated.affairs.enemies[2].garrison, migrated.affairs.raid.army)),
     6,
   )
-  assert.equal(JSON.parse(data.get(SAVE_KEY)).version, 9)
+  assert.equal(JSON.parse(data.get(SAVE_KEY)).version, 10)
   assert.deepEqual(decode(data.get(SAVE_KEY)).state, migrated)
   const before = structuredClone(migrated),
     a = { type: 'gather', tactic: 'guard' }

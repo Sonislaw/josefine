@@ -1,4 +1,4 @@
-import { KEYS, type Resource, type Resources } from './engine'
+import type { Resource } from './engine'
 /** Presentation only: keep Polish quantity forms out of the numeric economy. */
 export function resourceAmount(resource: Resource, amount: number): string {
   const units = { wood: 'drewna', stone: 'kamienia', food: 'żywności' }
@@ -13,7 +13,3 @@ export function resourceAmount(resource: Resource, amount: number): string {
       : units[resource]
   return `${amount.toLocaleString('pl-PL')} ${unit}`
 }
-export const resourceList = (resources: Resources) =>
-  KEYS.filter((k) => resources[k])
-    .map((k) => resourceAmount(k, resources[k]))
-    .join(' · ') || 'Bez kosztu'

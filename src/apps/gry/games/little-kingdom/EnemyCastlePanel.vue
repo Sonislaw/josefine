@@ -5,7 +5,7 @@ import type { Settlement } from './neighbours'
 import { CASTLES } from './castles'
 import { enemyDefence, enemyTactic, enemyTarget } from './campaign'
 import { TACTICS, UNIT_IDS, UNITS, WAR, type Army } from './military'
-import { resourceList } from './format'
+import ResourceList from './ResourceList.vue'
 const props = defineProps<{ state: Kingdom; settlement: Settlement; disabled: boolean }>()
 const emit = defineEmits<{ choose: [Action] }>()
 // Each castle owns its expedition selection; another panel cannot retarget an existing preview.
@@ -72,9 +72,9 @@ const missionError = (type: 'intercept' | 'expedition' | 'forcePeace') =>
           jednostka. Cel łącznie: {{ armyText(enemyTarget(state.rank)) }}.
         </p>
         <p>
-          Skarbiec: {{ resourceList(enemy.treasury) }}. Zwycięska wyprawa zabierze do
-          {{ resourceList(CASTLES.plunder) }}; przy zniszczeniu również pozostały skarbiec. Zapasy
-          odnawiają się powoli, co {{ CASTLES.replenishTurns }} tur.
+          Skarbiec: <ResourceList :resources="enemy.treasury" />. Zwycięska wyprawa zabierze do
+          <ResourceList :resources="CASTLES.plunder" />; przy zniszczeniu również pozostały
+          skarbiec. Zapasy odnawiają się powoli, co {{ CASTLES.replenishTurns }} tur.
         </p>
       </div>
       <p v-if="enemy.peaceUntil !== null" data-testid="campaign-peace">
@@ -99,14 +99,14 @@ const missionError = (type: 'intercept' | 'expedition' | 'forcePeace') =>
           :disabled="disabled"
           @click="emit('choose', { type: 'truce', enemyId: settlement.id })"
         >
-          Opłać rozejm · {{ WAR.truce.gold }} monet
+          Opłać rozejm · <ResourceList :resources="WAR.truce" />
         </button>
         <button
           type="button"
           :disabled="disabled || enemy.advantage < 2"
           @click="emit('choose', { type: 'negotiate', enemyId: settlement.id })"
         >
-          Wynegocjuj pokój · {{ WAR.negotiate.gold }} monet + {{ WAR.negotiate.food }} żywności
+          Wynegocjuj pokój · <ResourceList :resources="WAR.negotiate" />
         </button>
         <details class="expedition">
           <summary>Wyprawy wojenne</summary>
